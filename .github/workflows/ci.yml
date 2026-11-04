@@ -152,9 +152,12 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - run: docker build -f deploy/docker/api.Dockerfile -t wd-api:${{ github.sha }} .
       - run: docker build -f deploy/docker/web.Dockerfile -t wd-web:${{ github.sha }} .
-      - name: Trivy image scan
+      - name: Trivy image scan (api)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with: { image-ref: 'wd-api:${{ github.sha }}', severity: 'HIGH,CRITICAL', exit-code: '1', ignore-unfixed: true }
+      - name: Trivy image scan (web)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with: { image-ref: 'wd-web:${{ github.sha }}', severity: 'HIGH,CRITICAL', exit-code: '1', ignore-unfixed: true }
 
   e2e-keycloak:
     name: E2E against real Keycloak + ClamAV (docker compose)

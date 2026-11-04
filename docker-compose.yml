@@ -109,7 +109,7 @@ services:
   migrate:
     build: { context: ., dockerfile: deploy/docker/api.Dockerfile }
     environment: *api-env
-    command: ["sh", "-c", "node dist/db/migrate.js up && node dist/db/seed.js"]
+    command: ["dist/db/setup.js"]
     depends_on: { postgres: { condition: service_healthy } }
 
   api:
@@ -125,7 +125,7 @@ services:
   worker:
     build: { context: ., dockerfile: deploy/docker/api.Dockerfile }
     environment: *api-env
-    command: ["node", "dist/src/worker.js"]
+    command: ["dist/src/worker.js"]
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }

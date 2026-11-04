@@ -1,7 +1,7 @@
 # Runbook: operations
 
 ## Deploy order
-1. `node dist/db/migrate.js up` with `DATABASE_OWNER_URL` (migrations job; the owner secret is **only** mounted here).
+1. `node dist/db/setup.js` (migrate + reference data; `SEED=false` in production) with `DATABASE_OWNER_URL` (migrations job; the owner secret is **only** mounted here).
 2. Roll API and worker (same image, `node dist/src/main.js` / `node dist/src/worker.js`). Both refuse to start as an owner/RLS-bypass role.
 3. Roll web.
 Rollback: redeploy previous images; `migrate.js down 1` only if the migration notes say it is safe (data-destructive downs are flagged in review).
