@@ -122,8 +122,24 @@ export class AuthGuard implements CanActivate {
     );
     const r = rows.rows[0];
     if (!r) {
+      // Diagnose without leaking: does an account with this email exist, and is it linked elsewhere?
+      const acct = await this.db
+        .withSystem((tx) =>
+          tx
+            .selectFrom('app_user')
+            .select(['status', sql<boolean>`kc_subject IS NOT NULL`.as('linked')])
+            .where('email', '=', c.email!.toLowerCase())
+            .executeTakeFirst(),
+        )
+        .catch(() => undefined);
       logger.warn(
-        { sub: c.sub, emailVerified: c.email_verified === true },
+        {
+          sub: c.sub,
+          emailVerified: c.email_verified,
+          accountExists: Boolean(acct),
+          accountStatus: acct?.status,
+          linkedToAnotherIdentity: acct?.linked ?? false,
+        },
         'no portal account for authenticated identity',
       );
       throw forbidden('Your account has not been provisioned for the support portal.');

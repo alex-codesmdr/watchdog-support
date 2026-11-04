@@ -11,6 +11,8 @@ let caseUrlPath = '';
 let caseNumber = '';
 
 test('customer opens a P1 case with an attachment', async ({ page }) => {
+  // Real ClamAV loads its signature database on the first scan, which can take a while in CI.
+  test.setTimeout(150_000);
   await signIn(page, 'noc@kaveribank.example');
   await page.getByRole('link', { name: 'Open a case' }).first().click();
   await page.getByLabel(/Serial number/).fill('WDSW5600A0001');
@@ -41,11 +43,11 @@ test('customer opens a P1 case with an attachment', async ({ page }) => {
   await expect(page.getByRole('meter', { name: /First response/ })).toBeVisible();
   caseUrlPath = new URL(page.url()).pathname;
   caseNumber = caseUrlPath.split('/').pop()!;
-  // the scan worker masks the secret
+  // The scan worker masks the secret once the antivirus scan has passed.
   await expect(async () => {
     await page.reload();
     await expect(page.getByText(/secret masked/)).toBeVisible({ timeout: 2000 });
-  }).toPass({ timeout: 20_000 });
+  }).toPass({ timeout: 75_000 });
   await signOut(page);
 });
 
