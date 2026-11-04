@@ -22,7 +22,8 @@ export async function signIn(page: Page, email: string, returnTo = '/portal') {
     await page.locator('#kc-login').click();
     // Keycloak rejects a TOTP code that was already used by the same user; wait for a fresh window.
     const win = Math.floor(Date.now() / 30_000);
-    if (lastOtpWindow.get(email) === win) await page.waitForTimeout(30_000 - (Date.now() % 30_000) + 500);
+    if (lastOtpWindow.get(email) === win)
+      await page.waitForTimeout(30_000 - (Date.now() % 30_000) + 500);
     lastOtpWindow.set(email, Math.floor(Date.now() / 30_000));
     await page.locator('#otp').fill(totp());
     await page.locator('#kc-login').click();
