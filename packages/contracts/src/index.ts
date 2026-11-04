@@ -483,3 +483,76 @@ export const KbEditorArticle = KbEditorRow.extend({
   sourceCaseNumber: z.string().nullable(),
 });
 export type KbEditorArticle = z.infer<typeof KbEditorArticle>;
+
+// ---------- sites, assets, renewals, import ----------
+export const SiteView = z.object({
+  id: Uuid,
+  orgId: Uuid,
+  name: z.string(),
+  address: z.string().nullable(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+  pincode: z.string().nullable(),
+  assetCount: z.number().int(),
+});
+export type SiteView = z.infer<typeof SiteView>;
+export const SiteRequest = z.object({
+  orgId: Uuid.optional(),
+  name: z.string().trim().min(2).max(120),
+  address: z.string().trim().max(300).optional(),
+  city: z.string().trim().max(80).optional(),
+  state: z.string().trim().max(80).optional(),
+  pincode: z
+    .string()
+    .trim()
+    .regex(/^[1-9][0-9]{5}$/, 'Enter a 6-digit PIN code')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+});
+export const AssetUpdateRequest = z.object({ siteId: Uuid.nullable() });
+export const RenewalRequestBody = z.object({
+  desiredTier: SupportTier.optional(),
+  note: z.string().trim().max(2000).optional(),
+});
+export const RenewalView = z.object({
+  id: Uuid,
+  assetId: Uuid,
+  serialNumber: z.string(),
+  status: z.enum(['requested', 'quoted', 'won', 'lost', 'cancelled']),
+  desiredTier: SupportTier.nullable(),
+  createdAt: IsoDateTime,
+});
+export type RenewalView = z.infer<typeof RenewalView>;
+
+export const ImportRowResult = z.object({
+  row: z.number().int(),
+  serialNumber: z.string().nullable(),
+  status: z.enum(['created', 'updated', 'unchanged', 'error']),
+  messages: z.array(z.string()),
+});
+export const ImportReport = z.object({
+  id: Uuid,
+  fileName: z.string(),
+  dryRun: z.boolean(),
+  totalRows: z.number().int(),
+  created: z.number().int(),
+  updated: z.number().int(),
+  unchanged: z.number().int(),
+  failed: z.number().int(),
+  rows: z.array(ImportRowResult),
+});
+export type ImportReport = z.infer<typeof ImportReport>;
+export const IMPORT_COLUMNS = [
+  'organisation',
+  'serial_number',
+  'sku',
+  'site',
+  'mac',
+  'purchase_date',
+  'software_version',
+  'coverage_kind',
+  'coverage_tier',
+  'coverage_start',
+  'coverage_end',
+  'contract_ref',
+] as const;

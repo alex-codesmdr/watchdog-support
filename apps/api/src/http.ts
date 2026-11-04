@@ -62,6 +62,20 @@ export async function createHttpApp(o: AppOverrides = {}): Promise<NestExpressAp
     '/api/v1/dev/inbound-email',
     express.text({ type: ['text/plain', 'message/rfc822'], limit: '10mb' }),
   );
+  // Device import: CSV or Excel uploaded as the raw request body (staff only; size-capped).
+  app.use(
+    '/api/v1/admin/asset-imports',
+    express.raw({
+      type: [
+        'text/csv',
+        'application/csv',
+        'application/octet-stream',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ],
+      limit: '5mb',
+    }),
+  );
   app.use(express.json({ limit: '1mb', type: ['application/json', 'application/*+json'] }));
 
   // API docs: public in non-production; behind the internal ingress in production.

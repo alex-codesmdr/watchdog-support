@@ -380,7 +380,39 @@ export interface KbFeedbackT {
   created_at: Ts;
 }
 
+export interface RenewalRequestT {
+  id: Generated<string>;
+  org_id: string;
+  asset_id: string;
+  entitlement_id: string | null;
+  requested_by: string;
+  desired_tier: string | null;
+  note: string | null;
+  status: Generated<string>;
+  created_at: Ts;
+}
+export interface EntitlementReminderT {
+  entitlement_id: string;
+  days_before: number;
+  sent_at: Ts;
+}
+export interface AssetImportT {
+  id: Generated<string>;
+  uploaded_by: string;
+  file_name: string;
+  dry_run: boolean;
+  total_rows: number;
+  created: number;
+  updated: number;
+  failed: number;
+  report: Json<unknown[]>;
+  created_at: Ts;
+}
+
 export interface DB {
+  renewal_request: RenewalRequestT;
+  entitlement_reminder: EntitlementReminderT;
+  asset_import: AssetImportT;
   kb_article: KbArticleT;
   kb_version: KbVersionT;
   kb_article_product: KbArticleProductT;

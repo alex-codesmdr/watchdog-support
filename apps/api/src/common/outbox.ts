@@ -11,7 +11,9 @@ export type OutboxTopic =
   | 'case.escalated'
   | 'attachment.scan'
   | 'sla.warning'
-  | 'sla.breached';
+  | 'sla.breached'
+  | 'renewal.requested'
+  | 'coverage.expiring';
 
 /** Transactional outbox (ADR-006): the event commits or rolls back with the business change. */
 export async function emit(

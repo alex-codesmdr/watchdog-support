@@ -40,6 +40,9 @@ import { SlaReportController } from './modules/sla/sla-report.controller.js';
 import { WarrantyController } from './modules/public/warranty.controller.js';
 import { KbController, KbEditorController } from './modules/kb/kb.controller.js';
 import { KbService } from './modules/kb/kb.service.js';
+import { SitesController } from './modules/assets/sites.controller.js';
+import { AssetImportController } from './modules/assets/asset-import.controller.js';
+import { RemindersService } from './modules/assets/reminders.service.js';
 
 /** Providers tests may replace (JWKS, transports, storage, AV, IdP, Redis). */
 export interface AppOverrides {
@@ -117,6 +120,8 @@ export class AppModule {
         WarrantyController,
         KbController,
         KbEditorController,
+        SitesController,
+        AssetImportController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
@@ -127,6 +132,7 @@ export class AppModule {
         EmailInService,
         SlaMonitorService,
         KbService,
+        RemindersService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_GUARD, useClass: RateLimitGuard },

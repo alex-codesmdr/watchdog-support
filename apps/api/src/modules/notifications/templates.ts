@@ -17,7 +17,9 @@ export type TemplateKey =
   | 'case_resolved'
   | 'case_customer_escalated'
   | 'sla_warning'
-  | 'sla_breached';
+  | 'sla_breached'
+  | 'renewal_requested'
+  | 'coverage_expiring';
 
 interface Rendered {
   subject: string;
@@ -101,6 +103,17 @@ const EN: Strings = {
     heading: 'Customer escalation on {{number}}',
     body: '{{org}} escalated case "{{subject}}" ({{severity}}). Review the justification on the case and respond per the escalation matrix.',
     cta: 'Open case',
+  },
+  renewal_requested: {
+    subject: '[Renewal] {{org}} – {{serial}} ({{model}})',
+    heading: 'Renewal quote requested',
+    body: '{{requester}} at <b>{{org}}</b> asked for a renewal quote for {{model}}, serial {{serial}}. Current coverage: {{coverage}}. Requested tier: {{tier}}.<br>Note: {{note}}',
+  },
+  coverage_expiring: {
+    subject: 'WatchDog coverage ends in {{days}} days for {{count}} device(s)',
+    heading: 'Coverage is ending soon',
+    body: 'Support coverage for {{count}} device(s) at <b>{{org}}</b> ends within {{days}} days, the earliest on {{earliest}}:<br>{{listHtml}}<br>Request a renewal quote from the Devices page to keep 24×7 support and software updates.',
+    cta: 'Review devices',
   },
 };
 

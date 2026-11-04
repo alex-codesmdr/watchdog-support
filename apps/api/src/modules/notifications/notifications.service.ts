@@ -16,6 +16,10 @@ const fmtIst = (d: Date) =>
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(d);
+const ymd = (d: Date | string) =>
+  d instanceof Date
+    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    : String(d).slice(0, 10);
 const excerpt = (html: string) => {
   const t = htmlToText(html);
   return t.length > 600 ? `${t.slice(0, 600)}…` : t;
@@ -70,9 +74,119 @@ export class NotificationsService {
             escalatedTo: number | null;
           },
         );
+      case 'renewal.requested':
+        return this.renewal(String(payload.renewalId));
+      case 'coverage.expiring':
+        return this.coverageExpiring(
+          String(payload.orgId),
+          Number(payload.days),
+          payload.entitlementIds as string[],
+        );
       default:
         return;
     }
+  }
+
+  /** Renewal quote request → the renewals/sales mailbox (CRM adapter replaces this in Phase 4). */
+  private async renewal(id: string) {
+    const TIER: Record<string, string> = {
+      standard: 'Standard',
+      premium: 'Premium',
+      mission_critical: 'Mission-Critical',
+    };
+    await this.db.withSystem(async (tx) => {
+      const r = await tx
+        .selectFrom('renewal_request as r')
+        .innerJoin('asset as a', 'a.id', 'r.asset_id')
+        .innerJoin('product as p', 'p.id', 'a.product_id')
+        .innerJoin('organization as o', 'o.id', 'r.org_id')
+        .innerJoin('app_user as u', 'u.id', 'r.requested_by')
+        .leftJoin('entitlement as e', 'e.id', 'r.entitlement_id')
+        .select([
+          'r.org_id',
+          'r.desired_tier',
+          'r.note',
+          'a.serial_number',
+          'p.model_name',
+          'o.name as org_name',
+          'u.display_name',
+          'u.email',
+          'e.kind',
+          'e.tier',
+          'e.ends_on',
+        ])
+        .where('r.id', '=', id)
+        .executeTakeFirst();
+      if (!r) return;
+      const coverage = r.ends_on
+        ? `${TIER[r.tier ?? ''] ?? r.tier} ${r.kind} until ${ymd(r.ends_on as unknown as Date | string)}`
+        : 'none on record';
+      await this.send({
+        to: this.cfg.RENEWALS_EMAIL,
+        orgId: null,
+        userId: null,
+        key: 'renewal_requested',
+        vars: {
+          org: r.org_name,
+          serial: r.serial_number,
+          model: r.model_name,
+          requester: `${r.display_name} <${r.email}>`,
+          coverage,
+          tier: r.desired_tier ? (TIER[r.desired_tier] ?? r.desired_tier) : 'same as today',
+          note: r.note ?? '—',
+        },
+      });
+    });
+  }
+
+  /** Expiry reminder to every active customer administrator of the organisation. */
+  private async coverageExpiring(orgId: string, days: number, entitlementIds: string[]) {
+    if (!entitlementIds?.length) return;
+    const h = (v: string) => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    await this.db.withSystem(async (tx) => {
+      const rows = await tx
+        .selectFrom('entitlement as e')
+        .innerJoin('asset as a', 'a.id', 'e.asset_id')
+        .innerJoin('product as p', 'p.id', 'a.product_id')
+        .innerJoin('organization as o', 'o.id', 'e.org_id')
+        .select(['a.serial_number', 'p.model_name', 'e.ends_on', 'o.name as org_name'])
+        .where('e.id', 'in', entitlementIds)
+        .where('e.org_id', '=', orgId)
+        .orderBy('e.ends_on')
+        .execute();
+      if (!rows.length) return;
+      const date = ymd;
+      const shown = rows.slice(0, 20);
+      const listHtml =
+        shown
+          .map((r) => `• ${h(r.model_name)} — ${h(r.serial_number)} — ends ${date(r.ends_on)}`)
+          .join('<br>') +
+        (rows.length > shown.length ? `<br>…and ${rows.length - shown.length} more` : '');
+      const admins = await tx
+        .selectFrom('user_role as ur')
+        .innerJoin('app_user as u', 'u.id', 'ur.user_id')
+        .select(['u.id', 'u.email', 'u.locale'])
+        .where('ur.role_key', '=', 'customer_admin')
+        .where('u.org_id', '=', orgId)
+        .where('u.status', '=', 'active')
+        .execute();
+      for (const a of admins)
+        await this.send({
+          to: a.email,
+          orgId,
+          userId: a.id,
+          key: 'coverage_expiring',
+          locale: a.locale,
+          vars: {
+            org: rows[0]!.org_name,
+            days,
+            count: rows.length,
+            earliest: date(rows[0]!.ends_on),
+            listHtml,
+            url: `${this.cfg.PUBLIC_WEB_URL}/portal/assets`,
+          },
+        });
+    });
   }
 
   private async registration(topic: string, id: string) {

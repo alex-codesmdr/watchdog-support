@@ -62,6 +62,8 @@ export const apiEnvSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
   MAIL_FROM: z.string().default('WatchDog Support <support@watchdog.example>'),
+  /** Sales/renewals mailbox that receives renewal-quote requests (CRM adapter in Phase 4). */
+  RENEWALS_EMAIL: z.string().email().default('renewals@watchdog.example'),
   MAIL_REPLY_DOMAIN: z.string().default('support.watchdog.example'),
   MAIL_REPLY_LOCALPART: z.string().default('case'),
   IMAP_HOST: z.string().optional(),
