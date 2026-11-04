@@ -14,11 +14,12 @@ function totp(raw = 'WatchDogDemoTotpKey2026', step = 30): string {
 export async function signIn(page: Page, email: string, returnTo = '/portal') {
   await page.goto(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`);
   if (process.env.KEYCLOAK_E2E) {
-    await page.getByLabel(/username|email/i).fill(email);
-    await page.getByLabel(/password/i).fill(process.env.E2E_PASSWORD ?? 'Demo@WatchDog2026');
-    await page.getByRole('button', { name: /sign in/i }).click();
-    await page.getByLabel(/one-time code/i).fill(totp());
-    await page.getByRole('button', { name: /sign in|submit/i }).click();
+    // Keycloak login theme field ids (stable across 2x versions).
+    await page.locator('#username').fill(email);
+    await page.locator('#password').fill(process.env.E2E_PASSWORD ?? 'Demo@WatchDog2026');
+    await page.locator('#kc-login').click();
+    await page.locator('#otp').fill(totp());
+    await page.locator('#kc-login').click();
   } else {
     await page.locator(`button[value="${email}"]`).click();
   }
