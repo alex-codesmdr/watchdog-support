@@ -11,6 +11,8 @@
  *   echo "Term One" | node dist/fingerprint-cli.js >> prohibited.sha256
  */
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const FOLD: Record<string, string> = {
   '0': 'o',
@@ -99,4 +101,20 @@ export function scanFingerprints(text: string, fp: Fingerprints): FpHit[] {
     }
   }
   return hits;
+}
+
+let committed: Fingerprints | undefined;
+/**
+ * The committed fingerprint list shipped with this package (prohibited.sha256), for runtime guards
+ * in the API. Override with WD_PROHIBITED_FINGERPRINTS_FILE.
+ */
+export function committedFingerprints(): Fingerprints {
+  committed ??= parseFingerprints(
+    readFileSync(
+      process.env.WD_PROHIBITED_FINGERPRINTS_FILE ??
+        fileURLToPath(new URL('../prohibited.sha256', import.meta.url)),
+      'utf8',
+    ),
+  );
+  return committed;
 }

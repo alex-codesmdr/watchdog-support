@@ -13,7 +13,7 @@ COPY apps/api ./apps/api
 # Every workspace manifest must be present for a frozen-lockfile install.
 COPY apps/web/package.json ./apps/web/package.json
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
-RUN pnpm --filter "./packages/{config,contracts,rbac,sla-time}" build && pnpm --filter @wd/api build
+RUN pnpm --filter "./packages/{config,contracts,rbac,sla-time,brand-lint}" build && pnpm --filter @wd/api build
 RUN pnpm --filter @wd/api deploy --legacy --prod /out && cp -r apps/api/dist /out/dist
 
 # Hardened runtime: all Debian security updates applied at build time, package managers removed

@@ -57,7 +57,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter "./packages/{config,contracts,rbac,sla-time}" build
+      - run: pnpm --filter "./packages/{config,contracts,rbac,sla-time,brand-lint}" build
       - run: pnpm --filter @wd/api test:integration
       - name: Migrations are reversible (up → down → up)
         run: |
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter "./packages/{config,contracts,rbac,sla-time}" build && pnpm --filter @wd/api build && pnpm --filter @wd/web build
+      - run: pnpm --filter "./packages/{config,contracts,rbac,sla-time,brand-lint}" build && pnpm --filter @wd/api build && pnpm --filter @wd/web build
       - name: Database
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f deploy/postgres/00-roles.sql

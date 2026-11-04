@@ -32,6 +32,7 @@
     "@tus/file-store": "^2.1.2",
     "@tus/s3-store": "^2.1.0",
     "@tus/server": "^2.4.7",
+    "@wd/brand-lint": "workspace:*",
     "@wd/config": "workspace:*",
     "@wd/contracts": "workspace:*",
     "@wd/rbac": "workspace:*",
@@ -75,7 +76,6 @@
     "@types/sanitize-html": "^2.16.2",
     "@types/supertest": "^7.2.1",
     "@types/swagger-ui-express": "^4.1.8",
-    "@wd/brand-lint": "workspace:*",
     "supertest": "^7.3.1",
     "tsx": "^4.23.15",
     "unplugin-swc": "^2.0.0"
