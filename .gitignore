@@ -10,3 +10,6 @@ coverage/
 storybook-static/
 .brand-terms
 data/
+playwright-report/
+test-results/
+*.tsbuildinfo

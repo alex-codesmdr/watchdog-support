@@ -25,7 +25,15 @@ export class SmtpTransport implements MailTransport {
     });
   }
   async send(m: OutboundMail): Promise<void> {
-    await this.t.sendMail({ from: this.cfg.MAIL_FROM, to: m.to, subject: m.subject, html: m.html, text: m.text, replyTo: m.replyTo, headers: m.headers });
+    await this.t.sendMail({
+      from: this.cfg.MAIL_FROM,
+      to: m.to,
+      subject: m.subject,
+      html: m.html,
+      text: m.text,
+      replyTo: m.replyTo,
+      headers: m.headers,
+    });
   }
 }
 

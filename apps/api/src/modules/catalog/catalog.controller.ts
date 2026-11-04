@@ -23,15 +23,37 @@ export class CatalogController {
         .orderBy('f.sort_order')
         .execute(),
     );
-    return { items: rows.map((r) => ({ id: r.id, key: r.key, name: r.name, description: r.description, productCount: Number(r.n) })) };
+    return {
+      items: rows.map((r) => ({
+        id: r.id,
+        key: r.key,
+        name: r.name,
+        description: r.description,
+        productCount: Number(r.n),
+      })),
+    };
   }
 
   @Public()
   @Get('products')
   async products(): Promise<{ items: ProductPublic[] }> {
     // Explicit column list: the app role has no privilege on internal_oem_ref at all.
-    const rows = await this.db.withAnonymous((tx) => tx.selectFrom('product').select(['id', 'family_id', 'sku', 'model_name', 'lifecycle']).orderBy('sku').execute());
-    return { items: rows.map((r) => ({ id: r.id, familyId: r.family_id, sku: r.sku, modelName: r.model_name, lifecycle: r.lifecycle })) };
+    const rows = await this.db.withAnonymous((tx) =>
+      tx
+        .selectFrom('product')
+        .select(['id', 'family_id', 'sku', 'model_name', 'lifecycle'])
+        .orderBy('sku')
+        .execute(),
+    );
+    return {
+      items: rows.map((r) => ({
+        id: r.id,
+        familyId: r.family_id,
+        sku: r.sku,
+        modelName: r.model_name,
+        lifecycle: r.lifecycle,
+      })),
+    };
   }
 
   /** Internal mapping for PSIRT / RMA staff only. */
@@ -39,10 +61,23 @@ export class CatalogController {
   @RequirePermission('product:read:internal_ref')
   async internal(@CurrentPrincipal() p: Principal, @Param('sku') sku: string) {
     return this.db.withTenant(p, async (tx) => {
-      const prod = await tx.selectFrom('product').select(['id', 'family_id', 'sku', 'model_name', 'lifecycle']).where('sku', '=', sku).executeTakeFirst();
+      const prod = await tx
+        .selectFrom('product')
+        .select(['id', 'family_id', 'sku', 'model_name', 'lifecycle'])
+        .where('sku', '=', sku)
+        .executeTakeFirst();
       if (!prod) throw notFound('Product');
-      const ref = await sql<{ r: string | null }>`SELECT wd.product_internal_ref(${sku}) AS r`.execute(tx);
-      return { id: prod.id, familyId: prod.family_id, sku: prod.sku, modelName: prod.model_name, lifecycle: prod.lifecycle, internalOemRef: ref.rows[0]?.r ?? null };
+      const ref = await sql<{
+        r: string | null;
+      }>`SELECT wd.product_internal_ref(${sku}) AS r`.execute(tx);
+      return {
+        id: prod.id,
+        familyId: prod.family_id,
+        sku: prod.sku,
+        modelName: prod.model_name,
+        lifecycle: prod.lifecycle,
+        internalOemRef: ref.rows[0]?.r ?? null,
+      };
     });
   }
 }

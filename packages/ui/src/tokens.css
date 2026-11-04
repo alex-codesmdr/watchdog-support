@@ -1,0 +1,48 @@
+/*
+ * WatchDog design tokens. Brand teams swap these values; components only use the variables.
+ * Colors are stored as "R G B" so Tailwind can apply alpha.
+ */
+:root {
+  --wd-navy: 11 37 69;        /* #0B2545 brand primary */
+  --wd-navy-2: 19 49 92;      /* #13315C hover / secondary surfaces */
+  --wd-teal: 19 168 158;      /* #13A89E brand accent */
+  --wd-teal-ink: 11 122 115;  /* #0B7A73 accent text on light (AA) */
+  --wd-paper: 244 246 249;    /* #F4F6F9 page */
+  --wd-surface: 255 255 255;
+  --wd-line: 214 221 231;     /* #D6DDE7 */
+  --wd-ink: 22 32 46;         /* #16202E body text */
+  --wd-muted: 84 98 118;      /* #546276 secondary text (AA on paper) */
+  --wd-amber: 217 146 46;     /* #D9922E SLA warning */
+  --wd-amber-ink: 138 84 10;
+  --wd-red: 194 65 45;        /* #C2412D SLA breach / P1 */
+  --wd-green: 34 128 82;      /* #228052 met */
+  --wd-focus: 19 168 158;
+  --wd-radius-s: 4px;
+  --wd-radius-m: 8px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --wd-paper: 12 20 31;
+    --wd-surface: 19 30 45;
+    --wd-line: 44 60 82;
+    --wd-ink: 228 234 242;
+    --wd-muted: 152 166 186;
+    --wd-teal-ink: 77 208 196;
+    --wd-amber-ink: 240 186 104;
+    --wd-navy-2: 34 70 120;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --wd-paper: 12 20 31;
+  --wd-surface: 19 30 45;
+  --wd-line: 44 60 82;
+  --wd-ink: 228 234 242;
+  --wd-muted: 152 166 186;
+  --wd-teal-ink: 77 208 196;
+  --wd-amber-ink: 240 186 104;
+  --wd-navy-2: 34 70 120;
+  color-scheme: dark;
+}

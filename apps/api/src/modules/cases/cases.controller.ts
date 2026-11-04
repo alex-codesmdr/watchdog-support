@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Headers, HttpCode, Inject, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  Inject,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   AssignRequest,
   CaseListQuery,
@@ -34,7 +44,11 @@ export class CasesController {
   @Post()
   @RequirePermission('case:create', 'case:create:on_behalf')
   @RateLimit('case-create', 30, 3600)
-  async create(@CurrentPrincipal() p: Principal, @Ctx() ctx: RequestContext, @Body() body: unknown) {
+  async create(
+    @CurrentPrincipal() p: Principal,
+    @Ctx() ctx: RequestContext,
+    @Body() body: unknown,
+  ) {
     const c = await this.cases.create(p, ctx, parse(CreateCaseRequest, body));
     return this.cases.get(p, c.id);
   }
@@ -48,13 +62,24 @@ export class CasesController {
   @Post(':ref/messages')
   @HttpCode(201)
   @RateLimit('case-reply', 120, 3600)
-  reply(@CurrentPrincipal() p: Principal, @Ctx() ctx: RequestContext, @Param('ref') ref: string, @Body() body: unknown) {
+  reply(
+    @CurrentPrincipal() p: Principal,
+    @Ctx() ctx: RequestContext,
+    @Param('ref') ref: string,
+    @Body() body: unknown,
+  ) {
     return this.cases.reply(p, ctx, ref, parse(ReplyRequest, body));
   }
 
   @Post(':ref/transition')
   @HttpCode(200)
-  transition(@CurrentPrincipal() p: Principal, @Ctx() ctx: RequestContext, @Param('ref') ref: string, @Body() body: unknown, @Headers('if-match') ifMatch?: string) {
+  transition(
+    @CurrentPrincipal() p: Principal,
+    @Ctx() ctx: RequestContext,
+    @Param('ref') ref: string,
+    @Body() body: unknown,
+    @Headers('if-match') ifMatch?: string,
+  ) {
     const b = parse(TransitionRequest, body);
     const v = ifMatch ? Number(ifMatch.replace(/"/g, '')) : undefined;
     return this.cases.transition(p, ctx, ref, b.to, b.note, Number.isFinite(v) ? v : undefined);
@@ -63,20 +88,35 @@ export class CasesController {
   @Post(':ref/escalate')
   @HttpCode(200)
   @RateLimit('case-escalate', 10, 3600)
-  escalate(@CurrentPrincipal() p: Principal, @Ctx() ctx: RequestContext, @Param('ref') ref: string, @Body() body: unknown) {
+  escalate(
+    @CurrentPrincipal() p: Principal,
+    @Ctx() ctx: RequestContext,
+    @Param('ref') ref: string,
+    @Body() body: unknown,
+  ) {
     return this.cases.escalate(p, ctx, ref, parse(EscalateRequest, body).justification);
   }
 
   @Post(':ref/assign')
   @HttpCode(200)
   @RequirePermission('case:assign')
-  assign(@CurrentPrincipal() p: Principal, @Ctx() ctx: RequestContext, @Param('ref') ref: string, @Body() body: unknown) {
+  assign(
+    @CurrentPrincipal() p: Principal,
+    @Ctx() ctx: RequestContext,
+    @Param('ref') ref: string,
+    @Body() body: unknown,
+  ) {
     return this.cases.assign(p, ctx, ref, parse(AssignRequest, body).assigneeId);
   }
 
   @Post(':ref/csat')
   @HttpCode(201)
-  csat(@CurrentPrincipal() p: Principal, @Ctx() ctx: RequestContext, @Param('ref') ref: string, @Body() body: unknown) {
+  csat(
+    @CurrentPrincipal() p: Principal,
+    @Ctx() ctx: RequestContext,
+    @Param('ref') ref: string,
+    @Body() body: unknown,
+  ) {
     return this.cases.csat(p, ctx, ref, parse(CsatRequest, body));
   }
 }
@@ -84,7 +124,10 @@ export class CasesController {
 @Controller('api/v1/public/csat')
 export class PublicCsatController {
   private readonly signer: Signer;
-  constructor(@Inject(CasesService) private readonly cases: CasesService, @Inject(CONFIG) cfg: AppConfig) {
+  constructor(
+    @Inject(CasesService) private readonly cases: CasesService,
+    @Inject(CONFIG) cfg: AppConfig,
+  ) {
     this.signer = new Signer(cfg.APP_SIGNING_KEY);
   }
 

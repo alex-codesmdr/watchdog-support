@@ -20,14 +20,23 @@ export class OutboxRelay {
   private stopped = false;
   constructor(
     private readonly db: Database,
-    private readonly mode: { kind: 'inline'; handler: Handler } | { kind: 'bullmq'; connection: ConnectionOptions },
+    private readonly mode:
+      { kind: 'inline'; handler: Handler } | { kind: 'bullmq'; connection: ConnectionOptions },
   ) {}
 
   private queues = new Map<string, Queue>();
   private queue(name: string) {
     let q = this.queues.get(name);
     if (!q && this.mode.kind === 'bullmq') {
-      q = new Queue(name, { connection: this.mode.connection, defaultJobOptions: { attempts: MAX_ATTEMPTS, backoff: { type: 'exponential', delay: 5_000 }, removeOnComplete: 1000, removeOnFail: 5000 } });
+      q = new Queue(name, {
+        connection: this.mode.connection,
+        defaultJobOptions: {
+          attempts: MAX_ATTEMPTS,
+          backoff: { type: 'exponential', delay: 5_000 },
+          removeOnComplete: 1000,
+          removeOnFail: 5000,
+        },
+      });
       this.queues.set(name, q);
     }
     return q!;
@@ -48,9 +57,14 @@ export class OutboxRelay {
         .execute();
       for (const r of rows) {
         try {
-          if (this.mode.kind === 'inline') await this.mode.handler(r.topic, r.payload as Record<string, unknown>);
+          if (this.mode.kind === 'inline')
+            await this.mode.handler(r.topic, r.payload as Record<string, unknown>);
           else await this.queue(queueFor(r.topic)).add(r.topic, r.payload, { jobId: r.id });
-          await tx.updateTable('outbox_event').set({ published_at: new Date() }).where('id', '=', r.id).execute();
+          await tx
+            .updateTable('outbox_event')
+            .set({ published_at: new Date() })
+            .where('id', '=', r.id)
+            .execute();
         } catch (err) {
           const attempts = r.attempts + 1;
           logger.error({ err, topic: r.topic, attempts }, 'outbox dispatch failed');
@@ -90,9 +104,15 @@ export class OutboxRelay {
   }
 }
 
-export function startConsumers(connection: ConnectionOptions, handlers: Record<string, Handler>): Worker[] {
+export function startConsumers(
+  connection: ConnectionOptions,
+  handlers: Record<string, Handler>,
+): Worker[] {
   return Object.entries(handlers).map(([name, handler]) => {
-    const w = new Worker(name, (job) => handler(job.name, job.data as Record<string, unknown>), { connection, concurrency: name === 'file-scan' ? 2 : 10 });
+    const w = new Worker(name, (job) => handler(job.name, job.data as Record<string, unknown>), {
+      connection,
+      concurrency: name === 'file-scan' ? 2 : 10,
+    });
     w.on('failed', (job, err) => logger.error({ err, queue: name, job: job?.id }, 'job failed'));
     return w;
   });

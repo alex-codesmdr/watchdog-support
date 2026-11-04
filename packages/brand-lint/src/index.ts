@@ -36,9 +36,7 @@ const escapeClass = (s: string) => s.replace(/[\\\]^-]/g, (c) => `\\${c}`);
 export function termToRegex(term: string): RegExp {
   const chars = [...term.toLowerCase().replace(/[^a-z0-9]/g, '')];
   if (chars.length < 2) throw new Error(`brand-lint: term too short: "${term}"`);
-  const body = chars
-    .map((c) => `[${escapeClass(LOOKALIKE[c] ?? c)}]`)
-    .join('[\\s._\\-]{0,2}');
+  const body = chars.map((c) => `[${escapeClass(LOOKALIKE[c] ?? c)}]`).join('[\\s._\\-]{0,2}');
   return new RegExp(`(?<![a-z0-9])${body}(?![a-z0-9])`, 'gi');
 }
 
@@ -80,15 +78,53 @@ export function scanText(text: string, terms: readonly string[], file = '<text>'
 }
 
 /** Findings never print the term in full, so CI logs do not leak the list either. */
-const mask = (t: string) => (t.length <= 2 ? '**' : `${t[0]}${'*'.repeat(t.length - 2)}${t[t.length - 1]}`);
-const redact = (s: string, re: RegExp) => s.replace(new RegExp(re.source, 'gi'), (x) => mask(x)).replace(/\s+/g, ' ');
+const mask = (t: string) =>
+  t.length <= 2 ? '**' : `${t[0]}${'*'.repeat(t.length - 2)}${t[t.length - 1]}`;
+const redact = (s: string, re: RegExp) =>
+  s.replace(new RegExp(re.source, 'gi'), (x) => mask(x)).replace(/\s+/g, ' ');
 
 const TEXT_EXT = new Set([
-  '.ts', '.tsx', '.js', '.mjs', '.cjs', '.jsx', '.json', '.yaml', '.yml', '.md', '.mdx', '.sql', '.html',
-  '.htm', '.css', '.scss', '.txt', '.csv', '.xml', '.svg', '.mjml', '.hbs', '.env', '.example', '.toml',
-  '.properties', '.conf', '.rss', '.map', '.tf', '.tpl', '',
+  '.ts',
+  '.tsx',
+  '.js',
+  '.mjs',
+  '.cjs',
+  '.jsx',
+  '.json',
+  '.yaml',
+  '.yml',
+  '.md',
+  '.mdx',
+  '.sql',
+  '.html',
+  '.htm',
+  '.css',
+  '.scss',
+  '.txt',
+  '.csv',
+  '.xml',
+  '.svg',
+  '.mjml',
+  '.hbs',
+  '.env',
+  '.example',
+  '.toml',
+  '.properties',
+  '.conf',
+  '.rss',
+  '.map',
+  '.tf',
+  '.tpl',
+  '',
 ]);
-const DEFAULT_IGNORES = ['node_modules', '.git', '.turbo', 'coverage', '.next/cache', 'pnpm-lock.yaml'];
+const DEFAULT_IGNORES = [
+  'node_modules',
+  '.git',
+  '.turbo',
+  'coverage',
+  '.next/cache',
+  'pnpm-lock.yaml',
+];
 const MAX_BYTES = 20 * 1024 * 1024;
 
 export interface ScanOptions {
@@ -102,10 +138,15 @@ export function scanPath(root: string, opts: ScanOptions): { files: number; find
   let files = 0;
   const walk = (p: string) => {
     const rel = relative(root, p).split(sep).join('/');
-    if (rel && ignores.some((i) => rel === i || rel.startsWith(`${i}/`) || rel.split('/').includes(i))) return;
+    if (
+      rel &&
+      ignores.some((i) => rel === i || rel.startsWith(`${i}/`) || rel.split('/').includes(i))
+    )
+      return;
     const st = statSync(p);
     const base = rel.split('/').pop() ?? '';
-    for (const f of scanText(base, opts.terms, rel || p)) findings.push({ ...f, where: 'filename' });
+    for (const f of scanText(base, opts.terms, rel || p))
+      findings.push({ ...f, where: 'filename' });
     if (st.isDirectory()) {
       for (const e of readdirSync(p)) walk(join(p, e));
       return;

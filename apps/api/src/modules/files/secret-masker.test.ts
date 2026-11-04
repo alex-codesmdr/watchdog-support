@@ -21,7 +21,13 @@ describe('maskSecrets', () => {
   });
 
   it('leaves benign statements and normal log lines alone', () => {
-    const lines = ['password-recovery enable', 'key chain CORE', 'interface GigabitEthernet1/0/1', 'Link up at 10:02:11', 'password policy enable'];
+    const lines = [
+      'password-recovery enable',
+      'key chain CORE',
+      'interface GigabitEthernet1/0/1',
+      'Link up at 10:02:11',
+      'password policy enable',
+    ];
     for (const l of lines) expect(maskSecrets(l).count).toBe(0);
   });
 

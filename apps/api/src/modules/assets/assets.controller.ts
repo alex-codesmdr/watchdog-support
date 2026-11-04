@@ -16,18 +16,35 @@ export class AssetsController {
 
   @Get()
   @RequirePermission('asset:read:org', 'asset:read:delegated', 'asset:read:all')
-  async list(@CurrentPrincipal() p: Principal, @Query('orgId') orgId?: string): Promise<{ items: AssetSummary[] }> {
-    const target = z.string().uuid().optional().parse(orgId || undefined);
-    return this.db.withTenant(p, async (tx) => ({ items: await this.query(tx, p, { orgId: target }) }));
+  async list(
+    @CurrentPrincipal() p: Principal,
+    @Query('orgId') orgId?: string,
+  ): Promise<{ items: AssetSummary[] }> {
+    const target = z
+      .string()
+      .uuid()
+      .optional()
+      .parse(orgId || undefined);
+    return this.db.withTenant(p, async (tx) => ({
+      items: await this.query(tx, p, { orgId: target }),
+    }));
   }
 
   /** Used by the case form to validate a serial and show the entitlement before submission. */
   @Get('validate')
   @RequirePermission('asset:read:org', 'asset:read:delegated', 'asset:read:all')
   @RateLimit('serial-validate', 120, 60)
-  async validate(@CurrentPrincipal() p: Principal, @Query('serial') serial?: string, @Query('orgId') orgId?: string): Promise<SerialValidation> {
+  async validate(
+    @CurrentPrincipal() p: Principal,
+    @Query('serial') serial?: string,
+    @Query('orgId') orgId?: string,
+  ): Promise<SerialValidation> {
     const s = z.string().trim().toUpperCase().min(3).max(64).parse(serial);
-    const target = z.string().uuid().optional().parse(orgId || undefined);
+    const target = z
+      .string()
+      .uuid()
+      .optional()
+      .parse(orgId || undefined);
     return this.db.withTenant(p, async (tx) => {
       const [a] = await this.query(tx, p, { serial: s, orgId: target });
       if (!a) return { valid: false, asset: null, reason: 'not_found' };
@@ -36,13 +53,26 @@ export class AssetsController {
     });
   }
 
-  private async query(tx: Tx, p: Principal, f: { serial?: string; orgId?: string }): Promise<AssetSummary[]> {
+  private async query(
+    tx: Tx,
+    p: Principal,
+    f: { serial?: string; orgId?: string },
+  ): Promise<AssetSummary[]> {
     let q = tx
       .selectFrom('asset as a')
       .innerJoin('product as pr', 'pr.id', 'a.product_id')
       .innerJoin('product_family as f', 'f.id', 'pr.family_id')
       .leftJoin('site as s', 's.id', 'a.site_id')
-      .select(['a.id', 'a.serial_number', 'a.product_id', 'pr.model_name', 'f.key as family_key', 'a.site_id', 's.name as site_name', 'a.current_version'])
+      .select([
+        'a.id',
+        'a.serial_number',
+        'a.product_id',
+        'pr.model_name',
+        'f.key as family_key',
+        'a.site_id',
+        's.name as site_name',
+        'a.current_version',
+      ])
       .orderBy('a.serial_number')
       .limit(500);
     // RLS already limits to visible orgs; customers see their own org unless they pick a delegated one.
@@ -53,12 +83,23 @@ export class AssetsController {
     if (!rows.length) return [];
     const ents = await tx
       .selectFrom('entitlement')
-      .select(['asset_id', 'tier', 'kind', sql<string>`to_char(ends_on, 'YYYY-MM-DD')`.as('ends_on')])
-      .where('asset_id', 'in', rows.map((r) => r.id))
+      .select([
+        'asset_id',
+        'tier',
+        'kind',
+        sql<string>`to_char(ends_on, 'YYYY-MM-DD')`.as('ends_on'),
+      ])
+      .where(
+        'asset_id',
+        'in',
+        rows.map((r) => r.id),
+      )
       .where(sql<boolean>`current_date BETWEEN starts_on AND ends_on`)
       .execute();
     return rows.map((r) => {
-      const e = ents.filter((x) => x.asset_id === r.id).sort((a, b) => TIER_RANK[b.tier]! - TIER_RANK[a.tier]!)[0];
+      const e = ents
+        .filter((x) => x.asset_id === r.id)
+        .sort((a, b) => TIER_RANK[b.tier]! - TIER_RANK[a.tier]!)[0];
       return {
         id: r.id,
         serialNumber: r.serial_number,

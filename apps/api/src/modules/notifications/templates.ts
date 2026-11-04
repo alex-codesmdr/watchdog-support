@@ -24,7 +24,10 @@ interface Rendered {
 }
 
 type Vars = Record<string, string | number | null | undefined>;
-type Strings = Record<TemplateKey, { subject: string; heading: string; body: string; cta?: string }>;
+type Strings = Record<
+  TemplateKey,
+  { subject: string; heading: string; body: string; cta?: string }
+>;
 
 const EN: Strings = {
   registration_received: {
@@ -89,21 +92,40 @@ const EN: Strings = {
 
 const LOCALES: Record<string, Strings> = { en: EN };
 
-const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+const esc = (v: unknown) =>
+  String(v ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
 /** `{{x}}` is escaped; values ending in `Html` are trusted (pre-sanitised server HTML). */
-const fill = (tpl: string, v: Vars) => tpl.replace(/\{\{(\w+)\}\}/g, (_, k: string) => (k.endsWith('Html') ? String(v[k] ?? '') : esc(v[k])));
+const fill = (tpl: string, v: Vars) =>
+  tpl.replace(/\{\{(\w+)\}\}/g, (_, k: string) =>
+    k.endsWith('Html') ? String(v[k] ?? '') : esc(v[k]),
+  );
 
 const cache = new Map<string, Rendered>();
 
-export async function render(key: TemplateKey, vars: Vars & { url?: string }, locale = 'en'): Promise<Rendered> {
+export async function render(
+  key: TemplateKey,
+  vars: Vars & { url?: string },
+  locale = 'en',
+): Promise<Rendered> {
   const s = (LOCALES[locale.slice(0, 2)] ?? EN)[key];
   const heading = fill(s.heading, vars);
   const body = fill(s.body, vars);
-  const subject = fill(s.subject, vars).replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  const subject = fill(s.subject, vars)
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
   const cacheKey = `${key}|${heading}|${body}|${vars.url ?? ''}`;
   const hit = cache.get(cacheKey);
   if (hit) return hit;
-  const cta = s.cta && vars.url ? `<mj-button background-color="#0B2545" color="#ffffff" href="${esc(vars.url)}" font-weight="600" border-radius="6px">${esc(s.cta)}</mj-button>` : '';
+  const cta =
+    s.cta && vars.url
+      ? `<mj-button background-color="#0B2545" color="#ffffff" href="${esc(vars.url)}" font-weight="600" border-radius="6px">${esc(s.cta)}</mj-button>`
+      : '';
   const { html } = await mjml2html(
     `<mjml><mj-head><mj-attributes><mj-all font-family="IBM Plex Sans, Segoe UI, Arial, sans-serif" /><mj-text font-size="15px" line-height="1.55" color="#1f2937" /></mj-attributes><mj-title>${esc(subject)}</mj-title></mj-head>
     <mj-body background-color="#f3f5f8">
@@ -124,4 +146,11 @@ export async function render(key: TemplateKey, vars: Vars & { url?: string }, lo
   return out;
 }
 
-const stripTags = (s: string) => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+const stripTags = (s: string) =>
+  s
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");

@@ -14,7 +14,8 @@ const paths = args.filter((a) => !a.startsWith('--'));
 
 const terms = loadTerms();
 if (terms.length === 0) {
-  const msg = 'brand-lint: no prohibited terms configured (set WD_PROHIBITED_TERMS or WD_PROHIBITED_TERMS_FILE).';
+  const msg =
+    'brand-lint: no prohibited terms configured (set WD_PROHIBITED_TERMS or WD_PROHIBITED_TERMS_FILE).';
   if (requireTerms) {
     console.error(`${msg} Refusing to pass in CI.`);
     process.exit(2);
@@ -25,7 +26,10 @@ if (terms.length === 0) {
 
 const ignoreFile = '.brandlintignore';
 const ignore = existsSync(ignoreFile)
-  ? readFileSync(ignoreFile, 'utf8').split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
+  ? readFileSync(ignoreFile, 'utf8')
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('#'))
   : [];
 
 let findings: Finding[] = [];
@@ -42,8 +46,11 @@ for (const p of paths.length || fromStdin ? paths : ['.']) {
 
 if (findings.length) {
   for (const f of findings)
-    console.error(`${f.file}:${f.line}:${f.column}  [${f.where}] prohibited term ${f.term}  …${f.excerpt}…`);
+    console.error(
+      `${f.file}:${f.line}:${f.column}  [${f.where}] prohibited term ${f.term}  …${f.excerpt}…`,
+    );
   console.error(`\nbrand-lint: ${findings.length} finding(s) in ${files} file(s) scanned.`);
   process.exit(1);
 }
+// eslint-disable-next-line no-console -- CLI output
 console.log(`brand-lint: clean (${files} files, ${terms.length} terms).`);

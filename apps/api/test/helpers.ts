@@ -15,7 +15,16 @@ import { MemoryTransport, MockSmsAdapter } from '../src/modules/notifications/ma
 import { NotificationsService } from '../src/modules/notifications/notifications.service.js';
 import { ScanService } from '../src/modules/files/scan.service.js';
 import { DevAvScanner } from '../src/modules/files/clamav.js';
-import { AV_SCANNER, DB, IDENTITY_PROVISIONER, JWKS, MAIL_TRANSPORT, RATE_LIMITER, REDIS, SMS_ADAPTER } from '../src/tokens.js';
+import {
+  AV_SCANNER,
+  DB,
+  IDENTITY_PROVISIONER,
+  JWKS,
+  MAIL_TRANSPORT,
+  RATE_LIMITER,
+  REDIS,
+  SMS_ADAPTER,
+} from '../src/tokens.js';
 import { OutboxRelay } from '../src/worker/outbox.js';
 
 export const ISSUER = 'https://idp.test/realms/watchdog';
@@ -26,8 +35,16 @@ export interface TestApp {
   mail: MemoryTransport;
   sms: MockSmsAdapter;
   idp: MockProvisioner;
-  token(email: string, opts?: { acr?: string; emailVerified?: boolean; sub?: string }): Promise<string>;
-  as(email: string): Promise<{ get: (u: string) => request.Test; post: (u: string, body?: unknown) => request.Test }>;
+  token(
+    email: string,
+    opts?: { acr?: string; emailVerified?: boolean; sub?: string },
+  ): Promise<string>;
+  as(
+    email: string,
+  ): Promise<{
+    get: (u: string) => request.Test;
+    post: (u: string, body?: unknown) => request.Test;
+  }>;
   drainOutbox(): Promise<number>;
   owner: pg.Pool;
   app_: pg.Pool;
@@ -102,7 +119,11 @@ export async function createTestApp(opts: { rateLimitScale?: number } = {}): Pro
       const t = await token(email);
       return {
         get: (u: string) => http.get(u).set('authorization', `Bearer ${t}`),
-        post: (u: string, body?: unknown) => http.post(u).set('authorization', `Bearer ${t}`).send(body as object),
+        post: (u: string, body?: unknown) =>
+          http
+            .post(u)
+            .set('authorization', `Bearer ${t}`)
+            .send(body as object),
       };
     },
     async drainOutbox() {
@@ -160,11 +181,20 @@ export const caseBody = (serial: string, extra: Record<string, unknown> = {}) =>
 });
 
 /** Executes SQL as the app role with an explicit tenant context (bypasses the API entirely). */
-export async function asTenant<T extends pg.QueryResultRow>(pool: pg.Pool, ctx: { org?: string; user?: string; internal?: boolean; delegated?: string[] }, text: string, values: unknown[] = []) {
+export async function asTenant<T extends pg.QueryResultRow>(
+  pool: pg.Pool,
+  ctx: { org?: string; user?: string; internal?: boolean; delegated?: string[] },
+  text: string,
+  values: unknown[] = [],
+) {
   const c = await pool.connect();
   try {
     await c.query('BEGIN');
-    if (ctx.org) await c.query(`SELECT set_config('app.org_id', $1, true), set_config('app.user_id', $2, true), set_config('app.is_internal', $3, true), set_config('app.delegated_orgs', $4, true)`, [ctx.org, ctx.user ?? '', String(ctx.internal ?? false), (ctx.delegated ?? []).join(',')]);
+    if (ctx.org)
+      await c.query(
+        `SELECT set_config('app.org_id', $1, true), set_config('app.user_id', $2, true), set_config('app.is_internal', $3, true), set_config('app.delegated_orgs', $4, true)`,
+        [ctx.org, ctx.user ?? '', String(ctx.internal ?? false), (ctx.delegated ?? []).join(',')],
+      );
     const r = await c.query<T>(text, values);
     await c.query('ROLLBACK');
     return r;

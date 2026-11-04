@@ -5,7 +5,13 @@ import type { RequestContext } from './principal.js';
 export async function audit(
   tx: Tx,
   ctx: Pick<RequestContext, 'requestId' | 'ip'> & { actorId: string | null },
-  entry: { action: string; orgId: string | null; targetType?: string; targetId?: string; diff?: Record<string, unknown> },
+  entry: {
+    action: string;
+    orgId: string | null;
+    targetType?: string;
+    targetId?: string;
+    diff?: Record<string, unknown>;
+  },
 ): Promise<void> {
   await tx
     .insertInto('audit_log')

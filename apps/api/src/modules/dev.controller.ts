@@ -12,7 +12,10 @@ import { EmailInService } from './email-in/email-in.service.js';
  */
 @Controller('api/v1/dev')
 export class DevController {
-  constructor(@Inject(CONFIG) private readonly cfg: AppConfig, @Inject(EmailInService) private readonly mail: EmailInService) {}
+  constructor(
+    @Inject(CONFIG) private readonly cfg: AppConfig,
+    @Inject(EmailInService) private readonly mail: EmailInService,
+  ) {}
 
   @Public()
   @Post('inbound-email')

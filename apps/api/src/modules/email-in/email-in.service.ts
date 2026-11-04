@@ -24,7 +24,10 @@ export type IngestResult =
 @Injectable()
 export class EmailInService {
   private readonly signer: Signer;
-  constructor(@Inject(CONFIG) private readonly cfg: AppConfig, @Inject(DB) private readonly db: Database) {
+  constructor(
+    @Inject(CONFIG) private readonly cfg: AppConfig,
+    @Inject(DB) private readonly db: Database,
+  ) {
     this.signer = new Signer(cfg.APP_SIGNING_KEY);
   }
 
@@ -32,13 +35,26 @@ export class EmailInService {
     const mail = await simpleParser(raw);
     const from = (mail.from?.value[0]?.address ?? '').toLowerCase();
     const messageId = mail.messageId ?? null;
-    const recipients = [mail.to, mail.cc, mail.headers.get('delivered-to') as AddressObject | undefined]
+    const recipients = [
+      mail.to,
+      mail.cc,
+      mail.headers.get('delivered-to') as AddressObject | undefined,
+    ]
       .flatMap((a) => (Array.isArray(a) ? a : a ? [a] : []))
       .flatMap((a) => (a as AddressObject).value?.map((v) => v.address ?? '') ?? []);
 
     const hold = (reason: string, caseId: string | null = null) =>
       this.db.withSystem(async (tx) => {
-        await tx.insertInto('inbound_email_hold').values({ message_id: messageId, from_addr: from || 'unknown', subject: mail.subject ?? null, reason, case_id: caseId }).execute();
+        await tx
+          .insertInto('inbound_email_hold')
+          .values({
+            message_id: messageId,
+            from_addr: from || 'unknown',
+            subject: mail.subject ?? null,
+            reason,
+            case_id: caseId,
+          })
+          .execute();
         logger.warn({ reason, messageId }, 'inbound email held for review');
         return { status: 'held' as const, reason };
       });
@@ -48,7 +64,11 @@ export class EmailInService {
     const auto = String(mail.headers.get('auto-submitted') ?? 'no').toLowerCase();
     if (auto !== 'no' || /^(mailer-daemon|postmaster)@/i.test(from)) return hold('auto-generated');
 
-    const token = findReplyToken(recipients, this.cfg.MAIL_REPLY_LOCALPART, this.cfg.MAIL_REPLY_DOMAIN);
+    const token = findReplyToken(
+      recipients,
+      this.cfg.MAIL_REPLY_LOCALPART,
+      this.cfg.MAIL_REPLY_DOMAIN,
+    );
     const number = token ? this.signer.verifyReplyToken(token) : null;
     if (token && !number) return hold('invalid-reply-token');
     const caseNumber = number ?? caseNumberFromSubject(mail.subject);
@@ -56,10 +76,18 @@ export class EmailInService {
 
     return this.db.withSystem(async (tx) => {
       if (messageId) {
-        const dup = await tx.selectFrom('case_message').select('id').where('email_message_id', '=', messageId).executeTakeFirst();
+        const dup = await tx
+          .selectFrom('case_message')
+          .select('id')
+          .where('email_message_id', '=', messageId)
+          .executeTakeFirst();
         if (dup) return { status: 'duplicate' as const };
       }
-      const c = await tx.selectFrom('support_case').select(['id', 'org_id', 'number', 'status']).where('number', '=', caseNumber).executeTakeFirst();
+      const c = await tx
+        .selectFrom('support_case')
+        .select(['id', 'org_id', 'number', 'status'])
+        .where('number', '=', caseNumber)
+        .executeTakeFirst();
       if (!c) return hold('unknown-case');
       // Sender must be an active user of the case org, or of a partner with an active delegation.
       const sender = await sql<{ id: string }>`
@@ -77,19 +105,53 @@ export class EmailInService {
       if (!text) return hold('empty-body', c.id);
       const msg = await tx
         .insertInto('case_message')
-        .values({ case_id: c.id, author_id: userId, author_is_staff: false, visibility: 'public', body_html: textToHtml(text), source: 'email', email_message_id: messageId })
+        .values({
+          case_id: c.id,
+          author_id: userId,
+          author_is_staff: false,
+          visibility: 'public',
+          body_html: textToHtml(text),
+          source: 'email',
+          email_message_id: messageId,
+        })
         .returning('id')
         .executeTakeFirstOrThrow();
       if (mail.attachments.length) {
-        await tx.insertInto('case_event').values({ case_id: c.id, type: 'email_attachments_skipped', visibility: 'public', actor_id: userId, data: JSON.stringify({ count: mail.attachments.length }) } as never).execute();
+        await tx
+          .insertInto('case_event')
+          .values({
+            case_id: c.id,
+            type: 'email_attachments_skipped',
+            visibility: 'public',
+            actor_id: userId,
+            data: JSON.stringify({ count: mail.attachments.length }),
+          } as never)
+          .execute();
       }
       if (c.status === 'awaiting_customer') {
         // Same effect as a portal reply: back to the engineer, clocks resume.
         await resumeAll(tx, c.id, new Date());
-        await tx.updateTable('support_case').set({ status: 'in_progress', version: sql`version + 1` }).where('id', '=', c.id).execute();
-        await tx.insertInto('case_event').values({ case_id: c.id, type: 'status_changed', actor_id: userId, data: JSON.stringify({ from: 'awaiting_customer', to: 'in_progress', auto: true }) } as never).execute();
+        await tx
+          .updateTable('support_case')
+          .set({ status: 'in_progress', version: sql`version + 1` })
+          .where('id', '=', c.id)
+          .execute();
+        await tx
+          .insertInto('case_event')
+          .values({
+            case_id: c.id,
+            type: 'status_changed',
+            actor_id: userId,
+            data: JSON.stringify({ from: 'awaiting_customer', to: 'in_progress', auto: true }),
+          } as never)
+          .execute();
       }
-      await emit(tx, 'case.message.public_created', c.org_id, { caseId: c.id, number: c.number, messageId: msg.id, byStaff: false });
+      await emit(tx, 'case.message.public_created', c.org_id, {
+        caseId: c.id,
+        number: c.number,
+        messageId: msg.id,
+        byStaff: false,
+      });
       return { status: 'appended' as const, caseId: c.id, messageId: msg.id };
     });
   }

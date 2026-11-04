@@ -36,7 +36,14 @@ afterAll(() => t.close());
 
 /** A fresh case inside the role's reach (own case for customers, delegated org for partners). */
 async function caseFor(role: RoleKey): Promise<string> {
-  const owner = role === 'partner' ? USERS.narmadaUser : role === 'customer_admin' ? USERS.kaveriUser : role === 'customer_user' ? USERS.kaveriUser : USERS.kaveriAdmin;
+  const owner =
+    role === 'partner'
+      ? USERS.narmadaUser
+      : role === 'customer_admin'
+        ? USERS.kaveriUser
+        : role === 'customer_user'
+          ? USERS.kaveriUser
+          : USERS.kaveriAdmin;
   const serial = role === 'partner' ? SERIAL.narmadaPremium : SERIAL.kaveriPremium;
   const r = await (await t.as(owner)).post('/api/v1/cases', caseBody(serial));
   expect(r.status).toBe(201);
@@ -46,7 +53,11 @@ async function caseFor(role: RoleKey): Promise<string> {
 function bodyFor(id: string, role: RoleKey): unknown {
   switch (id) {
     case 'case.create':
-      if (m.roles[role].internal) return caseBody(SERIAL.kaveriPremium, { orgId: ORG.kaveri, requesterId: requesterIds.kaveri });
+      if (m.roles[role].internal)
+        return caseBody(SERIAL.kaveriPremium, {
+          orgId: ORG.kaveri,
+          requesterId: requesterIds.kaveri,
+        });
       if (role === 'partner') return caseBody(SERIAL.narmadaPremium, { orgId: ORG.narmada });
       return caseBody(SERIAL.kaveriPremium);
     case 'case.reply':
@@ -68,8 +79,12 @@ describe.each(m.endpoints)('$method $path', (ep) => {
     let path = ep.path.replace(/#.*$/, '').replace(':sku', 'WD-RT8800');
     if (path.includes(':case')) path = path.replace(':case', await caseFor(role));
     const client = await t.as(ROLE_USER[role]);
-    const res = ep.method === 'GET' ? await client.get(path) : await client.post(path, bodyFor(ep.id, role));
-    if (allowed) expect(res.status, `${role} should be allowed: ${JSON.stringify(res.body)}`).toBeLessThan(300);
+    const res =
+      ep.method === 'GET' ? await client.get(path) : await client.post(path, bodyFor(ep.id, role));
+    if (allowed)
+      expect(res.status, `${role} should be allowed: ${JSON.stringify(res.body)}`).toBeLessThan(
+        300,
+      );
     else expect([403, 404], `${role} should be denied but got ${res.status}`).toContain(res.status);
   });
 });
@@ -77,14 +92,21 @@ describe.each(m.endpoints)('$method $path', (ep) => {
 describe('every external role is denied on a foreign tenant (generated)', () => {
   const tenantEndpoints = m.endpoints.filter((e) => e.tenant);
   const external = roles.filter((r) => !m.roles[r].internal);
-  it.each(external.flatMap((r) => tenantEndpoints.map((e) => [r, e] as const)))('%s → %o', async (role, ep) => {
-    // A case in an org this role has no relationship with: Kaveri for partner, Narmada for Kaveri users.
-    const foreignOwner = role === 'partner' ? USERS.kaveriUser : USERS.narmadaUser;
-    const foreignSerial = role === 'partner' ? SERIAL.kaveriPremium : SERIAL.narmadaPremium;
-    const c = (await (await t.as(foreignOwner)).post('/api/v1/cases', caseBody(foreignSerial))).body.id as string;
-    const path = ep.path.replace(/#.*$/, '').replace(':case', c);
-    const client = await t.as(ROLE_USER[role]);
-    const res = ep.method === 'GET' ? await client.get(path) : await client.post(path, bodyFor(ep.id, role));
-    expect(res.status).toBe(404);
-  });
+  it.each(external.flatMap((r) => tenantEndpoints.map((e) => [r, e] as const)))(
+    '%s → %o',
+    async (role, ep) => {
+      // A case in an org this role has no relationship with: Kaveri for partner, Narmada for Kaveri users.
+      const foreignOwner = role === 'partner' ? USERS.kaveriUser : USERS.narmadaUser;
+      const foreignSerial = role === 'partner' ? SERIAL.kaveriPremium : SERIAL.narmadaPremium;
+      const c = (await (await t.as(foreignOwner)).post('/api/v1/cases', caseBody(foreignSerial)))
+        .body.id as string;
+      const path = ep.path.replace(/#.*$/, '').replace(':case', c);
+      const client = await t.as(ROLE_USER[role]);
+      const res =
+        ep.method === 'GET'
+          ? await client.get(path)
+          : await client.post(path, bodyFor(ep.id, role));
+      expect(res.status).toBe(404);
+    },
+  );
 });

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Readable } from 'node:stream';
+import { type Readable } from 'node:stream';
 import { Inject, Injectable } from '@nestjs/common';
 import { fileTypeFromBuffer } from 'file-type';
 import type { Database } from '../../db/database.js';
@@ -11,8 +11,13 @@ import { isTextLike, maskSecrets } from './secret-masker.js';
 
 const MAX_IN_MEMORY = 64 * 1024 * 1024; // text files up to this size are masked in memory; larger ones are scanned but flagged unmasked
 const EXECUTABLE_MIME = new Set([
-  'application/x-msdownload', 'application/x-elf', 'application/x-mach-binary', 'application/x-msi',
-  'application/vnd.microsoft.portable-executable', 'application/x-sharedlib', 'application/java-archive',
+  'application/x-msdownload',
+  'application/x-elf',
+  'application/x-mach-binary',
+  'application/x-msi',
+  'application/vnd.microsoft.portable-executable',
+  'application/x-sharedlib',
+  'application/java-archive',
 ]);
 
 /**
@@ -27,13 +32,27 @@ export class ScanService {
     @Inject(AV_SCANNER) private readonly av: AvScanner,
   ) {}
 
-  async process(attachmentId: string): Promise<'clean' | 'infected' | 'rejected' | 'error' | 'skipped'> {
+  async process(
+    attachmentId: string,
+  ): Promise<'clean' | 'infected' | 'rejected' | 'error' | 'skipped'> {
     const att = await this.db.withSystem((tx) =>
-      tx.selectFrom('case_attachment').selectAll().where('id', '=', attachmentId).where('scan_status', '=', 'pending').executeTakeFirst(),
+      tx
+        .selectFrom('case_attachment')
+        .selectAll()
+        .where('id', '=', attachmentId)
+        .where('scan_status', '=', 'pending')
+        .executeTakeFirst(),
     );
     if (!att) return 'skipped';
     const finish = (set: Record<string, unknown>) =>
-      this.db.withSystem((tx) => tx.updateTable('case_attachment').set(set).where('id', '=', att.id).where('scan_status', '=', 'pending').execute());
+      this.db.withSystem((tx) =>
+        tx
+          .updateTable('case_attachment')
+          .set(set)
+          .where('id', '=', att.id)
+          .where('scan_status', '=', 'pending')
+          .execute(),
+      );
 
     try {
       const q = att.quarantine_key;
@@ -44,7 +63,10 @@ export class ScanService {
         head.subarray(0, 2).toString('latin1') === 'MZ' ||
         head.subarray(0, 4).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46]));
       if (looksExecutable) {
-        await finish({ scan_status: 'rejected', scan_detail: 'executable content is not accepted' });
+        await finish({
+          scan_status: 'rejected',
+          scan_detail: 'executable content is not accepted',
+        });
         await this.store.delete('quarantine', q);
         return 'rejected';
       }
@@ -56,9 +78,16 @@ export class ScanService {
       const av = await this.av.scan(src);
       const sha256 = hash.digest('hex');
       if (!av.clean) {
-        await finish({ scan_status: 'infected', scan_detail: av.signature ?? 'malware detected', sha256 });
+        await finish({
+          scan_status: 'infected',
+          scan_detail: av.signature ?? 'malware detected',
+          sha256,
+        });
         await this.store.delete('quarantine', q);
-        logger.warn({ attachmentId, signature: av.signature }, 'infected upload quarantined and removed');
+        logger.warn(
+          { attachmentId, signature: av.signature },
+          'infected upload quarantined and removed',
+        );
         return 'infected';
       }
 
@@ -95,7 +124,9 @@ export class ScanService {
     } catch (err) {
       // Fail closed: the file stays quarantined and `pending`; the job is retried with backoff.
       logger.error({ err, attachmentId }, 'attachment scan failed; file stays quarantined');
-      await finish({ scan_detail: `scan attempt failed at ${new Date().toISOString()}` }).catch(() => undefined);
+      await finish({ scan_detail: `scan attempt failed at ${new Date().toISOString()}` }).catch(
+        () => undefined,
+      );
       return 'error';
     }
   }

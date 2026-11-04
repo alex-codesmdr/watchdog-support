@@ -19,9 +19,13 @@ export default async function setup() {
   await c.query(`DROP DATABASE IF EXISTS ${db} WITH (FORCE)`);
   await c.query(`CREATE DATABASE ${db} OWNER wd_owner`);
   await c.end();
-  const c2 = new pg.Client({ connectionString: Object.assign(new URL(admin), { pathname: `/${db}` }).toString() });
+  const c2 = new pg.Client({
+    connectionString: Object.assign(new URL(admin), { pathname: `/${db}` }).toString(),
+  });
   await c2.connect();
-  await c2.query('REVOKE ALL ON SCHEMA public FROM PUBLIC; ALTER SCHEMA public OWNER TO wd_owner; GRANT USAGE ON SCHEMA public TO wd_app;');
+  await c2.query(
+    'REVOKE ALL ON SCHEMA public FROM PUBLIC; ALTER SCHEMA public OWNER TO wd_owner; GRANT USAGE ON SCHEMA public TO wd_app;',
+  );
   await c2.end();
 
   const owner = `postgres://wd_owner:wd_owner_dev@${host.host}/${db}`;

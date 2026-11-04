@@ -32,12 +32,17 @@ beforeAll(async () => {
     .set('Content-Type', 'application/offset+octet-stream')
     .send(Buffer.from('hello world'))
     .expect(204);
-  const ra = await a.post('/api/v1/cases', caseBody(SERIAL.kaveriPremium, { uploadIds: [uploadId] }));
+  const ra = await a.post(
+    '/api/v1/cases',
+    caseBody(SERIAL.kaveriPremium, { uploadIds: [uploadId] }),
+  );
   expect(ra.status).toBe(201);
   caseA = ra.body;
   attachmentA = ra.body.messages[0].attachments[0].id;
   await t.drainOutbox();
-  const rb = await (await t.as(USERS.narmadaUser)).post('/api/v1/cases', caseBody(SERIAL.narmadaPremium));
+  const rb = await (
+    await t.as(USERS.narmadaUser)
+  ).post('/api/v1/cases', caseBody(SERIAL.narmadaPremium));
   expect(rb.status).toBe(201);
   caseB = rb.body;
 });
@@ -56,7 +61,9 @@ describe('API: cross-tenant access is indistinguishable from "not found"', () =>
     const b = await t.as(who);
     await b.post(`/api/v1/cases/${caseA.id}/messages`, { body: 'hello' }).expect(404);
     await b.post(`/api/v1/cases/${caseA.id}/transition`, { to: 'closed' }).expect(404);
-    await b.post(`/api/v1/cases/${caseA.id}/escalate`, { justification: 'x'.repeat(30) }).expect(404);
+    await b
+      .post(`/api/v1/cases/${caseA.id}/escalate`, { justification: 'x'.repeat(30) })
+      .expect(404);
     await b.post(`/api/v1/cases/${caseA.id}/csat`, { score: 1 }).expect(404);
   });
 
@@ -69,7 +76,11 @@ describe('API: cross-tenant access is indistinguishable from "not found"', () =>
   });
 
   it('cannot fetch org A attachment URLs', async () => {
-    await (await t.as(USERS.narmadaAdmin)).get(`/api/v1/attachments/${attachmentA}/url`).expect(404);
+    await (
+      await t.as(USERS.narmadaAdmin)
+    )
+      .get(`/api/v1/attachments/${attachmentA}/url`)
+      .expect(404);
     await (await t.as(USERS.kaveriAdmin)).get(`/api/v1/attachments/${attachmentA}/url`).expect(200);
   });
 
@@ -91,13 +102,19 @@ describe('API: cross-tenant access is indistinguishable from "not found"', () =>
       .send(Buffer.from('evil!'))
       .expect(404);
     // and cannot bind it to their own case
-    await (await t.as(USERS.narmadaUser)).post('/api/v1/cases', caseBody(SERIAL.narmadaPremium, { uploadIds: [id] })).expect(422);
+    await (
+      await t.as(USERS.narmadaUser)
+    )
+      .post('/api/v1/cases', caseBody(SERIAL.narmadaPremium, { uploadIds: [id] }))
+      .expect(422);
   });
 
   it('cannot open a case against another org’s serial or orgId', async () => {
     const b = await t.as(USERS.narmadaUser);
     await b.post('/api/v1/cases', caseBody(SERIAL.kaveriPremium)).expect(422);
-    await b.post('/api/v1/cases', caseBody(SERIAL.kaveriPremium, { orgId: ORG.kaveri })).expect(404);
+    await b
+      .post('/api/v1/cases', caseBody(SERIAL.kaveriPremium, { orgId: ORG.kaveri }))
+      .expect(404);
   });
 
   it('cannot see another org’s assets', async () => {
@@ -111,7 +128,13 @@ describe('API: cross-tenant access is indistinguishable from "not found"', () =>
 
 describe('API: within an organisation and for partners', () => {
   it('a customer user sees only cases they raised; the customer admin sees the org', async () => {
-    const adminCase = (await (await t.as(USERS.kaveriAdmin)).post('/api/v1/cases', caseBody(SERIAL.kaveriPremium)).expect(201)).body;
+    const adminCase = (
+      await (
+        await t.as(USERS.kaveriAdmin)
+      )
+        .post('/api/v1/cases', caseBody(SERIAL.kaveriPremium))
+        .expect(201)
+    ).body;
     await (await t.as(USERS.kaveriUser)).get(`/api/v1/cases/${adminCase.id}`).expect(404);
     await (await t.as(USERS.kaveriAdmin)).get(`/api/v1/cases/${caseA.id}`).expect(200);
   });
@@ -120,14 +143,30 @@ describe('API: within an organisation and for partners', () => {
     const p = await t.as(USERS.partner);
     await p.get(`/api/v1/cases/${caseB.id}`).expect(200);
     await p.get(`/api/v1/cases/${caseA.id}`).expect(404);
-    const created = await p.post('/api/v1/cases', caseBody(SERIAL.narmadaPremium, { orgId: ORG.narmada })).expect(201);
+    const created = await p
+      .post('/api/v1/cases', caseBody(SERIAL.narmadaPremium, { orgId: ORG.narmada }))
+      .expect(201);
     expect(created.body.orgId).toBe(ORG.narmada);
-    await p.post('/api/v1/cases', caseBody(SERIAL.kaveriPremium, { orgId: ORG.kaveri })).expect(404);
+    await p
+      .post('/api/v1/cases', caseBody(SERIAL.kaveriPremium, { orgId: ORG.kaveri }))
+      .expect(404);
   });
 });
 
 describe('Database: row-level security without the application', () => {
-  const tenantTables = ['support_case', 'case_message', 'case_attachment', 'case_event', 'sla_clock', 'asset', 'entitlement', 'site', 'app_user', 'upload', 'csat_response'];
+  const tenantTables = [
+    'support_case',
+    'case_message',
+    'case_attachment',
+    'case_event',
+    'sla_clock',
+    'asset',
+    'entitlement',
+    'site',
+    'app_user',
+    'upload',
+    'csat_response',
+  ];
 
   it.each(tenantTables)('%s: no tenant context returns zero rows', async (table) => {
     const r = await asTenant(t.app_, {}, `SELECT count(*)::int AS n FROM ${table}`);
@@ -135,36 +174,94 @@ describe('Database: row-level security without the application', () => {
   });
 
   it.each(tenantTables)('%s: org B context never returns org A rows', async (table) => {
-    const r = await asTenant(t.app_, { org: ORG.narmada }, `SELECT count(*)::int AS n FROM ${table} WHERE org_id = $1`, [ORG.kaveri]);
+    const r = await asTenant(
+      t.app_,
+      { org: ORG.narmada },
+      `SELECT count(*)::int AS n FROM ${table} WHERE org_id = $1`,
+      [ORG.kaveri],
+    );
     expect(r.rows[0]!.n).toBe(0);
   });
 
   it('org B context cannot insert rows into org A', async () => {
-    await expect(asTenant(t.app_, { org: ORG.narmada }, `INSERT INTO case_message (case_id, author_is_staff, visibility, body_html) VALUES ($1, false, 'public', 'x')`, [caseA.id])).rejects.toThrow(/case not found/);
-    await expect(asTenant(t.app_, { org: ORG.narmada }, `UPDATE support_case SET subject = 'pwned subject' WHERE id = $1 RETURNING id`, [caseA.id])).resolves.toMatchObject({ rowCount: 0 });
+    await expect(
+      asTenant(
+        t.app_,
+        { org: ORG.narmada },
+        `INSERT INTO case_message (case_id, author_is_staff, visibility, body_html) VALUES ($1, false, 'public', 'x')`,
+        [caseA.id],
+      ),
+    ).rejects.toThrow(/case not found/);
+    await expect(
+      asTenant(
+        t.app_,
+        { org: ORG.narmada },
+        `UPDATE support_case SET subject = 'pwned subject' WHERE id = $1 RETURNING id`,
+        [caseA.id],
+      ),
+    ).resolves.toMatchObject({ rowCount: 0 });
   });
 
   it('internal notes are invisible in customer context even via raw SQL', async () => {
-    await (await t.as(USERS.l1)).post(`/api/v1/cases/${caseA.id}/messages`, { visibility: 'internal', body: 'Suspect known defect 4411' }).expect(201);
-    const cust = await asTenant(t.app_, { org: ORG.kaveri }, `SELECT count(*)::int AS n FROM case_message WHERE case_id = $1 AND visibility = 'internal'`, [caseA.id]);
+    await (
+      await t.as(USERS.l1)
+    )
+      .post(`/api/v1/cases/${caseA.id}/messages`, {
+        visibility: 'internal',
+        body: 'Suspect known defect 4411',
+      })
+      .expect(201);
+    const cust = await asTenant(
+      t.app_,
+      { org: ORG.kaveri },
+      `SELECT count(*)::int AS n FROM case_message WHERE case_id = $1 AND visibility = 'internal'`,
+      [caseA.id],
+    );
     expect(cust.rows[0]!.n).toBe(0);
-    const staff = await asTenant(t.app_, { org: '00000000-0000-4000-8000-000000000100', internal: true }, `SELECT count(*)::int AS n FROM case_message WHERE case_id = $1 AND visibility = 'internal'`, [caseA.id]);
+    const staff = await asTenant(
+      t.app_,
+      { org: '00000000-0000-4000-8000-000000000100', internal: true },
+      `SELECT count(*)::int AS n FROM case_message WHERE case_id = $1 AND visibility = 'internal'`,
+      [caseA.id],
+    );
     expect(staff.rows[0]!.n).toBe(1);
   });
 
   it('customers cannot forge staff-authored or internal messages', async () => {
-    await expect(asTenant(t.app_, { org: ORG.kaveri }, `INSERT INTO case_message (case_id, author_is_staff, visibility, body_html) VALUES ($1, true, 'public', 'x')`, [caseA.id])).rejects.toThrow(/row-level security/);
-    await expect(asTenant(t.app_, { org: ORG.kaveri }, `INSERT INTO case_message (case_id, author_is_staff, visibility, body_html) VALUES ($1, false, 'internal', 'x')`, [caseA.id])).rejects.toThrow(/row-level security/);
+    await expect(
+      asTenant(
+        t.app_,
+        { org: ORG.kaveri },
+        `INSERT INTO case_message (case_id, author_is_staff, visibility, body_html) VALUES ($1, true, 'public', 'x')`,
+        [caseA.id],
+      ),
+    ).rejects.toThrow(/row-level security/);
+    await expect(
+      asTenant(
+        t.app_,
+        { org: ORG.kaveri },
+        `INSERT INTO case_message (case_id, author_is_staff, visibility, body_html) VALUES ($1, false, 'internal', 'x')`,
+        [caseA.id],
+      ),
+    ).rejects.toThrow(/row-level security/);
   });
 
   it('the app role cannot read the internal OEM mapping column at all', async () => {
-    await expect(asTenant(t.app_, { org: ORG.kaveri }, 'SELECT internal_oem_ref FROM product')).rejects.toThrow(/permission denied/);
-    await expect(asTenant(t.app_, { org: ORG.kaveri }, `SELECT wd.product_internal_ref('WD-RT8800')`)).rejects.toThrow(/not permitted/);
+    await expect(
+      asTenant(t.app_, { org: ORG.kaveri }, 'SELECT internal_oem_ref FROM product'),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      asTenant(t.app_, { org: ORG.kaveri }, `SELECT wd.product_internal_ref('WD-RT8800')`),
+    ).rejects.toThrow(/not permitted/);
   });
 
   it('the app role cannot modify or delete the audit log', async () => {
-    await expect(asTenant(t.app_, { org: ORG.kaveri }, 'DELETE FROM audit_log')).rejects.toThrow(/permission denied/);
-    await expect(asTenant(t.app_, { org: ORG.kaveri }, `UPDATE audit_log SET action = 'x'`)).rejects.toThrow(/permission denied/);
+    await expect(asTenant(t.app_, { org: ORG.kaveri }, 'DELETE FROM audit_log')).rejects.toThrow(
+      /permission denied/,
+    );
+    await expect(
+      asTenant(t.app_, { org: ORG.kaveri }, `UPDATE audit_log SET action = 'x'`),
+    ).rejects.toThrow(/permission denied/);
   });
 });
 
@@ -174,8 +271,16 @@ describe('Brand protection: internal mapping never reaches customers', () => {
     expect(JSON.stringify(r.body)).not.toMatch(/internal|OEM-REF/i);
   });
   it('customers get 403; L3 gets the mapping', async () => {
-    await (await t.as(USERS.kaveriAdmin)).get('/api/v1/catalog/products/WD-RT8800/internal').expect(403);
-    const r = await (await t.as(USERS.l3)).get('/api/v1/catalog/products/WD-RT8800/internal').expect(200);
+    await (
+      await t.as(USERS.kaveriAdmin)
+    )
+      .get('/api/v1/catalog/products/WD-RT8800/internal')
+      .expect(403);
+    const r = await (
+      await t.as(USERS.l3)
+    )
+      .get('/api/v1/catalog/products/WD-RT8800/internal')
+      .expect(200);
     expect(r.body.internalOemRef).toBe('OEM-REF-3001');
   });
   it('case payloads for customers carry no internal fields', async () => {

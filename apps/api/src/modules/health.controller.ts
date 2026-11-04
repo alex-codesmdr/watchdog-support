@@ -6,7 +6,10 @@ import { DB, REDIS } from '../tokens.js';
 
 @Controller()
 export class HealthController {
-  constructor(@Inject(DB) private readonly db: Database, @Inject(REDIS) private readonly redis: Redis | null) {}
+  constructor(
+    @Inject(DB) private readonly db: Database,
+    @Inject(REDIS) private readonly redis: Redis | null,
+  ) {}
 
   @Public()
   @Get('healthz')

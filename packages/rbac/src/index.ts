@@ -41,10 +41,14 @@ export function validateMatrix(m: RbacMatrix): void {
     }
     if (!def.internal) {
       const staffOnly = def.permissions.filter((p) =>
-        /(:all$|note:internal|transition:staff|escalate:level|internal_ref|registration:approve)/.test(p),
+        /(:all$|note:internal|transition:staff|escalate:level|internal_ref|registration:approve)/.test(
+          p,
+        ),
       );
       if (staffOnly.length)
-        throw new Error(`rbac: external role ${role} holds staff-only permissions ${staffOnly.join(',')}`);
+        throw new Error(
+          `rbac: external role ${role} holds staff-only permissions ${staffOnly.join(',')}`,
+        );
     }
   }
 }

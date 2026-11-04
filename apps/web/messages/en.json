@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "knowledge": "Knowledge base",
+    "downloads": "Downloads",
+    "advisories": "Security advisories",
+    "products": "Products",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "register": "Register your organisation",
+    "myCases": "My cases",
+    "dashboard": "Dashboard",
+    "openCase": "Open a case",
+    "queue": "Queue",
+    "registrations": "Registrations",
+    "skip": "Skip to content"
+  },
+  "home": {
+    "title": "What is your network telling you?",
+    "lead": "Paste an error, a log line or a model number. We search articles, release notes and resolved cases.",
+    "searchLabel": "Search knowledge base, products, errors",
+    "searchButton": "Search",
+    "actions": {
+      "openCase": ["Open a case", "Report an outage or a fault on a registered device."],
+      "warranty": ["Check warranty", "Look up coverage for any serial number."],
+      "firmware": ["Download firmware", "Software, release notes, MIBs and checksums."],
+      "rma": ["Request a replacement", "Start an RMA from an open hardware case."],
+      "advisories": ["Security advisories", "CVE-tracked advisories and field notices."]
+    },
+    "families": "Products we support",
+    "contact": "Need us now?",
+    "contactLead": "For a P1 outage, open a case online first, then call. The engineer who answers will already have your details."
+  },
+  "footer": {
+    "privacy": "Privacy notice",
+    "psirt": "Report a vulnerability",
+    "status": "Service status",
+    "rights": "WatchDog Networks"
+  }
+}

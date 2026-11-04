@@ -87,7 +87,13 @@ function offsetMs(instant: Date, tz: string): number {
 }
 
 /** Converts a local wall-clock time in `tz` to a UTC instant (handles DST gaps by shifting forward). */
-export function zonedToUtc(y: number, m: number, d: number, minutesOfDay: number, tz: string): Date {
+export function zonedToUtc(
+  y: number,
+  m: number,
+  d: number,
+  minutesOfDay: number,
+  tz: string,
+): Date {
   const guess = Date.UTC(y, m - 1, d, 0, minutesOfDay);
   let t = guess - offsetMs(new Date(guess), tz);
   // second pass settles transitions
@@ -131,7 +137,9 @@ function openIntervals(ld: LocalDate, cal: BusinessCalendar): Array<[number, num
 }
 
 function hasAnyOpenTime(cal: BusinessCalendar): boolean {
-  return cal.twentyFourSeven === true || Object.values(cal.weekly).some((w) => (w?.length ?? 0) > 0);
+  return (
+    cal.twentyFourSeven === true || Object.values(cal.weekly).some((w) => (w?.length ?? 0) > 0)
+  );
 }
 
 /**
@@ -190,7 +198,9 @@ export function businessMinutesBetween(a: Date, b: Date, cal: BusinessCalendar):
 export function isOpen(t: Date, cal: BusinessCalendar): boolean {
   if (cal.twentyFourSeven) return true;
   const l = localParts(t, cal.timeZone);
-  return openIntervals({ y: l.y, m: l.m, d: l.d }, cal).some(([a, b]) => t.getTime() >= a && t.getTime() < b);
+  return openIntervals({ y: l.y, m: l.m, d: l.d }, cal).some(
+    ([a, b]) => t.getTime() >= a && t.getTime() < b,
+  );
 }
 
 // ---------- clock evaluation (shared by API responses and the breach worker) ----------

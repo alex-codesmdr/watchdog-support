@@ -147,9 +147,7 @@ export const AssetSummary = z.object({
   siteId: Uuid.nullable(),
   siteName: z.string().nullable(),
   currentVersion: z.string().nullable(),
-  entitlement: z
-    .object({ tier: SupportTier, kind: z.string(), endsOn: z.string() })
-    .nullable(),
+  entitlement: z.object({ tier: SupportTier, kind: z.string(), endsOn: z.string() }).nullable(),
 });
 export type AssetSummary = z.infer<typeof AssetSummary>;
 
@@ -175,7 +173,10 @@ export const CreateCaseRequest = z.object({
   stepsTried: z.string().trim().max(10_000).optional(),
   businessImpact: z.string().trim().max(5_000).optional(),
   /** Already-uploaded (tus) upload ids to bind to the first message. */
-  uploadIds: z.array(z.string().regex(/^[a-f0-9]{32}$/)).max(20).default([]),
+  uploadIds: z
+    .array(z.string().regex(/^[a-f0-9]{32}$/))
+    .max(20)
+    .default([]),
 });
 export type CreateCaseRequest = z.infer<typeof CreateCaseRequest>;
 
@@ -203,6 +204,7 @@ export const CaseSummary = z.object({
   orgId: Uuid,
   orgName: z.string(),
   requesterName: z.string(),
+  assigneeId: Uuid.nullable(),
   assigneeName: z.string().nullable(),
   serialNumber: z.string().nullable(),
   modelName: z.string().nullable(),
@@ -271,7 +273,10 @@ export type CaseDetail = z.infer<typeof CaseDetail>;
 export const ReplyRequest = z.object({
   visibility: Visibility.default('public'),
   body: RichText,
-  uploadIds: z.array(z.string().regex(/^[a-f0-9]{32}$/)).max(20).default([]),
+  uploadIds: z
+    .array(z.string().regex(/^[a-f0-9]{32}$/))
+    .max(20)
+    .default([]),
   /** Optional status change applied atomically with the reply (e.g. reply + Awaiting Customer). */
   setStatus: CaseStatus.optional(),
 });
@@ -321,6 +326,8 @@ export const WarrantyLookupResponse = z.object({
   found: z.boolean(),
   modelName: z.string().nullable(),
   coverage: z
-    .array(z.object({ kind: z.string(), tier: SupportTier, endsOn: z.string(), active: z.boolean() }))
+    .array(
+      z.object({ kind: z.string(), tier: SupportTier, endsOn: z.string(), active: z.boolean() }),
+    )
     .default([]),
 });

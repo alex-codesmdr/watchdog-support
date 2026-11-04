@@ -32,7 +32,9 @@ export function loadMigrations(dir = DIR): Migration[] {
 }
 
 async function ensureTable(c: pg.Client) {
-  await c.query(`CREATE TABLE IF NOT EXISTS schema_migrations (id text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
+  await c.query(
+    `CREATE TABLE IF NOT EXISTS schema_migrations (id text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`,
+  );
 }
 
 export async function migrateUp(url: string, log = console.log): Promise<string[]> {
@@ -41,7 +43,9 @@ export async function migrateUp(url: string, log = console.log): Promise<string[
   try {
     await c.query('SELECT pg_advisory_lock(726200999)');
     await ensureTable(c);
-    const done = new Set((await c.query<{ id: string }>('SELECT id FROM schema_migrations')).rows.map((r) => r.id));
+    const done = new Set(
+      (await c.query<{ id: string }>('SELECT id FROM schema_migrations')).rows.map((r) => r.id),
+    );
     const applied: string[] = [];
     for (const m of loadMigrations()) {
       if (done.has(m.id)) continue;
@@ -70,7 +74,11 @@ export async function migrateDown(url: string, steps = 1, log = console.log): Pr
   try {
     await c.query('SELECT pg_advisory_lock(726200999)');
     await ensureTable(c);
-    const done = (await c.query<{ id: string }>('SELECT id FROM schema_migrations ORDER BY id DESC LIMIT $1', [steps])).rows;
+    const done = (
+      await c.query<{ id: string }>('SELECT id FROM schema_migrations ORDER BY id DESC LIMIT $1', [
+        steps,
+      ])
+    ).rows;
     const all = new Map(loadMigrations().map((m) => [m.id, m]));
     const rolled: string[] = [];
     for (const { id } of done) {
@@ -108,7 +116,9 @@ async function main() {
     const c = new pg.Client({ connectionString: url });
     await c.connect();
     await ensureTable(c);
-    const done = new Set((await c.query<{ id: string }>('SELECT id FROM schema_migrations')).rows.map((r) => r.id));
+    const done = new Set(
+      (await c.query<{ id: string }>('SELECT id FROM schema_migrations')).rows.map((r) => r.id),
+    );
     await c.end();
     for (const m of loadMigrations()) console.log(`${done.has(m.id) ? '[x]' : '[ ]'} ${m.id}`);
   } else {

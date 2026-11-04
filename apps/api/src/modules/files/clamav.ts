@@ -11,7 +11,11 @@ export interface AvScanner {
 
 /** Minimal clamd INSTREAM client (no dependency). Fails closed on any protocol or network error. */
 export class ClamAvScanner implements AvScanner {
-  constructor(private readonly host: string, private readonly port: number, private readonly timeoutMs = 120_000) {}
+  constructor(
+    private readonly host: string,
+    private readonly port: number,
+    private readonly timeoutMs = 120_000,
+  ) {}
 
   scan(stream: Readable): Promise<AvResult> {
     return new Promise((resolve, reject) => {
@@ -28,7 +32,11 @@ export class ClamAvScanner implements AvScanner {
       sock.on('end', () => {
         const r = reply.replace(/\0/g, '').trim();
         if (/: OK$/.test(r)) resolve({ clean: true });
-        else if (/FOUND$/.test(r)) resolve({ clean: false, signature: r.replace(/^stream:\s*/, '').replace(/\s*FOUND$/, '') });
+        else if (/FOUND$/.test(r))
+          resolve({
+            clean: false,
+            signature: r.replace(/^stream:\s*/, '').replace(/\s*FOUND$/, ''),
+          });
         else reject(new Error(`clamd: unexpected reply "${r.slice(0, 120)}"`));
       });
       sock.on('connect', () => {
@@ -54,7 +62,8 @@ export class DevAvScanner implements AvScanner {
     let tail = '';
     for await (const chunk of stream) {
       const s = tail + (chunk as Buffer).toString('latin1');
-      if (s.includes('EICAR-STANDARD-ANTIVIRUS-TEST-FILE')) return { clean: false, signature: 'Eicar-Test-Signature' };
+      if (s.includes('EICAR-STANDARD-ANTIVIRUS-TEST-FILE'))
+        return { clean: false, signature: 'Eicar-Test-Signature' };
       tail = s.slice(-64);
     }
     return { clean: true };

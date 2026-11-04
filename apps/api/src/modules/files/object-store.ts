@@ -17,7 +17,12 @@ export interface ObjectStore {
   get(bucket: Bucket, key: string): Promise<Readable>;
   delete(bucket: Bucket, key: string): Promise<void>;
   /** Short-lived URL that forces download (`Content-Disposition: attachment`). */
-  signedDownloadUrl(bucket: Bucket, key: string, fileName: string, ttlSeconds: number): Promise<string>;
+  signedDownloadUrl(
+    bucket: Bucket,
+    key: string,
+    fileName: string,
+    ttlSeconds: number,
+  ): Promise<string>;
 }
 
 const contentDisposition = (fileName: string) =>
@@ -26,7 +31,11 @@ export { contentDisposition };
 
 export class FsObjectStore implements ObjectStore {
   private readonly root: string;
-  constructor(root: string, private readonly signer: Signer, private readonly publicApiUrl: string) {
+  constructor(
+    root: string,
+    private readonly signer: Signer,
+    private readonly publicApiUrl: string,
+  ) {
     this.root = resolve(root);
   }
   path(bucket: Bucket, key: string): string {
@@ -37,7 +46,10 @@ export class FsObjectStore implements ObjectStore {
   async put(bucket: Bucket, key: string, body: Readable | Buffer): Promise<void> {
     const p = this.path(bucket, key);
     await mkdir(dirname(p), { recursive: true });
-    if (Buffer.isBuffer(body)) await pipeline(async function* () { yield body; }, createWriteStream(p));
+    if (Buffer.isBuffer(body))
+      await pipeline(async function* () {
+        yield body;
+      }, createWriteStream(p));
     else await pipeline(body, createWriteStream(p));
   }
   async get(bucket: Bucket, key: string): Promise<Readable> {
@@ -48,7 +60,12 @@ export class FsObjectStore implements ObjectStore {
   async delete(bucket: Bucket, key: string): Promise<void> {
     await rm(this.path(bucket, key), { force: true });
   }
-  async signedDownloadUrl(bucket: Bucket, key: string, fileName: string, ttl: number): Promise<string> {
+  async signedDownloadUrl(
+    bucket: Bucket,
+    key: string,
+    fileName: string,
+    ttl: number,
+  ): Promise<string> {
     const t = this.signer.sign({ b: bucket, k: key, f: fileName }, ttl);
     return `${this.publicApiUrl}/api/v1/files/${t}`;
   }
@@ -61,16 +78,29 @@ export class S3ObjectStore implements ObjectStore {
       region: cfg.S3_REGION,
       endpoint: cfg.S3_ENDPOINT,
       forcePathStyle: cfg.S3_FORCE_PATH_STYLE,
-      credentials: cfg.S3_ACCESS_KEY ? { accessKeyId: cfg.S3_ACCESS_KEY, secretAccessKey: cfg.S3_SECRET_KEY ?? '' } : undefined,
+      credentials: cfg.S3_ACCESS_KEY
+        ? { accessKeyId: cfg.S3_ACCESS_KEY, secretAccessKey: cfg.S3_SECRET_KEY ?? '' }
+        : undefined,
     });
   }
   private name(b: Bucket) {
     return b === 'quarantine' ? this.cfg.S3_BUCKET_QUARANTINE : this.cfg.S3_BUCKET_ATTACHMENTS;
   }
-  async put(bucket: Bucket, key: string, body: Readable | Buffer, contentType?: string): Promise<void> {
+  async put(
+    bucket: Bucket,
+    key: string,
+    body: Readable | Buffer,
+    contentType?: string,
+  ): Promise<void> {
     await new Upload({
       client: this.s3,
-      params: { Bucket: this.name(bucket), Key: key, Body: body, ContentType: contentType ?? 'application/octet-stream', ServerSideEncryption: 'AES256' },
+      params: {
+        Bucket: this.name(bucket),
+        Key: key,
+        Body: body,
+        ContentType: contentType ?? 'application/octet-stream',
+        ServerSideEncryption: 'AES256',
+      },
     }).done();
   }
   async get(bucket: Bucket, key: string): Promise<Readable> {
@@ -80,10 +110,20 @@ export class S3ObjectStore implements ObjectStore {
   async delete(bucket: Bucket, key: string): Promise<void> {
     await this.s3.send(new DeleteObjectCommand({ Bucket: this.name(bucket), Key: key }));
   }
-  async signedDownloadUrl(bucket: Bucket, key: string, fileName: string, ttl: number): Promise<string> {
+  async signedDownloadUrl(
+    bucket: Bucket,
+    key: string,
+    fileName: string,
+    ttl: number,
+  ): Promise<string> {
     return getSignedUrl(
       this.s3,
-      new GetObjectCommand({ Bucket: this.name(bucket), Key: key, ResponseContentDisposition: contentDisposition(fileName), ResponseContentType: 'application/octet-stream' }),
+      new GetObjectCommand({
+        Bucket: this.name(bucket),
+        Key: key,
+        ResponseContentDisposition: contentDisposition(fileName),
+        ResponseContentType: 'application/octet-stream',
+      }),
       { expiresIn: ttl },
     );
   }

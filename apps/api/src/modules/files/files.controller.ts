@@ -8,7 +8,12 @@ import { notFound, ProblemError } from '../../common/errors.js';
 import type { Principal } from '../../common/principal.js';
 import { asCase } from '@wd/rbac';
 import { Signer } from '../../common/signing.js';
-import { contentDisposition, FsObjectStore, type Bucket, type ObjectStore } from './object-store.js';
+import {
+  contentDisposition,
+  FsObjectStore,
+  type Bucket,
+  type ObjectStore,
+} from './object-store.js';
 
 @Controller('api/v1')
 export class FilesController {
@@ -33,11 +38,25 @@ export class FilesController {
         .where('a.id', '=', id)
         .executeTakeFirst(),
     );
-    if (!row || !p.ability.can('read', asCase({ orgId: row.org_id, requesterId: row.requester_id }))) throw notFound('Attachment');
+    if (
+      !row ||
+      !p.ability.can('read', asCase({ orgId: row.org_id, requesterId: row.requester_id }))
+    )
+      throw notFound('Attachment');
     if (row.scan_status !== 'clean' || !row.object_key)
-      throw new ProblemError(409, 'not-ready', 'This file is not available', row.scan_status === 'pending' ? 'Security scan in progress' : 'File failed the security scan');
+      throw new ProblemError(
+        409,
+        'not-ready',
+        'This file is not available',
+        row.scan_status === 'pending'
+          ? 'Security scan in progress'
+          : 'File failed the security scan',
+      );
     const ttl = this.cfg.DOWNLOAD_URL_TTL_SECONDS;
-    return { url: await this.store.signedDownloadUrl('attachments', row.object_key, row.file_name, ttl), expiresAt: new Date(Date.now() + ttl * 1000).toISOString() };
+    return {
+      url: await this.store.signedDownloadUrl('attachments', row.object_key, row.file_name, ttl),
+      expiresAt: new Date(Date.now() + ttl * 1000).toISOString(),
+    };
   }
 
   /** Signed-token download for the filesystem driver (S3 uses presigned URLs instead). */

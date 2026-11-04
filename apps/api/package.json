@@ -4,20 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && rm -rf dist/db/migrations && cp -r db/migrations dist/db/migrations",
     "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
     "dev:worker": "tsx watch --env-file-if-exists=../../.env src/worker.ts",
-    "start": "node dist/main.js",
-    "start:worker": "node dist/worker.js",
+    "start": "node dist/src/main.js",
+    "start:worker": "node dist/src/worker.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src test",
+    "lint": "eslint . --max-warnings=0",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "db:migrate": "tsx --env-file-if-exists=../../.env db/migrate.ts up",
     "db:rollback": "tsx --env-file-if-exists=../../.env db/migrate.ts down",
     "db:status": "tsx --env-file-if-exists=../../.env db/migrate.ts status",
     "db:seed": "tsx --env-file-if-exists=../../.env db/seed.ts",
-    "openapi": "tsx src/openapi/emit.ts > openapi.json"
+    "openapi": "tsx src/openapi/emit.ts > openapi.json",
+    "migrate:prod": "node dist/db/migrate.js up",
+    "seed:prod": "node dist/db/seed.js"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^7.3.4",

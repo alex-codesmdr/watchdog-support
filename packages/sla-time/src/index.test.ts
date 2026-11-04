@@ -45,12 +45,15 @@ describe('addBusinessMinutes (IST, Mon–Fri 09–18, Sat 09–13)', () => {
     );
   });
   it('24x7 is wall-clock', () => {
-    expect(addBusinessMinutes(ist('2026-11-08T22:00:00'), 15, TWENTY_FOUR_SEVEN).toISOString()).toBe(
-      ist('2026-11-08T22:15:00').toISOString(),
-    );
+    expect(
+      addBusinessMinutes(ist('2026-11-08T22:00:00'), 15, TWENTY_FOUR_SEVEN).toISOString(),
+    ).toBe(ist('2026-11-08T22:15:00').toISOString());
   });
   it('works across a DST change for non-IST zones', () => {
-    const ny: BusinessCalendar = { timeZone: 'America/New_York', weekly: { fri: [['09:00', '17:00']], mon: [['09:00', '17:00']] } };
+    const ny: BusinessCalendar = {
+      timeZone: 'America/New_York',
+      weekly: { fri: [['09:00', '17:00']], mon: [['09:00', '17:00']] },
+    };
     // US DST ends Sun 2026-11-01. Fri Oct 30 16:00 EDT + 2h -> Mon Nov 2 10:00 EST (15:00Z)
     expect(addBusinessMinutes(new Date('2026-10-30T20:00:00Z'), 120, ny).toISOString()).toBe(
       '2026-11-02T15:00:00.000Z',
@@ -62,7 +65,11 @@ describe('addBusinessMinutes (IST, Mon–Fri 09–18, Sat 09–13)', () => {
 });
 
 describe('properties', () => {
-  const arbStart = fc.date({ min: new Date('2026-01-01T00:00:00Z'), max: new Date('2027-12-31T00:00:00Z'), noInvalidDate: true });
+  const arbStart = fc.date({
+    min: new Date('2026-01-01T00:00:00Z'),
+    max: new Date('2027-12-31T00:00:00Z'),
+    noInvalidDate: true,
+  });
   const arbMin = fc.integer({ min: 0, max: 60 * 24 * 20 });
 
   it('round-trips: between(start, add(start, n)) == n', () => {
@@ -78,18 +85,25 @@ describe('properties', () => {
     fc.assert(
       fc.property(arbStart, arbMin, arbMin, (s, a, b) => {
         const [lo, hi] = a <= b ? [a, b] : [b, a];
-        expect(addBusinessMinutes(s, lo, IST).getTime()).toBeLessThanOrEqual(addBusinessMinutes(s, hi, IST).getTime());
+        expect(addBusinessMinutes(s, lo, IST).getTime()).toBeLessThanOrEqual(
+          addBusinessMinutes(s, hi, IST).getTime(),
+        );
       }),
       { numRuns: 300 },
     );
   });
   it('is additive: add(add(s,a),b) == add(s,a+b) for a > 0', () => {
     fc.assert(
-      fc.property(arbStart, fc.integer({ min: 1, max: 5000 }), fc.integer({ min: 1, max: 5000 }), (s, a, b) => {
-        expect(addBusinessMinutes(addBusinessMinutes(s, a, IST), b, IST).getTime()).toBe(
-          addBusinessMinutes(s, a + b, IST).getTime(),
-        );
-      }),
+      fc.property(
+        arbStart,
+        fc.integer({ min: 1, max: 5000 }),
+        fc.integer({ min: 1, max: 5000 }),
+        (s, a, b) => {
+          expect(addBusinessMinutes(addBusinessMinutes(s, a, IST), b, IST).getTime()).toBe(
+            addBusinessMinutes(s, a + b, IST).getTime(),
+          );
+        },
+      ),
       { numRuns: 300 },
     );
   });
@@ -99,7 +113,11 @@ describe('evaluate', () => {
   it('reports elapsed, remaining and breach, excluding paused time', () => {
     const startedAt = ist('2026-11-04T10:00:00');
     const now = ist('2026-11-04T13:00:00');
-    const r = evaluate({ startedAt, targetMinutes: 240, pausedMs: 60 * 60_000, pausedAt: null, metAt: null }, IST, now);
+    const r = evaluate(
+      { startedAt, targetMinutes: 240, pausedMs: 60 * 60_000, pausedAt: null, metAt: null },
+      IST,
+      now,
+    );
     expect(r.percentElapsed).toBe(50); // 3h elapsed - 1h paused = 2h of 4h
     expect(r.remainingSeconds).toBe(2 * 3600);
     expect(r.dueAt.toISOString()).toBe(ist('2026-11-04T15:00:00').toISOString());
@@ -107,7 +125,13 @@ describe('evaluate', () => {
   });
   it('freezes while paused', () => {
     const r = evaluate(
-      { startedAt: ist('2026-11-04T10:00:00'), targetMinutes: 60, pausedMs: 0, pausedAt: ist('2026-11-04T10:30:00'), metAt: null },
+      {
+        startedAt: ist('2026-11-04T10:00:00'),
+        targetMinutes: 60,
+        pausedMs: 0,
+        pausedAt: ist('2026-11-04T10:30:00'),
+        metAt: null,
+      },
       IST,
       ist('2026-11-04T16:00:00'),
     );
@@ -115,7 +139,9 @@ describe('evaluate', () => {
     expect(r.breached).toBe(false);
   });
   it('minutes helper floors', () => {
-    expect(businessMinutesBetween(ist('2026-11-04T10:00:00'), ist('2026-11-04T10:00:59'), IST)).toBe(0);
+    expect(
+      businessMinutesBetween(ist('2026-11-04T10:00:00'), ist('2026-11-04T10:00:59'), IST),
+    ).toBe(0);
   });
 });
 

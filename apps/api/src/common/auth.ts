@@ -25,11 +25,13 @@ export const Public = () => SetMetadata(PUBLIC, true);
 export const Ctx = createParamDecorator((_d: unknown, ctx: ExecutionContext): RequestContext => {
   return ctx.switchToHttp().getRequest<Request>().wd!;
 });
-export const CurrentPrincipal = createParamDecorator((_d: unknown, ctx: ExecutionContext): Principal => {
-  const p = ctx.switchToHttp().getRequest<Request>().wd?.principal;
-  if (!p) throw unauthorized();
-  return p;
-});
+export const CurrentPrincipal = createParamDecorator(
+  (_d: unknown, ctx: ExecutionContext): Principal => {
+    const p = ctx.switchToHttp().getRequest<Request>().wd?.principal;
+    if (!p) throw unauthorized();
+    return p;
+  },
+);
 
 interface TokenClaims extends JWTPayload {
   email?: string;
@@ -57,7 +59,10 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<Request>();
-    const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC, [ctx.getHandler(), ctx.getClass()]);
+    const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
     const header = req.headers.authorization;
     if (!header) {
       if (isPublic) return true;
@@ -87,13 +92,26 @@ export class AuthGuard implements CanActivate {
 
   private async resolve(c: TokenClaims): Promise<Principal> {
     const rows = await this.db.withAnonymous((tx) =>
-      sql<{ user_id: string; org_id: string; org_type: Principal['orgType']; org_status: string; user_status: string; roles: string[]; delegated: string[] }>`
-        SELECT * FROM wd.resolve_principal(${c.sub!}, ${c.email!.toLowerCase()}, ${c.email_verified === true})`.execute(tx),
+      sql<{
+        user_id: string;
+        org_id: string;
+        org_type: Principal['orgType'];
+        org_status: string;
+        user_status: string;
+        roles: string[];
+        delegated: string[];
+      }>`
+        SELECT * FROM wd.resolve_principal(${c.sub!}, ${c.email!.toLowerCase()}, ${c.email_verified === true})`.execute(
+        tx,
+      ),
     );
     const r = rows.rows[0];
     if (!r) throw forbidden('Your account has not been provisioned for the support portal.');
     if (r.user_status !== 'active') throw forbidden('Your account is disabled.');
-    if (r.org_status !== 'active') throw forbidden('Your organisation is not active yet. You will be notified once it is approved.');
+    if (r.org_status !== 'active')
+      throw forbidden(
+        'Your organisation is not active yet. You will be notified once it is approved.',
+      );
     const roles = r.roles.filter((x): x is RoleKey => RoleKey.safeParse(x).success);
     const permissions = permissionsFor(roles);
     const isInternal = r.org_type === 'internal';
@@ -120,7 +138,10 @@ export const RequirePermission = (...anyOf: string[]) => SetMetadata(PERMS, anyO
 export class PermissionGuard implements CanActivate {
   constructor(@Inject(Reflector) private readonly reflector: Reflector) {}
   canActivate(ctx: ExecutionContext): boolean {
-    const anyOf = this.reflector.getAllAndOverride<string[] | undefined>(PERMS, [ctx.getHandler(), ctx.getClass()]);
+    const anyOf = this.reflector.getAllAndOverride<string[] | undefined>(PERMS, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
     if (!anyOf?.length) return true;
     const p = ctx.switchToHttp().getRequest<Request>().wd?.principal;
     if (!p) throw unauthorized();

@@ -12,7 +12,9 @@ import { CONFIG, DB } from './tokens.js';
 import { OutboxRelay, startConsumers } from './worker/outbox.js';
 
 async function bootstrap() {
-  const ctx = await NestFactory.createApplicationContext(AppModule.forRoot(), { logger: ['error', 'warn'] });
+  const ctx = await NestFactory.createApplicationContext(AppModule.forRoot(), {
+    logger: ['error', 'warn'],
+  });
   const cfg = ctx.get<AppConfig>(CONFIG);
   const db = ctx.get<Database>(DB);
   await db.assertSafeRole();

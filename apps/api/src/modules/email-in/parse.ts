@@ -1,7 +1,11 @@
 /** Pure helpers for inbound email threading (unit-tested). */
 
 /** Extracts the reply token from "case+<token>@domain" in any recipient header. */
-export function findReplyToken(addresses: string[], localpart: string, domain: string): string | null {
+export function findReplyToken(
+  addresses: string[],
+  localpart: string,
+  domain: string,
+): string | null {
   const re = new RegExp(`^${escapeRe(localpart)}\\+([^@]+)@${escapeRe(domain)}$`, 'i');
   for (const a of addresses) {
     const m = re.exec(a.trim().toLowerCase());
@@ -25,7 +29,11 @@ export function stripQuoted(text: string): string {
   const out: string[] = [];
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i]!;
-    if (/^On .+wrote:\s*$/i.test(l) || (/^On .+/i.test(l) && /wrote:\s*$/i.test(lines[i + 1] ?? ''))) break;
+    if (
+      /^On .+wrote:\s*$/i.test(l) ||
+      (/^On .+/i.test(l) && /wrote:\s*$/i.test(lines[i + 1] ?? ''))
+    )
+      break;
     if (/^-{2,}\s*Original Message\s*-{2,}/i.test(l)) break;
     if (/^From:\s.+/i.test(l) && /^(Sent|Date):\s/i.test(lines[i + 1] ?? '')) break;
     if (/^_{20,}$/.test(l)) break;
@@ -33,7 +41,10 @@ export function stripQuoted(text: string): string {
     if (/^>/.test(l)) continue;
     out.push(l);
   }
-  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return out
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

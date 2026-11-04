@@ -1,0 +1,125 @@
+import Link from 'next/link';
+import type { Me } from '@wd/contracts';
+import { Wordmark } from '@wd/ui';
+import { t } from '@/lib/i18n';
+import { getSession } from '@/lib/session';
+
+const link = 'rounded-s px-2 py-1 text-sm text-white/85 hover:text-white hover:bg-white/10';
+
+export async function SiteHeader({
+  me,
+  area,
+}: {
+  me?: Me | null;
+  area?: 'portal' | 'workspace' | 'admin';
+}) {
+  const s = await getSession();
+  const staff = me?.isInternal;
+  return (
+    <header className="bg-navy text-white">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50 focus:rounded-s focus:bg-white focus:px-3 focus:py-2 focus:text-navy"
+      >
+        {t('nav.skip')}
+      </a>
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+        <Link href="/" className="rounded-s" aria-label="WatchDog Support home">
+          <Wordmark inverted />
+        </Link>
+        <nav
+          aria-label="Main"
+          className="order-3 flex w-full flex-wrap items-center gap-1 sm:order-none sm:w-auto sm:flex-1"
+        >
+          {me && !staff && (
+            <>
+              <Link className={link} href="/portal">
+                {t('nav.dashboard')}
+              </Link>
+              <Link className={link} href="/portal/cases">
+                {t('nav.myCases')}
+              </Link>
+            </>
+          )}
+          {staff && (
+            <>
+              <Link className={link} href="/workspace">
+                {t('nav.queue')}
+              </Link>
+              {me?.permissions.includes('registration:approve') && (
+                <Link className={link} href="/admin/registrations">
+                  {t('nav.registrations')}
+                </Link>
+              )}
+            </>
+          )}
+          {!me && (
+            <>
+              <Link className={link} href="/search">
+                {t('nav.knowledge')}
+              </Link>
+              <Link className={link} href="/downloads">
+                {t('nav.downloads')}
+              </Link>
+              <Link className={link} href="/advisories">
+                {t('nav.advisories')}
+              </Link>
+            </>
+          )}
+        </nav>
+        <div className="ml-auto flex items-center gap-2 sm:ml-0">
+          {s ? (
+            <>
+              {me && !staff && area !== undefined && (
+                <Link
+                  href="/portal/cases/new"
+                  className="hidden h-9 items-center rounded-s bg-teal px-3 text-sm font-semibold text-navy hover:bg-teal/90 sm:inline-flex"
+                >
+                  {t('nav.openCase')}
+                </Link>
+              )}
+              <form action="/auth/logout" method="post">
+                <input type="hidden" name="csrf" value={s.csrf} />
+                <button className={link} type="submit" title={s.email}>
+                  {t('nav.signOut')}
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <Link className={link} href="/register">
+                {t('nav.register')}
+              </Link>
+              <a
+                className="inline-flex h-9 items-center rounded-s bg-white px-3 text-sm font-semibold text-navy hover:bg-white/90"
+                href="/auth/login"
+              >
+                {t('nav.signIn')}
+              </a>
+            </>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export function SiteFooter() {
+  return (
+    <footer className="mt-16 border-t border-line">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-muted">
+        <span>
+          © {new Date().getFullYear()} {t('footer.rights')}
+        </span>
+        <nav aria-label="Footer" className="flex flex-wrap gap-4">
+          <Link className="hover:text-ink" href="/privacy">
+            {t('footer.privacy')}
+          </Link>
+          <Link className="hover:text-ink" href="/advisories#report">
+            {t('footer.psirt')}
+          </Link>
+        </nav>
+      </div>
+    </footer>
+  );
+}

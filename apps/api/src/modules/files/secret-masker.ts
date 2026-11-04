@@ -21,26 +21,58 @@ interface Rule {
 
 const KEYWORD_VALUE: Rule[] = [
   // password / secret statements, incl. "password 7 <hash>", "secret 5 $1$..", "password cipher <x>", "password simple <x>"
-  { id: 'password', re: /\b((?:enable\s+)?(?:password|passwd|secret|passphrase)(?:\s+(?:0|5|7|8|9|cipher|simple|irreversible-cipher|hash|encrypted|plain))?\s+)(\S+)/gi, group: 2 },
-  { id: 'password-kv', re: /\b((?:password|passwd|pwd|secret|passphrase)\s*[:=]\s*)("[^"]*"|'[^']*'|\S+)/gi, group: 2 },
+  {
+    id: 'password',
+    re: /\b((?:enable\s+)?(?:password|passwd|secret|passphrase)(?:\s+(?:0|5|7|8|9|cipher|simple|irreversible-cipher|hash|encrypted|plain))?\s+)(\S+)/gi,
+    group: 2,
+  },
+  {
+    id: 'password-kv',
+    re: /\b((?:password|passwd|pwd|secret|passphrase)\s*[:=]\s*)("[^"]*"|'[^']*'|\S+)/gi,
+    group: 2,
+  },
   // SNMP communities: "snmp-server community <x> RO", "snmp-agent community read <x>", "community <x>"
-  { id: 'snmp-community', re: /\b(community(?:\s+(?:read|write|ro|rw|cipher|simple))*\s+)(\S+)/gi, group: 2 },
+  {
+    id: 'snmp-community',
+    re: /\b(community(?:\s+(?:read|write|ro|rw|cipher|simple))*\s+)(\S+)/gi,
+    group: 2,
+  },
   // pre-shared keys and generic key statements
-  { id: 'psk', re: /\b((?:pre-shared-key|preshared-key|psk|wpa-psk|wpa2-psk|sae-password)(?:\s+(?:0|7|cipher|simple|ascii|hex|pass-phrase|raw-key))*\s+)(\S+)/gi, group: 2 },
-  { id: 'key', re: /\b((?:key-string|authentication-key|auth-key|md5|sha|hmac-sha-256|radius-server\s+key|tacacs-server\s+key|key)(?:\s+(?:0|7|cipher|simple))*\s+)(\S+)/gi, group: 2 },
-  { id: 'snmpv3-auth', re: /\b((?:auth|priv)(?:entication|acy)?-?(?:mode)?\s+(?:md5|sha|sha256|des|aes\d*)\s+(?:cipher\s+|simple\s+)?)(\S+)/gi, group: 2 },
+  {
+    id: 'psk',
+    re: /\b((?:pre-shared-key|preshared-key|psk|wpa-psk|wpa2-psk|sae-password)(?:\s+(?:0|7|cipher|simple|ascii|hex|pass-phrase|raw-key))*\s+)(\S+)/gi,
+    group: 2,
+  },
+  {
+    id: 'key',
+    re: /\b((?:key-string|authentication-key|auth-key|md5|sha|hmac-sha-256|radius-server\s+key|tacacs-server\s+key|key)(?:\s+(?:0|7|cipher|simple))*\s+)(\S+)/gi,
+    group: 2,
+  },
+  {
+    id: 'snmpv3-auth',
+    re: /\b((?:auth|priv)(?:entication|acy)?-?(?:mode)?\s+(?:md5|sha|sha256|des|aes\d*)\s+(?:cipher\s+|simple\s+)?)(\S+)/gi,
+    group: 2,
+  },
   // tokens in key=value form
-  { id: 'token-kv', re: /\b((?:api[_-]?key|access[_-]?token|auth[_-]?token|client[_-]?secret|bearer)\s*[:=]\s*)("[^"]*"|'[^']*'|\S+)/gi, group: 2 },
+  {
+    id: 'token-kv',
+    re: /\b((?:api[_-]?key|access[_-]?token|auth[_-]?token|client[_-]?secret|bearer)\s*[:=]\s*)("[^"]*"|'[^']*'|\S+)/gi,
+    group: 2,
+  },
 ];
 
 const WHOLE: Array<{ id: string; re: RegExp }> = [
-  { id: 'pem-private-key', re: /-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z ]+ )?PRIVATE KEY-----/g },
+  {
+    id: 'pem-private-key',
+    re: /-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z ]+ )?PRIVATE KEY-----/g,
+  },
   { id: 'aws-access-key', re: /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g },
   { id: 'jwt', re: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g },
 ];
 
 // Values that are not secrets even after a keyword (e.g. "password-policy enable", "key chain NAME").
-const BENIGN = /^(?:\*+|enable|disable|required|optional|none|chain|config-key|policy|recovery|length|min-length|history|aging|level|\{|\(|<masked>)$/i;
+const BENIGN =
+  /^(?:\*+|enable|disable|required|optional|none|chain|config-key|policy|recovery|length|min-length|history|aging|level|\{|\(|<masked>)$/i;
 
 export function maskSecrets(input: string): MaskResult {
   const rules: Record<string, number> = {};

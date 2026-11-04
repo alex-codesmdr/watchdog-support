@@ -12,6 +12,14 @@ export type OutboxTopic =
   | 'attachment.scan';
 
 /** Transactional outbox (ADR-006): the event commits or rolls back with the business change. */
-export async function emit(tx: Tx, topic: OutboxTopic, orgId: string | null, payload: Record<string, unknown>): Promise<void> {
-  await tx.insertInto('outbox_event').values({ topic, org_id: orgId, payload: JSON.stringify(payload) }).execute();
+export async function emit(
+  tx: Tx,
+  topic: OutboxTopic,
+  orgId: string | null,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  await tx
+    .insertInto('outbox_event')
+    .values({ topic, org_id: orgId, payload: JSON.stringify(payload) })
+    .execute();
 }

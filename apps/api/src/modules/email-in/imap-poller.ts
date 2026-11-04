@@ -7,14 +7,19 @@ import type { EmailInService } from './email-in.service.js';
 export class ImapPoller {
   private timer?: NodeJS.Timeout;
   private running = false;
-  constructor(private readonly cfg: AppConfig, private readonly svc: EmailInService, private readonly intervalMs = 60_000) {}
+  constructor(
+    private readonly cfg: AppConfig,
+    private readonly svc: EmailInService,
+    private readonly intervalMs = 60_000,
+  ) {}
 
   start() {
     if (!this.cfg.IMAP_HOST) {
       logger.info('IMAP not configured; inbound email polling disabled');
       return;
     }
-    const tick = () => void this.poll().finally(() => (this.timer = setTimeout(tick, this.intervalMs)));
+    const tick = () =>
+      void this.poll().finally(() => (this.timer = setTimeout(tick, this.intervalMs)));
     tick();
   }
 

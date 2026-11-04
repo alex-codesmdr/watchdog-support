@@ -1,8 +1,6 @@
 import { z } from 'zod';
 
-const bool = z
-  .enum(['true', 'false', '1', '0'])
-  .transform((v) => v === 'true' || v === '1');
+const bool = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1');
 
 /** Environment schema for the API and worker processes. Validated once at boot; the process exits on error. */
 export const apiEnvSchema = z.object({
@@ -41,7 +39,10 @@ export const apiEnvSchema = z.object({
   S3_BUCKET_QUARANTINE: z.string().default('wd-quarantine'),
   S3_BUCKET_ATTACHMENTS: z.string().default('wd-attachments'),
   UPLOAD_TMP_DIR: z.string().default('./data/uploads'),
-  UPLOAD_MAX_BYTES: z.coerce.number().int().default(2 * 1024 * 1024 * 1024),
+  UPLOAD_MAX_BYTES: z.coerce
+    .number()
+    .int()
+    .default(2 * 1024 * 1024 * 1024),
   DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().default(300),
   /** HMAC key for signed download URLs (fs driver), reply tokens and CSAT tokens. >= 32 chars. */
   APP_SIGNING_KEY: z.string().min(32),
@@ -81,7 +82,10 @@ export const webEnvSchema = z.object({
   OIDC_CLIENT_ID: z.string().default('wd-web'),
   OIDC_CLIENT_SECRET: z.string().min(1),
   SESSION_REDIS_URL: z.string().default('redis://localhost:6379'),
-  SESSION_TTL_SECONDS: z.coerce.number().int().default(8 * 3600),
+  SESSION_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .default(8 * 3600),
   SESSION_COOKIE_SECURE: bool.default('true'),
 });
 export type WebEnv = z.infer<typeof webEnvSchema>;
@@ -92,7 +96,9 @@ export function loadEnv<T extends z.ZodTypeAny>(
 ): z.infer<T> {
   const parsed = schema.safeParse(source);
   if (!parsed.success) {
-    const issues = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
+    const issues = parsed.error.issues
+      .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
+      .join('\n');
     throw new Error(`Invalid configuration:\n${issues}`);
   }
   return parsed.data;

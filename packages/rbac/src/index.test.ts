@@ -19,26 +19,46 @@ describe('rbac matrix', () => {
   });
 
   it('customer user reads only own cases', () => {
-    const ab = buildAbility({ userId: U1, orgId: A, delegatedOrgIds: [], permissions: permissionsFor(['customer_user']) });
+    const ab = buildAbility({
+      userId: U1,
+      orgId: A,
+      delegatedOrgIds: [],
+      permissions: permissionsFor(['customer_user']),
+    });
     expect(ab.can('read', asCase({ orgId: A, requesterId: U1 }))).toBe(true);
     expect(ab.can('read', asCase({ orgId: A, requesterId: U2 }))).toBe(false);
     expect(ab.can('note', asCase({ orgId: A, requesterId: U1 }))).toBe(false);
   });
 
   it('customer admin reads org cases but never another org', () => {
-    const ab = buildAbility({ userId: U1, orgId: A, delegatedOrgIds: [], permissions: permissionsFor(['customer_admin']) });
+    const ab = buildAbility({
+      userId: U1,
+      orgId: A,
+      delegatedOrgIds: [],
+      permissions: permissionsFor(['customer_admin']),
+    });
     expect(ab.can('read', asCase({ orgId: A, requesterId: U2 }))).toBe(true);
     expect(ab.can('read', asCase({ orgId: B, requesterId: U2 }))).toBe(false);
   });
 
   it('partner reads delegated orgs only', () => {
-    const ab = buildAbility({ userId: U1, orgId: A, delegatedOrgIds: [B], permissions: permissionsFor(['partner']) });
+    const ab = buildAbility({
+      userId: U1,
+      orgId: A,
+      delegatedOrgIds: [B],
+      permissions: permissionsFor(['partner']),
+    });
     expect(ab.can('read', asCase({ orgId: B, requesterId: U2 }))).toBe(true);
     expect(ab.can('read', asCase({ orgId: A, requesterId: U2 }))).toBe(false);
   });
 
   it('engineers can add internal notes on any case', () => {
-    const ab = buildAbility({ userId: U1, orgId: A, delegatedOrgIds: [], permissions: permissionsFor(['l1_engineer']) });
+    const ab = buildAbility({
+      userId: U1,
+      orgId: A,
+      delegatedOrgIds: [],
+      permissions: permissionsFor(['l1_engineer']),
+    });
     expect(ab.can('note', asCase({ orgId: B, requesterId: U2 }))).toBe(true);
     expect(ab.can('csat', asCase({ orgId: B, requesterId: U2 }))).toBe(false);
   });
