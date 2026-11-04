@@ -8,7 +8,7 @@
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { loadMatrix } from '@wd/rbac';
-import { seedDownloads } from './seed-downloads.js';
+import { seedDownloadFiles, seedDownloads } from './seed-downloads.js';
 import { seedKb } from './seed-kb.js';
 
 export const SYSTEM_USER_ID = '00000000-0000-4000-8000-000000000001';
@@ -458,8 +458,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     console.error('refusing --reset in production');
     process.exit(1);
   }
-  seed(url, { reset: process.argv.includes('--reset') }).catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
+  seed(url, { reset: process.argv.includes('--reset') })
+    .then(() => seedDownloadFiles())
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
 }

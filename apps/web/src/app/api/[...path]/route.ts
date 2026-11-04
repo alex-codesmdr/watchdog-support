@@ -18,6 +18,7 @@ const FORWARD = [
   'content-type',
   'content-length',
   'if-match',
+  'idempotency-key',
   'tus-resumable',
   'upload-length',
   'upload-offset',

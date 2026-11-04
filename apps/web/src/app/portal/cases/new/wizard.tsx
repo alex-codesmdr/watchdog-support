@@ -55,6 +55,8 @@ export function NewCaseWizard({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  // One key per form: a retry after a network error never opens a duplicate case.
+  const [idemKey] = useState(() => crypto.randomUUID());
   const [serial, setSerial] = useState(initialSerial);
   const [form, setForm] = useState({
     severity: '' as Severity | '',
@@ -133,6 +135,7 @@ export function NewCaseWizard({
     try {
       const c = await apiFetch<CaseDetail>('/v1/cases', {
         method: 'POST',
+        headers: { 'idempotency-key': idemKey },
         body: {
           serialNumber: serial.trim(),
           ...form,

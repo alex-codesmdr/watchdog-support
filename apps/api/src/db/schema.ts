@@ -391,6 +391,13 @@ export interface RenewalRequestT {
   status: Generated<string>;
   created_at: Ts;
 }
+export interface IdempotencyKeyT {
+  user_id: string;
+  key: string;
+  request_hash: string;
+  case_id: string | null;
+  created_at: Ts;
+}
 export interface EulaT {
   id: Generated<string>;
   version: string;
@@ -465,6 +472,7 @@ export interface DB {
   renewal_request: RenewalRequestT;
   entitlement_reminder: EntitlementReminderT;
   eula: EulaT;
+  idempotency_key: IdempotencyKeyT;
   software_release: SoftwareReleaseT;
   release_product: ReleaseProductT;
   release_file: ReleaseFileT;

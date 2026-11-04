@@ -5,6 +5,13 @@
  */
 import { createHash } from 'node:crypto';
 import type pg from 'pg';
+import { apiEnvSchema } from '@wd/config';
+import { Signer } from '../src/common/signing.js';
+import {
+  FsObjectStore,
+  S3ObjectStore,
+  type ObjectStore,
+} from '../src/modules/files/object-store.js';
 import { renderMarkdown } from '../src/modules/kb/markdown.js';
 
 type Q = (t: string, v?: unknown[]) => Promise<pg.QueryResult>;
@@ -244,4 +251,39 @@ export async function seedDownloads(q: Q, authorId: string): Promise<number> {
     }
   }
   return SEED_RELEASES.length;
+}
+
+/** Writes the starter download files to object storage (skipped when storage is not configured). */
+export async function seedDownloadFiles() {
+  const parsed = apiEnvSchema.safeParse(process.env);
+  if (!parsed.success) {
+    console.error('  download files skipped (API configuration incomplete)');
+    return;
+  }
+  const cfg = parsed.data;
+  let store: ObjectStore;
+  if (cfg.STORAGE_DRIVER === 's3') {
+    const s3 = new S3ObjectStore(cfg);
+    if (cfg.S3_ENSURE_BUCKETS) await s3.ensureBuckets();
+    store = s3;
+  } else {
+    store = new FsObjectStore(
+      cfg.STORAGE_FS_ROOT,
+      new Signer(cfg.APP_SIGNING_KEY),
+      cfg.PUBLIC_API_URL,
+    );
+  }
+  let n = 0;
+  for (const r of SEED_RELEASES)
+    for (const f of r.files) {
+      const exists = await store
+        .get('attachments', seedObjectKey(f.name))
+        .then((s) => (s.destroy(), true))
+        .catch(() => false);
+      if (!exists) {
+        await store.put('attachments', seedObjectKey(f.name), f.content());
+        n++;
+      }
+    }
+  if (n) console.error(`  ${n} download files written`);
 }
