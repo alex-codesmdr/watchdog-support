@@ -105,8 +105,8 @@ jobs:
             --collect.url=http://localhost:3000/search --collect.url=http://localhost:3000/products/switching \
             --assert.assertions.categories:accessibility="error;minScore=0.9" --upload.target=filesystem
       - name: Brand scan of rendered pages
-        env: { WD_PROHIBITED_TERMS: '${{ secrets.WD_PROHIBITED_TERMS }}' }
         run: |
+          pnpm --filter @wd/brand-lint build
           mkdir -p rendered && for p in / /register /search /products/switching /downloads /advisories /api/v1/catalog/products; do
             curl -s "http://localhost:3000$p" > "rendered/$(echo $p | tr '/' '_').html"; done
           curl -s http://localhost:4000/api/openapi.json > rendered/openapi.json
@@ -128,7 +128,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @wd/brand-lint build
       - name: Brand lint (source, seeds, migrations, docs, file names)
-        env: { WD_PROHIBITED_TERMS: '${{ secrets.WD_PROHIBITED_TERMS }}' }
+        # Uses packages/brand-lint/prohibited.sha256 (one-way fingerprints; names never stored)
         run: node packages/brand-lint/dist/cli.js --require-terms .
       - name: Secret scan
         uses: gitleaks/gitleaks-action@v2

@@ -1,0 +1,5 @@
+# One-way fingerprints of prohibited third-party names (see src/fingerprints.ts).
+# The plain names are intentionally not stored anywhere in this repository.
+ea99a417ef026dc0dfb851c0cb51889dc68a4f52d47a3371d684682990faef82 3
+ed20b974978f4750fecc7fae31c77935a6bdde269f1a6916322487ff136aac57 6
+125a553bb97ce4b9308d1e0e386d387d839332495c16aadec8853e68bfbc757a 7

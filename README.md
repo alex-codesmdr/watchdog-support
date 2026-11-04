@@ -74,6 +74,6 @@ docs/                Architecture, ADRs, Phase 2 report, runbooks, ASVS mapping
 | `pnpm -r test` | Unit tests: SLA arithmetic (incl. property tests), RBAC, secret masking, sanitising, templates, brand-lint |
 | `TEST_PG_ADMIN_URL=postgres://postgres@localhost/postgres pnpm test:integration` | Real Postgres: tenant isolation through API **and** raw SQL, generated RBAC matrix, full case lifecycle, email-to-case, audit chain |
 | `pnpm --filter @wd/web exec playwright test` | Browser E2E of the MVP flow + axe WCAG 2.1 AA on public pages (desktop + mobile) |
-| `WD_PROHIBITED_TERMS=… pnpm brand-lint` | Zero prohibited brand names in source, builds, rendered pages |
+| `pnpm brand-lint` | Zero prohibited third-party names in source, builds, rendered pages. The list is stored only as one-way fingerprints in `packages/brand-lint/prohibited.sha256`; add a name with `printf 'Name\n' \| node packages/brand-lint/dist/fingerprint-cli.js >> packages/brand-lint/prohibited.sha256` |
 
 Conventional commits are enforced in CI (`commitlint`). Keep PRs small.

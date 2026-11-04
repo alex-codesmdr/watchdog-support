@@ -43,3 +43,33 @@ describe('brand-lint matching', () => {
     expect(r.findings.map((f) => f.where)).toEqual(['filename']);
   });
 });
+
+import { fingerprintLine, parseFingerprints } from './fingerprints.js';
+
+describe('fingerprint matching (no plain names in the repo)', () => {
+  const fp = parseFingerprints(
+    [
+      '# test list',
+      fingerprintLine('AcmeNet'),
+      fingerprintLine('Zeta Ware'),
+      fingerprintLine('Q7X'),
+    ].join('\n'),
+  );
+  it.each([
+    ['Powered by AcmeNet', 1],
+    ['ACME-NET and acm3n3t', 2],
+    ['A c m e N e t', 1],
+    ['the ZetaWare OS and zeta-ware', 2],
+    ['Q7X router', 1],
+    ['q-7-x', 1],
+    ['acmenetwork is a different word', 0],
+    ['hash 4fq7xa1 is not a match', 0],
+    ['WatchDog Support', 0],
+  ])('%s -> %i', (text, n) => {
+    expect(scanText(text, [], 't', fp)).toHaveLength(n);
+  });
+  it('never prints the term itself', () => {
+    const [f] = scanText('x AcmeNet y', [], 't', fp);
+    expect(JSON.stringify(f)).not.toMatch(/acme/i);
+  });
+});
