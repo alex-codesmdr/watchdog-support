@@ -37,6 +37,7 @@ import { MockSmsAdapter, SmtpTransport } from './modules/notifications/mailer.js
 import { NotificationsService } from './modules/notifications/notifications.service.js';
 import { SlaMonitorService } from './modules/sla/sla-monitor.service.js';
 import { SlaReportController } from './modules/sla/sla-report.controller.js';
+import { WarrantyController } from './modules/public/warranty.controller.js';
 
 /** Providers tests may replace (JWKS, transports, storage, AV, IdP, Redis). */
 export interface AppOverrides {
@@ -111,6 +112,7 @@ export class AppModule {
         FilesController,
         DevController,
         SlaReportController,
+        WarrantyController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),

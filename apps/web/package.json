@@ -29,6 +29,7 @@
     "@wd/config": "workspace:*",
     "@wd/contracts": "workspace:*",
     "@wd/ui": "workspace:*",
+    "altcha-lib": "^1.4.1",
     "ioredis": "^5.11.1",
     "jose": "^6.2.15",
     "next": "^15.5.29",
