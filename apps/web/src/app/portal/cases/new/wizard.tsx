@@ -72,16 +72,32 @@ export function NewCaseWizard({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Partners open cases for the customers that delegated access to them.
+  const orgs = useQuery({
+    queryKey: ['my-orgs'],
+    queryFn: () =>
+      apiFetch<{ items: Array<{ id: string; name: string; own: boolean }> }>(
+        '/v1/me/organizations',
+      ),
+  });
+  const customers = (orgs.data?.items ?? []).filter((o) => !o.own);
+  const isPartner = customers.length > 0;
+  const [orgId, setOrgId] = useState('');
+  const orgQs = isPartner && orgId ? `&orgId=${orgId}` : '';
   const assets = useQuery({
-    queryKey: ['assets'],
-    queryFn: () => apiFetch<{ items: AssetSummary[] }>('/v1/assets'),
+    queryKey: ['assets', orgId],
+    queryFn: () =>
+      apiFetch<{ items: AssetSummary[] }>(`/v1/assets${orgQs ? `?${orgQs.slice(1)}` : ''}`),
+    enabled: !isPartner || !!orgId,
   });
   const dSerial = useDebounced(serial.trim().toUpperCase(), 350);
   const validation = useQuery({
-    queryKey: ['serial', dSerial],
+    queryKey: ['serial', dSerial, orgId],
     queryFn: () =>
-      apiFetch<SerialValidation>(`/v1/assets/validate?serial=${encodeURIComponent(dSerial)}`),
-    enabled: dSerial.length >= 6,
+      apiFetch<SerialValidation>(
+        `/v1/assets/validate?serial=${encodeURIComponent(dSerial)}${orgQs}`,
+      ),
+    enabled: dSerial.length >= 6 && (!isPartner || !!orgId),
   });
   const dSubject = useDebounced(form.subject.trim(), 500);
   const articles = useQuery({
@@ -110,7 +126,8 @@ export function NewCaseWizard({
   function validate(s: number): boolean {
     const e: Record<string, string> = {};
     if (s === 0) {
-      if (!validation.data?.valid)
+      if (isPartner && !orgId) e.org = 'Choose the customer this case is for.';
+      else if (!validation.data?.valid)
         e.serial =
           validation.data?.reason === 'not_entitled'
             ? 'This device has no active support contract.'
@@ -138,6 +155,7 @@ export function NewCaseWizard({
         headers: { 'idempotency-key': idemKey },
         body: {
           serialNumber: serial.trim(),
+          ...(isPartner && orgId ? { orgId } : {}),
           ...form,
           softwareVersion: form.softwareVersion || undefined,
           stepsTried: form.stepsTried || undefined,
@@ -178,6 +196,25 @@ export function NewCaseWizard({
         <div className="mt-6 flex flex-col gap-5 rounded-m border border-line bg-surface p-6">
           {step === 0 && (
             <>
+              {isPartner && (
+                <Field
+                  label="Customer"
+                  required
+                  hint="The organisation that owns the device."
+                  error={errors.org}
+                >
+                  {(p) => (
+                    <Select {...p} value={orgId} onChange={(e) => setOrgId(e.target.value)}>
+                      <option value="">Choose a customer</option>
+                      {customers.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              )}
               <Field
                 label="Serial number"
                 required

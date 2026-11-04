@@ -151,6 +151,17 @@ describe('API: within an organisation and for partners', () => {
       .post('/api/v1/cases', caseBody(SERIAL.kaveriPremium, { orgId: ORG.kaveri }))
       .expect(404);
   });
+
+  it('a partner can list the organisations it may open cases for (and nothing else)', async () => {
+    const orgs = (await (await t.as(USERS.partner)).get('/api/v1/me/organizations').expect(200))
+      .body.items as { id: string; own: boolean }[];
+    expect(orgs.map((o) => o.id)).toContain(ORG.narmada);
+    expect(orgs.map((o) => o.id)).not.toContain(ORG.kaveri);
+    expect(orgs.filter((o) => o.own)).toHaveLength(1);
+    const cust = (await (await t.as(USERS.kaveriUser)).get('/api/v1/me/organizations').expect(200))
+      .body.items as { id: string }[];
+    expect(cust.map((o) => o.id)).toEqual([ORG.kaveri]);
+  });
 });
 
 describe('Database: row-level security without the application', () => {

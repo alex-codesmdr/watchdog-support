@@ -82,6 +82,30 @@ export class IdentityController {
     };
   }
 
+  /** Organisations the user can open cases for: their own, plus delegating customers (partners). */
+  @Get('me/organizations')
+  async organizations(@CurrentPrincipal() p: Principal) {
+    if (p.isInternal) return { items: [] };
+    const ids = [p.orgId, ...p.delegatedOrgIds];
+    return this.db.withTenant(p, async (tx) => {
+      const rows = await tx
+        .selectFrom('organization')
+        .select(['id', 'name', 'org_type'])
+        .where('id', 'in', ids)
+        .where('status', '=', 'active')
+        .orderBy('name')
+        .execute();
+      return {
+        items: rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          own: r.id === p.orgId,
+          type: r.org_type,
+        })),
+      };
+    });
+  }
+
   @Get('admin/registrations')
   @RequirePermission('registration:approve')
   async registrations(
