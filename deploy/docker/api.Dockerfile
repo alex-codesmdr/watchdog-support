@@ -16,12 +16,16 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 RUN pnpm --filter "./packages/{config,contracts,rbac,sla-time}" build && pnpm --filter @wd/api build
 RUN pnpm --filter @wd/api deploy --legacy --prod /out && cp -r apps/api/dist /out/dist
 
-# Distroless runtime: Node.js + libc only. No shell, no package manager, no OS tools to patch or abuse.
-FROM gcr.io/distroless/nodejs22-debian12:nonroot AS runtime
+# Hardened runtime: all Debian security updates applied at build time, package managers removed
+# (npm/corepack/yarn carried vulnerable bundled modules), non-root user. Rebuild weekly to pick up fixes.
+FROM node:22.20.0-bookworm-slim AS runtime
+RUN apt-get update && apt-get -y upgrade && apt-get clean && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=build --chown=nonroot:nonroot /out /app
+COPY --from=build --chown=node:node /out /app
+USER node
 EXPOSE 4000 9464
-HEALTHCHECK --interval=15s --timeout=3s CMD ["/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:4000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-# Entrypoint is node; override the script for the worker (dist/src/worker.js) or setup (dist/db/setup.js).
+HEALTHCHECK --interval=15s --timeout=3s CMD ["node", "-e", "fetch('http://127.0.0.1:4000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+# The official entrypoint runs `node <script>`; override with dist/src/worker.js or dist/db/setup.js.
 CMD ["dist/src/main.js"]
