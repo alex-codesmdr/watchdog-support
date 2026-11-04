@@ -98,3 +98,8 @@ Format: Context · Decision · Consequences · Alternatives. ADR-001…016: **Ac
 ## ADR-021 Hand-maintained Kysely types in Phase 2
 **Decision.** `src/db/schema.ts` is written by hand alongside migrations; `kysely-codegen` replaces it once the CI database job publishes generated types.
 **Consequences.** Small drift risk, mitigated by the integration suite exercising every table through the API.
+
+## ADR-022 S3-compatible storage without MinIO community images
+**Context.** MinIO stopped publishing community container images (pulls of `minio/mc` fail), which broke the local stack.
+**Decision.** Local and reference on-prem stack use SeaweedFS (Apache-2.0) through the standard S3 API. The code depends only on the S3 API, so production may use AWS S3, Ceph RGW, SeaweedFS or a licensed MinIO. Buckets can be created at start-up (`S3_ENSURE_BUCKETS`), and download URLs are signed against a browser-facing endpoint (`S3_PUBLIC_ENDPOINT`).
+**Consequences.** ADR-008's MinIO references now read "any S3-compatible store". Object lock for firmware (Phase 3) must be confirmed for the chosen production store.

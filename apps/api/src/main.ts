@@ -5,12 +5,16 @@ import { createHttpApp } from './http.js';
 import { logger } from './common/logger.js';
 import type { AppConfig } from './config.js';
 import type { Database } from './db/database.js';
-import { CONFIG, DB } from './tokens.js';
+import { CONFIG, DB, OBJECT_STORE } from './tokens.js';
+import { S3ObjectStore, type ObjectStore } from './modules/files/object-store.js';
 
 async function bootstrap() {
   const app = await createHttpApp();
   const cfg = app.get<AppConfig>(CONFIG);
   await app.get<Database>(DB).assertSafeRole();
+  const store = app.get<ObjectStore>(OBJECT_STORE);
+  if (store instanceof S3ObjectStore && app.get<AppConfig>(CONFIG).S3_ENSURE_BUCKETS)
+    await store.ensureBuckets();
 
   // Prometheus metrics on a separate, internal-only port.
   collectDefaultMetrics({ prefix: 'wd_api_' });

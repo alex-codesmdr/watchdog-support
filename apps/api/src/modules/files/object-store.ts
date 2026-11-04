@@ -3,7 +3,13 @@ import { mkdir, rm, stat } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import type { Readable } from 'node:stream';
-import { DeleteObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  CreateBucketCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadBucketCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { AppConfig } from '../../config.js';
@@ -73,15 +79,31 @@ export class FsObjectStore implements ObjectStore {
 
 export class S3ObjectStore implements ObjectStore {
   private readonly s3: S3Client;
+  /** Separate client so presigned URLs carry the browser-facing host (signature covers the host). */
+  private readonly signer: S3Client;
   constructor(private readonly cfg: AppConfig) {
-    this.s3 = new S3Client({
-      region: cfg.S3_REGION,
-      endpoint: cfg.S3_ENDPOINT,
-      forcePathStyle: cfg.S3_FORCE_PATH_STYLE,
-      credentials: cfg.S3_ACCESS_KEY
-        ? { accessKeyId: cfg.S3_ACCESS_KEY, secretAccessKey: cfg.S3_SECRET_KEY ?? '' }
-        : undefined,
-    });
+    const client = (endpoint: string | undefined) =>
+      new S3Client({
+        region: cfg.S3_REGION,
+        endpoint,
+        forcePathStyle: cfg.S3_FORCE_PATH_STYLE,
+        credentials: cfg.S3_ACCESS_KEY
+          ? { accessKeyId: cfg.S3_ACCESS_KEY, secretAccessKey: cfg.S3_SECRET_KEY ?? '' }
+          : undefined,
+      });
+    this.s3 = client(cfg.S3_ENDPOINT);
+    this.signer = cfg.S3_PUBLIC_ENDPOINT ? client(cfg.S3_PUBLIC_ENDPOINT) : this.s3;
+  }
+
+  /** Creates the quarantine and attachment buckets if they do not exist. */
+  async ensureBuckets(): Promise<void> {
+    for (const b of [this.cfg.S3_BUCKET_QUARANTINE, this.cfg.S3_BUCKET_ATTACHMENTS]) {
+      try {
+        await this.s3.send(new HeadBucketCommand({ Bucket: b }));
+      } catch {
+        await this.s3.send(new CreateBucketCommand({ Bucket: b }));
+      }
+    }
   }
   private name(b: Bucket) {
     return b === 'quarantine' ? this.cfg.S3_BUCKET_QUARANTINE : this.cfg.S3_BUCKET_ATTACHMENTS;
@@ -117,7 +139,7 @@ export class S3ObjectStore implements ObjectStore {
     ttl: number,
   ): Promise<string> {
     return getSignedUrl(
-      this.s3,
+      this.signer,
       new GetObjectCommand({
         Bucket: this.name(bucket),
         Key: key,

@@ -21,7 +21,7 @@ docker compose up --build     # first run takes a few minutes (ClamAV downloads 
 | http://localhost:4000/api/docs | API reference (OpenAPI 3.1) |
 | http://localhost:8025 | Mailpit: every email the portal sends |
 | http://localhost:8080 | Keycloak admin (`admin` / `admin`) |
-| http://localhost:9001 | MinIO console |
+| http://localhost:8333 | S3-compatible file storage (SeaweedFS) |
 
 Demo sign-in (local only): any user below, password `Demo@WatchDog2026`. Each has a pre-enrolled authenticator:
 add base32 secret `K5QXIY3IIRXWORDFNVXVI33UOBFWK6JSGAZDM===` to any TOTP app.

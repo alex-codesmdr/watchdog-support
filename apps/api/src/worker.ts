@@ -8,7 +8,8 @@ import { EmailInService } from './modules/email-in/email-in.service.js';
 import { ImapPoller } from './modules/email-in/imap-poller.js';
 import { ScanService } from './modules/files/scan.service.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
-import { CONFIG, DB } from './tokens.js';
+import { CONFIG, DB, OBJECT_STORE } from './tokens.js';
+import { S3ObjectStore, type ObjectStore } from './modules/files/object-store.js';
 import { OutboxRelay, startConsumers } from './worker/outbox.js';
 
 async function bootstrap() {
@@ -18,6 +19,8 @@ async function bootstrap() {
   const cfg = ctx.get<AppConfig>(CONFIG);
   const db = ctx.get<Database>(DB);
   await db.assertSafeRole();
+  const store = ctx.get<ObjectStore>(OBJECT_STORE);
+  if (store instanceof S3ObjectStore && cfg.S3_ENSURE_BUCKETS) await store.ensureBuckets();
   const connection = { url: cfg.REDIS_URL, maxRetriesPerRequest: null };
 
   const notifications = ctx.get(NotificationsService);

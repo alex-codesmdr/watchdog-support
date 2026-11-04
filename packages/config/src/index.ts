@@ -32,6 +32,10 @@ export const apiEnvSchema = z.object({
   STORAGE_DRIVER: z.enum(['s3', 'fs']).default('fs'),
   STORAGE_FS_ROOT: z.string().default('./data/objects'),
   S3_ENDPOINT: z.string().optional(),
+  /** Browser-reachable endpoint used only to sign download URLs (defaults to S3_ENDPOINT). */
+  S3_PUBLIC_ENDPOINT: z.string().optional(),
+  /** Create the buckets at start-up if missing (dev/on-prem convenience; off when IaC owns buckets). */
+  S3_ENSURE_BUCKETS: bool.default(false),
   S3_REGION: z.string().default('ap-south-1'),
   S3_ACCESS_KEY: z.string().optional(),
   S3_SECRET_KEY: z.string().optional(),

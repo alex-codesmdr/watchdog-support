@@ -4,7 +4,7 @@
 #   api       http://localhost:4000   REST API, docs at /api/docs
 #   keycloak  http://localhost:8080   identity (admin / admin)
 #   mailpit   http://localhost:8025   every email the portal sends
-#   minio     http://localhost:9001   object storage console (wd-minio / wd-minio-secret)
+#   s3        http://localhost:8333   S3-compatible storage (SeaweedFS; key wd-s3)
 #
 # Local-development credentials only. Production uses the Helm chart with secrets from the vault.
 name: watchdog-support
@@ -25,9 +25,11 @@ x-api-env: &api-env
   KEYCLOAK_ADMIN_CLIENT_ID: wd-provisioner
   KEYCLOAK_ADMIN_CLIENT_SECRET: change-me-provisioner
   STORAGE_DRIVER: s3
-  S3_ENDPOINT: http://minio:9000
-  S3_ACCESS_KEY: wd-minio
-  S3_SECRET_KEY: wd-minio-secret
+  S3_ENDPOINT: http://seaweedfs:8333
+  S3_PUBLIC_ENDPOINT: http://localhost:8333
+  S3_ACCESS_KEY: wd-s3
+  S3_SECRET_KEY: wd-s3-secret-dev
+  S3_ENSURE_BUCKETS: "true"
   AV_MODE: clamav
   CLAMAV_HOST: clamav
   SMTP_HOST: mailpit
@@ -74,26 +76,19 @@ services:
       interval: 10s
       retries: 30
 
-  minio:
-    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
-    command: ["server", "/data", "--console-address", ":9001"]
-    environment:
-      MINIO_ROOT_USER: wd-minio
-      MINIO_ROOT_PASSWORD: wd-minio-secret
-    volumes: [minio:/data]
-    ports: ["9000:9000", "9001:9001"]
+  # S3-compatible object storage for local/on-prem use (SeaweedFS, Apache-2.0).
+  # Any S3 API works in production: AWS S3, Ceph RGW, SeaweedFS or a commercial MinIO.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.49
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json", "-master.volumeSizeLimitMB=1024"]
+    volumes:
+      - s3data:/data
+      - ./deploy/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    ports: ["8333:8333"]
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8333/healthz || exit 1"]
       interval: 5s
-
-  minio-buckets:
-    image: minio/mc:RELEASE.2024-11-21T17-21-54Z
-    depends_on: { minio: { condition: service_healthy } }
-    entrypoint: >
-      /bin/sh -c "mc alias set wd http://minio:9000 wd-minio wd-minio-secret &&
-      mc mb -p wd/wd-quarantine wd/wd-attachments &&
-      mc anonymous set none wd/wd-quarantine && mc anonymous set none wd/wd-attachments &&
-      mc version enable wd/wd-attachments"
+      retries: 30
 
   clamav:
     image: clamav/clamav:1.4
@@ -120,7 +115,7 @@ services:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
       keycloak: { condition: service_healthy }
-      minio-buckets: { condition: service_completed_successfully }
+      seaweedfs: { condition: service_healthy }
 
   worker:
     build: { context: ., dockerfile: deploy/docker/api.Dockerfile }
@@ -130,6 +125,7 @@ services:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
       clamav: { condition: service_healthy }
+      seaweedfs: { condition: service_healthy }
 
   web:
     build: { context: ., dockerfile: deploy/docker/web.Dockerfile }
@@ -148,4 +144,4 @@ services:
 
 volumes:
   pg: {}
-  minio: {}
+  s3data: {}

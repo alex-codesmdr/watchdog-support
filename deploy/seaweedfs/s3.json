@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "wd-portal",
+      "credentials": [{ "accessKey": "wd-s3", "secretKey": "wd-s3-secret-dev" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}
