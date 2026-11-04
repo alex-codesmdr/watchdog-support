@@ -277,7 +277,7 @@ export async function seed(url: string, opts: { reset?: boolean; log?: (s: strin
 
     // Internal org + system user always exist
     await q(
-      `INSERT INTO organization (id, name, org_type, status) VALUES ($1, 'WatchDog Networks', 'internal', 'active') ON CONFLICT (id) DO NOTHING`,
+      `INSERT INTO organization (id, name, org_type, status) VALUES ($1, 'WatchDog Support (Apollo Infoways Pvt. Ltd.)', 'internal', 'active') ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
       [ORGS.internal],
     );
     await q(

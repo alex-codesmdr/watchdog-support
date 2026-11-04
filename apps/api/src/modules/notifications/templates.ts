@@ -135,7 +135,7 @@ export async function render(
         <mj-text>${body}</mj-text>
         ${cta}
       </mj-column></mj-section>
-      <mj-section padding="12px 24px"><mj-column><mj-text font-size="12px" color="#6b7280">You are receiving this because you have an account with WatchDog Support. Manage notifications in your profile. WatchDog Networks.</mj-text></mj-column></mj-section>
+      <mj-section padding="12px 24px"><mj-column><mj-text font-size="12px" color="#6b7280">You are receiving this because you have an account with WatchDog Support. Manage notifications in your profile. WatchDog is a brand of Apollo Infoways Pvt. Ltd.</mj-text></mj-column></mj-section>
     </mj-body></mjml>`,
     { validationLevel: 'strict' },
   );

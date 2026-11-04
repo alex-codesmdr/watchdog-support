@@ -17,3 +17,4 @@ test-results/
 # Runtime/test object storage (uploads, quarantine) — never committed
 apps/api/var/
 var/
+*.rdb
