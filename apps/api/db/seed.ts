@@ -285,6 +285,53 @@ export async function seed(url: string, opts: { reset?: boolean; log?: (s: strin
       [SYSTEM_USER_ID, ORGS.internal],
     );
 
+    // SLA escalation defaults (design §6.4) — only when no rules exist, so admin edits survive re-seeding.
+    if (!(await q('SELECT 1 FROM escalation_rule LIMIT 1')).rowCount) {
+      const rules: Array<[number, string, string | null]> = [
+        [50, 'notify_assignee', null],
+        [75, 'notify_assignee', null],
+        [75, 'notify_managers', null],
+        [90, 'notify_managers', null],
+        [90, 'notify_matrix', null],
+        [100, 'notify_managers', null],
+        [100, 'notify_matrix', null],
+        [100, 'escalate_level', 'first_response'],
+        [100, 'escalate_level', 'restoration'],
+        [100, 'escalate_level', 'resolution'],
+      ];
+      for (const [t, a, m] of rules)
+        await q('INSERT INTO escalation_rule (threshold, action, metric) VALUES ($1,$2,$3)', [
+          t,
+          a,
+          m,
+        ]);
+    }
+    if (!(await q('SELECT 1 FROM escalation_contact LIMIT 1')).rowCount) {
+      const contacts: Array<[string | null, number, string, string, string]> = [
+        [
+          null,
+          1,
+          'Duty Support Manager',
+          'Duty Manager (24x7 rota)',
+          'duty.manager@watchdog.example',
+        ],
+        [null, 2, 'Priya Raman', 'Head of Technical Support', 'head.support@watchdog.example'],
+        [null, 3, 'Anil Mehta', 'VP Customer Success', 'vp.customer@watchdog.example'],
+        [
+          'mission_critical',
+          1,
+          'Mission-Critical Desk',
+          'MC Duty Lead (24x7)',
+          'mc.desk@watchdog.example',
+        ],
+      ];
+      for (const [tier, level, name, title, email] of contacts)
+        await q(
+          'INSERT INTO escalation_contact (tier, level, name, title, email) VALUES ($1,$2,$3,$4,$5)',
+          [tier, level, name, title, email],
+        );
+    }
+
     const hasDemo = (await q(`SELECT 1 FROM organization WHERE org_type <> 'internal' LIMIT 1`))
       .rowCount;
     if (!hasDemo) {

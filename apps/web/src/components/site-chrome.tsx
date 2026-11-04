@@ -46,6 +46,11 @@ export async function SiteHeader({
               <Link className={link} href="/workspace">
                 {t('nav.queue')}
               </Link>
+              {me?.permissions.includes('report:sla:read') && (
+                <Link className={link} href="/workspace/sla">
+                  {t('nav.sla')}
+                </Link>
+              )}
               {me?.permissions.includes('registration:approve') && (
                 <Link className={link} href="/admin/registrations">
                   {t('nav.registrations')}

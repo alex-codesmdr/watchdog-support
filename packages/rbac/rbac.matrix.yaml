@@ -31,6 +31,7 @@ permissions:
   - product:read:internal_ref
   - audit:read:org
   - audit:read:all
+  - report:sla:read
 
 roles:
   customer_user:
@@ -63,7 +64,7 @@ roles:
     internal: true
     permissions: [catalog:read, case:create:on_behalf, case:read:all, case:reply:public, case:note:internal,
                   case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all,
-                  audit:read:all]
+                  audit:read:all, report:sla:read]
   content_editor:
     internal: true
     permissions: [catalog:read]
@@ -73,7 +74,7 @@ roles:
   system_admin:
     internal: true
     permissions: [catalog:read, registration:approve, org:users:manage, audit:read:all,
-                  product:read:internal_ref, asset:read:all]
+                  product:read:internal_ref, asset:read:all, report:sla:read]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.
 # allow: roles that must succeed against a resource in their reach. Every other role must get 403/404.
@@ -88,4 +89,5 @@ endpoints:
   - { id: case.escalate,    method: POST,  path: "/api/v1/cases/:case/escalate",   allow: [customer_user, customer_admin, partner, l1_engineer, l2_engineer, l3_engineer, support_manager], tenant: true }
   - { id: case.transition,  method: POST,  path: "/api/v1/cases/:case/transition", allow: [l1_engineer, l2_engineer, l3_engineer, support_manager], tenant: true }
   - { id: registration.list, method: GET,  path: /api/v1/admin/registrations,      allow: [system_admin] }
+  - { id: report.sla,       method: GET,   path: /api/v1/reports/sla,              allow: [support_manager, system_admin] }
   - { id: product.internal, method: GET,   path: "/api/v1/catalog/products/:sku/internal", allow: [l3_engineer, rma_coordinator, system_admin] }

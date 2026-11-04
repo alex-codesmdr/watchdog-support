@@ -331,3 +331,40 @@ export const WarrantyLookupResponse = z.object({
     )
     .default([]),
 });
+
+// ---------- SLA reporting ----------
+export const SlaReportQuery = z.object({
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+});
+export const SlaComplianceRow = z.object({
+  tier: SupportTier,
+  severity: Severity,
+  metric: z.enum(['first_response', 'update', 'restoration', 'resolution']),
+  total: z.number().int(),
+  met: z.number().int(),
+  breached: z.number().int(),
+  running: z.number().int(),
+  compliancePct: z.number().nullable(),
+});
+export const SlaBreachRow = z.object({
+  caseNumber: z.string(),
+  subject: z.string(),
+  orgName: z.string(),
+  severity: Severity,
+  tier: SupportTier,
+  metric: z.enum(['first_response', 'update', 'restoration', 'resolution']),
+  dueAt: IsoDateTime,
+  breachedAt: IsoDateTime,
+  metAt: IsoDateTime.nullable(),
+  assigneeName: z.string().nullable(),
+  supportLevel: z.number().int(),
+});
+export const SlaReport = z.object({
+  from: z.string(),
+  to: z.string(),
+  overallCompliancePct: z.number().nullable(),
+  rows: z.array(SlaComplianceRow),
+  breaches: z.array(SlaBreachRow),
+});
+export type SlaReport = z.infer<typeof SlaReport>;

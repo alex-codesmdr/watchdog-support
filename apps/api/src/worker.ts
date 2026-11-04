@@ -7,6 +7,7 @@ import type { Database } from './db/database.js';
 import { EmailInService } from './modules/email-in/email-in.service.js';
 import { ImapPoller } from './modules/email-in/imap-poller.js';
 import { ScanService } from './modules/files/scan.service.js';
+import { SlaMonitorService } from './modules/sla/sla-monitor.service.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
 import { CONFIG, DB, OBJECT_STORE } from './tokens.js';
 import { S3ObjectStore, type ObjectStore } from './modules/files/object-store.js';
@@ -34,6 +35,7 @@ async function bootstrap() {
     },
   });
   relay.start();
+  const stopSla = ctx.get(SlaMonitorService).start(30_000);
   const imap = new ImapPoller(cfg, ctx.get(EmailInService));
   imap.start();
   logger.info('WatchDog Support worker started');
@@ -41,6 +43,7 @@ async function bootstrap() {
   const shutdown = async () => {
     logger.info('worker shutting down');
     imap.stop();
+    stopSla();
     await relay.stop();
     await Promise.all(workers.map((w) => w.close()));
     await ctx.close();

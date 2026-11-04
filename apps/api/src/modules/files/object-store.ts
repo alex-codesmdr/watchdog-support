@@ -95,16 +95,31 @@ export class S3ObjectStore implements ObjectStore {
     this.signer = cfg.S3_PUBLIC_ENDPOINT ? client(cfg.S3_PUBLIC_ENDPOINT) : this.s3;
   }
 
-  /** Creates the quarantine and attachment buckets if they do not exist. */
-  async ensureBuckets(): Promise<void> {
+  /**
+   * Creates the quarantine and attachment buckets if they do not exist. Safe when API and worker
+   * start together (an "already exists/owned" race is success) and retries while storage warms up.
+   */
+  async ensureBuckets(attempts = 10): Promise<void> {
     for (const b of [this.cfg.S3_BUCKET_QUARANTINE, this.cfg.S3_BUCKET_ATTACHMENTS]) {
-      try {
-        await this.s3.send(new HeadBucketCommand({ Bucket: b }));
-      } catch {
-        await this.s3.send(new CreateBucketCommand({ Bucket: b }));
+      for (let i = 1; ; i++) {
+        try {
+          await this.s3.send(new HeadBucketCommand({ Bucket: b }));
+          break;
+        } catch {
+          try {
+            await this.s3.send(new CreateBucketCommand({ Bucket: b }));
+            break;
+          } catch (e) {
+            const name = (e as { name?: string }).name ?? '';
+            if (name === 'BucketAlreadyOwnedByYou' || name === 'BucketAlreadyExists') break;
+            if (i >= attempts) throw e;
+            await new Promise((r) => setTimeout(r, 1000 * i));
+          }
+        }
       }
     }
   }
+
   private name(b: Bucket) {
     return b === 'quarantine' ? this.cfg.S3_BUCKET_QUARANTINE : this.cfg.S3_BUCKET_ATTACHMENTS;
   }

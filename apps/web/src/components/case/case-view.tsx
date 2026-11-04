@@ -53,6 +53,10 @@ const EVENT: Record<string, (d: Record<string, unknown>) => string> = {
   customer_escalated: () => 'Escalated to WatchDog management',
   assigned: () => 'Assigned',
   csat_submitted: (d) => `Rated ${d.score} of 5`,
+  sla_warning: (d) =>
+    `SLA warning: ${METRIC[String(d.metric)] ?? d.metric} at ${d.threshold}% of target`,
+  sla_breached: (d) =>
+    `SLA breached: ${METRIC[String(d.metric)] ?? d.metric}${d.escalatedTo ? `, auto-escalated to L${d.escalatedTo}` : ''}`,
   email_attachments_skipped: (d) =>
     `${d.count} email attachment(s) not imported. Upload them in the portal.`,
 };

@@ -169,7 +169,13 @@ jobs:
         with: { version: '${{ env.PNPM_VERSION }}' }
       - uses: actions/setup-node@v4
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
-      - run: docker compose up -d --build --wait
+      - name: Start full stack
+        run: |
+          docker compose up -d --build --wait || {
+            docker compose ps -a
+            docker compose logs --no-color --tail=120 migrate api worker web seaweedfs
+            exit 1
+          }
         timeout-minutes: 20
       - run: pnpm install --frozen-lockfile && pnpm --filter @wd/web exec playwright install --with-deps chromium
       - run: pnpm --filter @wd/web exec playwright test e2e/mvp.spec.ts

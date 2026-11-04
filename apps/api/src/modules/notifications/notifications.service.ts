@@ -58,6 +58,18 @@ export class NotificationsService {
         );
       case 'case.customer_escalated':
         return this.customerEscalated(String(payload.caseId));
+      case 'sla.warning':
+      case 'sla.breached':
+        return this.sla(
+          topic,
+          payload as {
+            caseId: string;
+            metric: string;
+            threshold: number;
+            actions: string[];
+            escalatedTo: number | null;
+          },
+        );
       default:
         return;
     }
@@ -304,6 +316,85 @@ export class NotificationsService {
             url: this.caseUrl(c.number, true),
           },
         });
+    });
+  }
+
+  /** Internal SLA alerts. Recipients come from the escalation rule actions recorded on the event. */
+  private async sla(
+    topic: string,
+    p: {
+      caseId: string;
+      metric: string;
+      threshold: number;
+      actions: string[];
+      escalatedTo: number | null;
+    },
+  ) {
+    const METRIC: Record<string, string> = {
+      first_response: 'First response',
+      update: 'Customer update',
+      restoration: 'Service restoration',
+      resolution: 'Resolution',
+    };
+    const TIER: Record<string, string> = {
+      standard: 'Standard',
+      premium: 'Premium',
+      mission_critical: 'Mission-Critical',
+    };
+    await this.db.withSystem(async (tx) => {
+      const c = await this.loadCase(tx, p.caseId);
+      if (!c) return;
+      const meta = await tx
+        .selectFrom('support_case as sc')
+        .leftJoin('app_user as a', 'a.id', 'sc.assignee_id')
+        .select([
+          'sc.tier',
+          'a.id as assignee_id',
+          'a.email as assignee_email',
+          'a.display_name as assignee_name',
+        ])
+        .where('sc.id', '=', p.caseId)
+        .executeTakeFirst();
+      const clock = await tx
+        .selectFrom('sla_clock')
+        .select('due_at')
+        .where('case_id', '=', p.caseId)
+        .where('metric', '=', p.metric as never)
+        .executeTakeFirst();
+      const vars = {
+        number: c.number,
+        subject: c.subject,
+        severity: c.severity,
+        tier: TIER[meta?.tier ?? 'standard'] ?? 'Standard',
+        org: c.org_name,
+        metricLabel: METRIC[p.metric] ?? p.metric,
+        threshold: p.threshold,
+        due: clock ? fmtIst(clock.due_at) : '',
+        assignee: meta?.assignee_name ?? 'nobody (unassigned)',
+        escalation: p.escalatedTo
+          ? `The case was automatically escalated to ${p.escalatedTo >= 4 ? 'Engineering' : `L${p.escalatedTo}`}.`
+          : '',
+        url: this.caseUrl(c.number, true),
+      };
+      const key = topic === 'sla.breached' ? 'sla_breached' : 'sla_warning';
+      const to = new Map<string, string | null>();
+      if (p.actions.includes('notify_assignee') && meta?.assignee_email)
+        to.set(meta.assignee_email, meta.assignee_id);
+      if (p.actions.includes('notify_managers'))
+        for (const m of await this.usersWithRole(tx, ['support_manager'])) to.set(m.email, m.id);
+      if (p.actions.includes('notify_matrix')) {
+        const maxLevel = p.threshold >= 100 ? 2 : 1;
+        const contacts = await tx
+          .selectFrom('escalation_contact')
+          .select(['email'])
+          .where('active', '=', true)
+          .where('level', '<=', maxLevel)
+          .where((eb) => eb.or([eb('tier', 'is', null), eb('tier', '=', meta?.tier ?? 'standard')]))
+          .execute();
+        for (const ct of contacts) if (!to.has(ct.email)) to.set(ct.email, null);
+      }
+      for (const [email, userId] of to)
+        await this.send({ to: email, orgId: null, userId, key, vars });
     });
   }
 

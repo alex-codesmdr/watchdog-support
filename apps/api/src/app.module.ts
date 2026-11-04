@@ -35,6 +35,8 @@ import { IdentityController } from './modules/identity/identity.controller.js';
 import { KeycloakProvisioner, MockProvisioner } from './modules/identity/provisioner.js';
 import { MockSmsAdapter, SmtpTransport } from './modules/notifications/mailer.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
+import { SlaMonitorService } from './modules/sla/sla-monitor.service.js';
+import { SlaReportController } from './modules/sla/sla-report.controller.js';
 
 /** Providers tests may replace (JWKS, transports, storage, AV, IdP, Redis). */
 export interface AppOverrides {
@@ -108,6 +110,7 @@ export class AppModule {
         UploadsController,
         FilesController,
         DevController,
+        SlaReportController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
@@ -116,6 +119,7 @@ export class AppModule {
         ScanService,
         NotificationsService,
         EmailInService,
+        SlaMonitorService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_GUARD, useClass: RateLimitGuard },

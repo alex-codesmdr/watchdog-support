@@ -31,3 +31,12 @@ test('axe: signed-in case form and case page', async ({ page }) => {
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   expect(r.violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
 });
+
+test('axe: SLA report (support manager)', async ({ page }) => {
+  await page.goto('/auth/login?returnTo=/workspace/sla');
+  await page.locator('button[value="rohan.manager@watchdog.example"]').click();
+  await page.waitForURL(/workspace\/sla/);
+  await expect(page.getByRole('heading', { name: 'SLA compliance' })).toBeVisible();
+  const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+  expect(r.violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+});

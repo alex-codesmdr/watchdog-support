@@ -15,7 +15,9 @@ export type TemplateKey =
   | 'case_customer_reply'
   | 'case_status'
   | 'case_resolved'
-  | 'case_customer_escalated';
+  | 'case_customer_escalated'
+  | 'sla_warning'
+  | 'sla_breached';
 
 interface Rendered {
   subject: string;
@@ -81,6 +83,18 @@ const EN: Strings = {
     heading: 'Case {{number}} is resolved',
     body: 'We have marked "{{subject}}" as resolved. If the problem persists, just reply and the case will reopen.<br><br>Please take 10 seconds to rate the support you received.',
     cta: 'Rate this case',
+  },
+  sla_warning: {
+    subject: '[SLA {{threshold}}%] {{number}} {{metricLabel}} due {{due}}',
+    heading: '{{metricLabel}} is {{threshold}}% through its SLA',
+    body: 'Case {{number}} ({{severity}}, {{tier}}): "{{subject}}". Due by <b>{{due}} IST</b>. Assigned to {{assignee}}.',
+    cta: 'Open case',
+  },
+  sla_breached: {
+    subject: '[SLA BREACH] {{number}} {{metricLabel}} missed',
+    heading: '{{metricLabel}} SLA breached on {{number}}',
+    body: 'Case {{number}} ({{severity}}, {{tier}}, {{org}}): "{{subject}}" missed its {{metricLabel}} target due {{due}} IST. {{escalation}}',
+    cta: 'Open case',
   },
   case_customer_escalated: {
     subject: '[ESCALATION] {{number}} – {{org}}',

@@ -313,7 +313,30 @@ export interface PartnerDelegationT {
   expires_at: TsNull;
 }
 
+export interface EscalationRuleT {
+  id: Generated<string>;
+  tier: string | null;
+  severity: string | null;
+  metric: string | null;
+  threshold: number;
+  action: 'notify_assignee' | 'notify_managers' | 'notify_matrix' | 'escalate_level';
+  active: boolean;
+}
+export interface EscalationContactT {
+  id: Generated<string>;
+  tier: string | null;
+  level: number;
+  region: string | null;
+  name: string;
+  title: string;
+  email: string;
+  phone: string | null;
+  active: boolean;
+}
+
 export interface DB {
+  escalation_rule: EscalationRuleT;
+  escalation_contact: EscalationContactT;
   organization: OrganizationT;
   app_user: AppUserT;
   user_role: UserRoleT;

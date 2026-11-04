@@ -9,7 +9,9 @@ export type OutboxTopic =
   | 'case.status_changed'
   | 'case.customer_escalated'
   | 'case.escalated'
-  | 'attachment.scan';
+  | 'attachment.scan'
+  | 'sla.warning'
+  | 'sla.breached';
 
 /** Transactional outbox (ADR-006): the event commits or rolls back with the business change. */
 export async function emit(
