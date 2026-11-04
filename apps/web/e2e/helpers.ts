@@ -11,6 +11,8 @@ function totp(raw = 'WatchDogDemoTotpKey2026', step = 30): string {
 }
 
 /** Signs in through the OIDC flow (mock IdP locally; Keycloak test users in CI). */
+const lastOtpWindow = new Map<string, number>();
+
 export async function signIn(page: Page, email: string, returnTo = '/portal') {
   await page.goto(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`);
   if (process.env.KEYCLOAK_E2E) {
@@ -18,6 +20,10 @@ export async function signIn(page: Page, email: string, returnTo = '/portal') {
     await page.locator('#username').fill(email);
     await page.locator('#password').fill(process.env.E2E_PASSWORD ?? 'Demo@WatchDog2026');
     await page.locator('#kc-login').click();
+    // Keycloak rejects a TOTP code that was already used by the same user; wait for a fresh window.
+    const win = Math.floor(Date.now() / 30_000);
+    if (lastOtpWindow.get(email) === win) await page.waitForTimeout(30_000 - (Date.now() % 30_000) + 500);
+    lastOtpWindow.set(email, Math.floor(Date.now() / 30_000));
     await page.locator('#otp').fill(totp());
     await page.locator('#kc-login').click();
   } else {
