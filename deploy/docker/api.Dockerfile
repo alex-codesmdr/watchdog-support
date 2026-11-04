@@ -7,7 +7,7 @@ RUN npm install -g pnpm@10.28.0 && pnpm --version
 WORKDIR /repo
 
 FROM base AS build
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
 # Every workspace manifest must be present for a frozen-lockfile install.

@@ -241,7 +241,7 @@ export type MessageView = z.infer<typeof MessageView>;
 export const CaseEventView = z.object({
   id: Uuid,
   type: z.string(),
-  data: z.record(z.unknown()),
+  data: z.record(z.string(), z.unknown()),
   actorName: z.string().nullable(),
   at: IsoDateTime,
 });

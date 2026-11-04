@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 import type { AppConfig } from '../../config.js';
 
 export interface OutboundMail {
@@ -14,7 +14,7 @@ export interface MailTransport {
 }
 
 export class SmtpTransport implements MailTransport {
-  private readonly t: nodemailer.Transporter;
+  private readonly t: Transporter;
   constructor(private readonly cfg: AppConfig) {
     this.t = nodemailer.createTransport({
       host: cfg.SMTP_HOST,

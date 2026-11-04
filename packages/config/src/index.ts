@@ -21,7 +21,7 @@ export const apiEnvSchema = z.object({
   AUTH_JWKS_URL: z.string().url().optional(),
   /** ACR values that count as multi-factor. Keycloak LoA mapping: "mfa" -> 2. */
   AUTH_MFA_ACR_VALUES: z.string().default('mfa,2'),
-  AUTH_REQUIRE_MFA: bool.default('true'),
+  AUTH_REQUIRE_MFA: bool.default(true),
 
   KEYCLOAK_ADMIN_URL: z.string().url().optional(),
   KEYCLOAK_REALM: z.string().default('watchdog'),
@@ -35,7 +35,7 @@ export const apiEnvSchema = z.object({
   S3_REGION: z.string().default('ap-south-1'),
   S3_ACCESS_KEY: z.string().optional(),
   S3_SECRET_KEY: z.string().optional(),
-  S3_FORCE_PATH_STYLE: bool.default('true'),
+  S3_FORCE_PATH_STYLE: bool.default(true),
   S3_BUCKET_QUARANTINE: z.string().default('wd-quarantine'),
   S3_BUCKET_ATTACHMENTS: z.string().default('wd-attachments'),
   UPLOAD_TMP_DIR: z.string().default('./data/uploads'),
@@ -54,7 +54,7 @@ export const apiEnvSchema = z.object({
 
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().default(1025),
-  SMTP_SECURE: bool.default('false'),
+  SMTP_SECURE: bool.default(false),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
   MAIL_FROM: z.string().default('WatchDog Support <support@watchdog.example>'),
@@ -86,7 +86,7 @@ export const webEnvSchema = z.object({
     .number()
     .int()
     .default(8 * 3600),
-  SESSION_COOKIE_SECURE: bool.default('true'),
+  SESSION_COOKIE_SECURE: bool.default(true),
 });
 export type WebEnv = z.infer<typeof webEnvSchema>;
 
