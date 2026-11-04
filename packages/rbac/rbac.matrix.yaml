@@ -38,6 +38,7 @@ permissions:
   - asset:manage:org
   - asset:import
   - renewal:request
+  - release:manage # publish firmware, software and documents in the download centre
 
 roles:
   customer_user:
@@ -161,10 +162,11 @@ roles:
         kb:draft,
         kb:publish,
         asset:import,
+        release:manage,
       ]
   content_editor:
     internal: true
-    permissions: [catalog:read, kb:read:internal, kb:draft, kb:publish]
+    permissions: [catalog:read, kb:read:internal, kb:draft, kb:publish, release:manage]
   rma_coordinator:
     internal: true
     permissions:
@@ -189,6 +191,7 @@ roles:
         report:sla:read,
         kb:read:internal,
         asset:import,
+        release:manage,
       ]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.
@@ -332,4 +335,11 @@ endpoints:
       method: GET,
       path: '/api/v1/catalog/products/:sku/internal',
       allow: [l3_engineer, rma_coordinator, system_admin],
+    }
+  - { id: downloads.list, method: GET, path: /api/v1/downloads, allow: '*' }
+  - {
+      id: releases.admin.list,
+      method: GET,
+      path: /api/v1/admin/releases,
+      allow: [support_manager, content_editor, system_admin],
     }

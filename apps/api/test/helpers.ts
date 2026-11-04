@@ -13,6 +13,7 @@ import type { Database } from '../src/db/database.js';
 import { MockProvisioner } from '../src/modules/identity/provisioner.js';
 import { MemoryTransport, MockSmsAdapter } from '../src/modules/notifications/mailer.js';
 import { NotificationsService } from '../src/modules/notifications/notifications.service.js';
+import { DownloadsService } from '../src/modules/downloads/downloads.service.js';
 import { ScanService } from '../src/modules/files/scan.service.js';
 import { DevAvScanner } from '../src/modules/files/clamav.js';
 import {
@@ -90,6 +91,8 @@ export async function createTestApp(opts: { rateLimitScale?: number } = {}): Pro
     kind: 'inline',
     handler: async (topic, payload) => {
       if (topic === 'attachment.scan') await scan.process(String(payload.attachmentId));
+      else if (topic === 'release.file.scan')
+        await app.get(DownloadsService).scanFile(String(payload.fileId));
       else await notifications.handle(topic, payload);
     },
   });

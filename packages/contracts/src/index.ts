@@ -556,3 +556,85 @@ export const IMPORT_COLUMNS = [
   'coverage_end',
   'contract_ref',
 ] as const;
+
+// ---------- download centre ----------
+export const ReleaseKind = z.enum([
+  'firmware',
+  'software',
+  'release_notes',
+  'mib',
+  'document',
+  'tool',
+]);
+export type ReleaseKind = z.infer<typeof ReleaseKind>;
+export const RELEASE_KIND_LABELS: Record<ReleaseKind, string> = {
+  firmware: 'Firmware',
+  software: 'Software',
+  release_notes: 'Release notes',
+  mib: 'MIBs',
+  document: 'Documents',
+  tool: 'Tools',
+};
+export const ReleaseVisibility = z.enum(['public', 'registered', 'entitled', 'internal']);
+export type ReleaseVisibility = z.infer<typeof ReleaseVisibility>;
+export const ReleaseStatus = z.enum(['draft', 'published', 'deprecated', 'withdrawn']);
+/** What the current visitor can do with a release's files. */
+export const ReleaseAccess = z.enum(['download', 'sign_in', 'entitlement_required']);
+export const ReleaseFileView = z.object({
+  id: Uuid,
+  fileName: z.string(),
+  sizeBytes: z.number().int(),
+  sha256: z.string(),
+  ready: z.boolean(),
+});
+export const ReleaseView = z.object({
+  id: Uuid,
+  family: z.object({ key: z.string(), name: z.string() }),
+  kind: ReleaseKind,
+  title: z.string(),
+  version: z.string(),
+  visibility: ReleaseVisibility,
+  status: ReleaseStatus,
+  recommended: z.boolean(),
+  releasedOn: z.string().nullable(),
+  access: ReleaseAccess,
+  products: z.array(z.object({ sku: z.string(), modelName: z.string() })),
+  files: z.array(ReleaseFileView),
+  eula: z
+    .object({ id: Uuid, title: z.string(), version: z.string(), accepted: z.boolean() })
+    .nullable(),
+  notesHtml: z.string().optional(),
+});
+export type ReleaseView = z.infer<typeof ReleaseView>;
+export const ReleaseListQuery = z.object({
+  family: z.string().max(40).optional(),
+  kind: ReleaseKind.optional(),
+  q: z.string().trim().max(100).optional(),
+});
+export const ReleaseDraftRequest = z.object({
+  familyKey: z.string().max(40),
+  kind: ReleaseKind,
+  title: z.string().trim().min(3).max(200),
+  version: z
+    .string()
+    .regex(/^[A-Za-z0-9._-]{1,40}$/, 'Use letters, digits, dots, hyphens or underscores'),
+  visibility: ReleaseVisibility,
+  recommended: z.boolean().default(false),
+  releasedOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  notesMd: z.string().max(100_000).default(''),
+  productSkus: z.array(z.string().max(40)).max(100).default([]),
+  eulaVersion: z.string().max(40).nullable().optional(),
+});
+export type ReleaseDraftRequest = z.infer<typeof ReleaseDraftRequest>;
+export const ReleaseStatusRequest = z.object({ status: ReleaseStatus });
+export const DownloadLink = z.object({
+  url: z.string(),
+  expiresAt: IsoDateTime,
+  fileName: z.string(),
+  sha256: z.string(),
+});
+export type DownloadLink = z.infer<typeof DownloadLink>;

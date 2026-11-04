@@ -43,6 +43,11 @@ import { KbService } from './modules/kb/kb.service.js';
 import { SitesController } from './modules/assets/sites.controller.js';
 import { AssetImportController } from './modules/assets/asset-import.controller.js';
 import { RemindersService } from './modules/assets/reminders.service.js';
+import {
+  DownloadsController,
+  ReleasesAdminController,
+} from './modules/downloads/downloads.controller.js';
+import { DownloadsService } from './modules/downloads/downloads.service.js';
 
 /** Providers tests may replace (JWKS, transports, storage, AV, IdP, Redis). */
 export interface AppOverrides {
@@ -122,6 +127,8 @@ export class AppModule {
         KbEditorController,
         SitesController,
         AssetImportController,
+        DownloadsController,
+        ReleasesAdminController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
@@ -133,6 +140,7 @@ export class AppModule {
         SlaMonitorService,
         KbService,
         RemindersService,
+        DownloadsService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_GUARD, useClass: RateLimitGuard },

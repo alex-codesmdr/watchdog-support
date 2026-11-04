@@ -8,6 +8,7 @@ import { EmailInService } from './modules/email-in/email-in.service.js';
 import { ImapPoller } from './modules/email-in/imap-poller.js';
 import { ScanService } from './modules/files/scan.service.js';
 import { SlaMonitorService } from './modules/sla/sla-monitor.service.js';
+import { DownloadsService } from './modules/downloads/downloads.service.js';
 import { RemindersService } from './modules/assets/reminders.service.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
 import { CONFIG, DB, OBJECT_STORE } from './tokens.js';
@@ -27,11 +28,15 @@ async function bootstrap() {
 
   const notifications = ctx.get(NotificationsService);
   const scan = ctx.get(ScanService);
+  const downloads = ctx.get(DownloadsService);
   const relay = new OutboxRelay(db, { kind: 'bullmq', connection });
   const workers = startConsumers(connection, {
     notifications: (topic, payload) => notifications.handle(topic, payload),
-    'file-scan': async (_topic, payload) => {
-      const r = await scan.process(String(payload.attachmentId));
+    'file-scan': async (topic, payload) => {
+      const r =
+        topic === 'release.file.scan'
+          ? await downloads.scanFile(String(payload.fileId))
+          : await scan.process(String(payload.attachmentId));
       if (r === 'error') throw new Error('scan failed; will retry');
     },
   });

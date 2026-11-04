@@ -391,6 +391,58 @@ export interface RenewalRequestT {
   status: Generated<string>;
   created_at: Ts;
 }
+export interface EulaT {
+  id: Generated<string>;
+  version: string;
+  title: string;
+  body_html: string;
+  created_at: Ts;
+}
+export interface SoftwareReleaseT {
+  id: Generated<string>;
+  family_id: string;
+  kind: 'firmware' | 'software' | 'release_notes' | 'mib' | 'document' | 'tool';
+  title: string;
+  version: string;
+  visibility: Generated<'public' | 'registered' | 'entitled' | 'internal'>;
+  status: Generated<'draft' | 'published' | 'deprecated' | 'withdrawn'>;
+  recommended: Generated<boolean>;
+  released_on: TsNull;
+  notes_md: Generated<string>;
+  notes_html: Generated<string>;
+  eula_id: string | null;
+  created_by: string;
+  created_at: Ts;
+  published_at: TsNull;
+}
+export interface ReleaseProductT {
+  release_id: string;
+  product_id: string;
+}
+export interface ReleaseFileT {
+  id: Generated<string>;
+  release_id: string;
+  file_name: string;
+  size_bytes: ColumnType<string, number | string, number | string>;
+  sha256: string;
+  quarantine_key: string | null;
+  object_key: string | null;
+  scan_status: Generated<'pending' | 'clean' | 'infected'>;
+  created_at: Ts;
+}
+export interface EulaAcceptanceT {
+  user_id: string;
+  eula_id: string;
+  accepted_at: Ts;
+}
+export interface DownloadEventT {
+  id: Generated<string>;
+  file_id: string;
+  user_id: string | null;
+  org_id: string | null;
+  ip: string | null;
+  at: Ts;
+}
 export interface EntitlementReminderT {
   entitlement_id: string;
   days_before: number;
@@ -412,6 +464,12 @@ export interface AssetImportT {
 export interface DB {
   renewal_request: RenewalRequestT;
   entitlement_reminder: EntitlementReminderT;
+  eula: EulaT;
+  software_release: SoftwareReleaseT;
+  release_product: ReleaseProductT;
+  release_file: ReleaseFileT;
+  eula_acceptance: EulaAcceptanceT;
+  download_event: DownloadEventT;
   asset_import: AssetImportT;
   kb_article: KbArticleT;
   kb_version: KbVersionT;

@@ -7,6 +7,7 @@ export type Handler = (topic: string, payload: Record<string, unknown>) => Promi
 
 const QUEUE_FOR: Record<string, string> = {
   'attachment.scan': 'file-scan',
+  'release.file.scan': 'file-scan',
 };
 const queueFor = (topic: string) => QUEUE_FOR[topic] ?? 'notifications';
 const MAX_ATTEMPTS = 8;
