@@ -39,6 +39,9 @@ export async function SiteHeader({
               <Link className={link} href="/portal/cases">
                 {t('nav.myCases')}
               </Link>
+              <Link className={link} href="/portal/assets">
+                {t('nav.devices')}
+              </Link>
               <Link className={link} href="/search">
                 {t('nav.knowledge')}
               </Link>
@@ -57,6 +60,11 @@ export async function SiteHeader({
               {me?.permissions.includes('report:sla:read') && (
                 <Link className={link} href="/workspace/sla">
                   {t('nav.sla')}
+                </Link>
+              )}
+              {me?.permissions.includes('asset:import') && (
+                <Link className={link} href="/admin/imports">
+                  {t('nav.imports')}
                 </Link>
               )}
               {me?.permissions.includes('registration:approve') && (

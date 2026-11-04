@@ -4,33 +4,85 @@
 @tailwind utilities;
 
 @layer base {
-  html { -webkit-text-size-adjust: 100%; }
-  body { @apply bg-paper text-ink font-sans antialiased; font-feature-settings: 'tnum' 0; }
-  h1, h2, h3 { text-wrap: balance; }
-  p { text-wrap: pretty; }
-  :focus-visible { outline: 2px solid rgb(var(--wd-focus)); outline-offset: 2px; }
-  ::selection { background: rgb(var(--wd-teal) / 0.25); }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    font-feature-settings: 'tnum' 0;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  :focus-visible {
+    outline: 2px solid rgb(var(--wd-focus));
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: rgb(var(--wd-teal) / 0.25);
+  }
 }
 
 /* Case thread HTML (server-sanitised). */
-.wd-prose { @apply text-base leading-relaxed text-ink; }
-.wd-prose p { @apply my-2; }
-.wd-prose pre { @apply my-3 overflow-x-auto rounded-s bg-navy px-4 py-3 font-mono text-sm leading-6 text-white; }
-.wd-prose code { @apply font-mono text-[0.92em]; }
-.wd-prose :not(pre) > code { @apply rounded-s bg-navy/5 px-1 py-0.5; }
-.wd-prose a { @apply text-teal-ink underline underline-offset-2; }
+.wd-prose {
+  @apply text-base leading-relaxed text-ink;
+}
+.wd-prose p {
+  @apply my-2;
+}
+.wd-prose pre {
+  @apply my-3 overflow-x-auto rounded-s bg-navy px-4 py-3 font-mono text-sm leading-6 text-white;
+}
+.wd-prose code {
+  @apply font-mono text-[0.92em];
+}
+.wd-prose :not(pre) > code {
+  @apply rounded-s bg-navy/5 px-1 py-0.5;
+}
+.wd-prose a {
+  @apply text-teal-ink underline underline-offset-2;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Knowledge-base articles (server-rendered, sanitised markdown). */
-.wd-article h2 { @apply mt-8 text-xl font-semibold; }
-.wd-article h3 { @apply mt-6 text-lg font-semibold; }
-.wd-article ul { @apply my-3 list-disc pl-6; }
-.wd-article ol { @apply my-3 list-decimal pl-6; }
-.wd-article li { @apply my-1; }
-.wd-article table { @apply my-4 w-full border-collapse text-sm; }
-.wd-article th, .wd-article td { @apply border border-line px-3 py-2 text-left align-top; }
-.wd-article th { @apply bg-paper font-semibold; }
-.wd-article blockquote { @apply my-4 border-l-4 border-amber/60 pl-4 text-muted; }
+.wd-article h2 {
+  @apply mt-8 text-xl font-semibold;
+}
+.wd-article h3 {
+  @apply mt-6 text-lg font-semibold;
+}
+.wd-article ul {
+  @apply my-3 list-disc pl-6;
+}
+.wd-article ol {
+  @apply my-3 list-decimal pl-6;
+}
+.wd-article li {
+  @apply my-1;
+}
+.wd-article table {
+  @apply my-4 w-full border-collapse text-sm;
+}
+.wd-article th,
+.wd-article td {
+  @apply border border-line px-3 py-2 text-left align-top;
+}
+.wd-article th {
+  @apply bg-paper font-semibold;
+}
+.wd-article blockquote {
+  @apply my-4 border-l-4 border-amber/60 pl-4 text-muted;
+}

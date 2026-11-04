@@ -13,7 +13,9 @@
     "queue": "Queue",
     "registrations": "Registrations",
     "sla": "SLA report",
-    "skip": "Skip to content"
+    "skip": "Skip to content",
+    "devices": "Devices",
+    "imports": "Device import"
   },
   "home": {
     "title": "What is your network telling you?",

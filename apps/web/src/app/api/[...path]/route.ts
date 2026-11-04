@@ -95,6 +95,7 @@ export {
   handle as GET,
   handle as POST,
   handle as PATCH,
+  handle as PUT,
   handle as HEAD,
   handle as DELETE,
   handle as OPTIONS,

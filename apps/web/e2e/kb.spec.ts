@@ -58,6 +58,7 @@ test('content editor writes and publishes an article', async ({ page }) => {
   await page.getByRole('button', { name: 'Publish version 1' }).click();
   await expect(page.getByText('Published. Readers now see this version.')).toBeVisible();
   await signOut(page);
-  await page.goto(`/search?q=${encodeURIComponent('NTP CoreLink')}`);
+  // Search for the unique title: reruns against the same database leave earlier copies behind.
+  await page.goto(`/search?q=${encodeURIComponent(title)}`);
   await expect(page.getByRole('link', { name: title })).toBeVisible();
 });
