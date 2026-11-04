@@ -19,6 +19,9 @@ export class ClamAvScanner implements AvScanner {
 
   scan(stream: Readable): Promise<AvResult> {
     return new Promise((resolve, reject) => {
+      // The caller may already have a 'data' listener (hashing), which switches the stream to
+      // flowing mode. Hold it until clamd is connected, or a small file is gone before we send it.
+      stream.pause();
       const sock = connect({ host: this.host, port: this.port });
       let reply = '';
       const fail = (e: Error) => {
@@ -51,6 +54,7 @@ export class ClamAvScanner implements AvScanner {
         });
         stream.on('end', () => sock.write(Buffer.from([0, 0, 0, 0])));
         stream.on('error', fail);
+        stream.resume();
       });
     });
   }
