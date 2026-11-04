@@ -13,3 +13,7 @@ data/
 playwright-report/
 test-results/
 *.tsbuildinfo
+
+# Runtime/test object storage (uploads, quarantine) — never committed
+apps/api/var/
+var/
