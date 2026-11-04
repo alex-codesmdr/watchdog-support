@@ -1,0 +1,5 @@
+# Build outputs that are not customer-facing or are scanned separately in CI (rendered pages, .next).
+storybook-static
+playwright-report
+test-results
+data

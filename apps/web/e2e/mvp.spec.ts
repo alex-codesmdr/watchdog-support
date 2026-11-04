@@ -25,13 +25,11 @@ test('customer opens a P1 case with an attachment', async ({ page }) => {
     .fill('Unit reboots with a watchdog timeout.\n\n```\n%DEV/1/REBOOT: Board 1 restarted\n```');
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  await page
-    .locator('input[type=file]')
-    .setInputFiles({
-      name: 'running-config.cfg',
-      mimeType: 'text/plain',
-      buffer: Buffer.from('hostname core\nsnmp-server community S3cret RO\n'),
-    });
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'running-config.cfg',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('hostname core\nsnmp-server community S3cret RO\n'),
+  });
   await expect(page.getByText('Uploaded')).toBeVisible();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('button', { name: 'Open case' }).click();

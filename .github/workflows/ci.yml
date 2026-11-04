@@ -1,0 +1,178 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 22
+  PNPM_VERSION: 10.28.0
+
+jobs:
+  quality:
+    name: lint · typecheck · unit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter "./packages/{config,contracts,rbac,sla-time,brand-lint}" build
+      - run: pnpm exec prettier --check "apps/**/*.{ts,tsx}" "packages/**/*.{ts,tsx}"
+      - run: pnpm exec eslint . --max-warnings=0
+      - run: pnpm -r typecheck
+      - run: pnpm -r test
+      - name: Storybook (design system docs) builds
+        run: pnpm --filter @wd/ui build-storybook
+      - name: Conventional commits
+        if: github.event_name == 'pull_request'
+        run: pnpm exec commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+
+  integration:
+    name: API integration (real Postgres, RLS, RBAC matrix)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16.6-bookworm
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+    env:
+      TEST_PG_ADMIN_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter "./packages/{config,contracts,rbac,sla-time}" build
+      - run: pnpm --filter @wd/api test:integration
+      - name: Migrations are reversible (up → down → up)
+        run: |
+          export DATABASE_OWNER_URL=postgres://wd_owner:wd_owner_dev@localhost:5432/watchdog_test
+          cd apps/api && pnpm exec tsx db/migrate.ts down 99 && pnpm exec tsx db/migrate.ts up
+
+  e2e:
+    name: E2E + accessibility (mock IdP)
+    runs-on: ubuntu-24.04
+    needs: [quality]
+    services:
+      postgres:
+        image: postgres:16.6-bookworm
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter "./packages/{config,contracts,rbac,sla-time}" build && pnpm --filter @wd/api build && pnpm --filter @wd/web build
+      - name: Database
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f deploy/postgres/00-roles.sql
+          cp .env.example .env
+          pnpm db:migrate && pnpm db:seed
+      - name: Start stack
+        run: |
+          set -a && . ./.env && set +a
+          (cd apps/web && node e2e/mock-oidc.mjs &)
+          (cd apps/api && node dist/src/main.js &) ; (cd apps/api && node dist/src/worker.js &)
+          (cd apps/web && cp -r .next/static .next/standalone/apps/web/.next/static && node .next/standalone/apps/web/server.js &)
+          npx wait-on -t 60000 http://localhost:4000/readyz http://localhost:3000 http://localhost:8080/realms/watchdog/.well-known/openid-configuration
+      - run: pnpm --filter @wd/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @wd/web exec playwright test
+      - name: Lighthouse accessibility ≥ 90 on public pages
+        run: |
+          npx @lhci/cli@0.14.0 autorun --collect.url=http://localhost:3000/ --collect.url=http://localhost:3000/register \
+            --collect.url=http://localhost:3000/search --collect.url=http://localhost:3000/products/switching \
+            --assert.assertions.categories:accessibility="error;minScore=0.9" --upload.target=filesystem
+      - name: Brand scan of rendered pages
+        env: { WD_PROHIBITED_TERMS: '${{ secrets.WD_PROHIBITED_TERMS }}' }
+        run: |
+          mkdir -p rendered && for p in / /register /search /products/switching /downloads /advisories /api/v1/catalog/products; do
+            curl -s "http://localhost:3000$p" > "rendered/$(echo $p | tr '/' '_').html"; done
+          curl -s http://localhost:4000/api/openapi.json > rendered/openapi.json
+          node packages/brand-lint/dist/cli.js --require-terms rendered
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: apps/web/playwright-report }
+
+  brand-and-security:
+    name: brand-lint · secrets · deps · SBOM
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @wd/brand-lint build
+      - name: Brand lint (source, seeds, migrations, docs, file names)
+        env: { WD_PROHIBITED_TERMS: '${{ secrets.WD_PROHIBITED_TERMS }}' }
+        run: node packages/brand-lint/dist/cli.js --require-terms .
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+      - name: Dependency audit (high+)
+        run: pnpm audit --audit-level high --prod
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with: { scan-type: fs, severity: 'HIGH,CRITICAL', exit-code: '1', ignore-unfixed: true }
+      - name: SBOM (CycloneDX)
+        run: npx @cyclonedx/cdxgen@11 -t js -o sbom.cdx.json .
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom, path: sbom.cdx.json }
+
+  images:
+    name: container images
+    runs-on: ubuntu-24.04
+    needs: [quality, integration]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - run: docker build -f deploy/docker/api.Dockerfile -t wd-api:${{ github.sha }} .
+      - run: docker build -f deploy/docker/web.Dockerfile -t wd-web:${{ github.sha }} .
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with: { image-ref: 'wd-api:${{ github.sha }}', severity: 'HIGH,CRITICAL', exit-code: '1', ignore-unfixed: true }
+
+  e2e-keycloak:
+    name: E2E against real Keycloak + ClamAV (docker compose)
+    runs-on: ubuntu-24.04
+    needs: [images]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: docker compose up -d --build --wait
+        timeout-minutes: 20
+      - run: pnpm install --frozen-lockfile && pnpm --filter @wd/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @wd/web exec playwright test e2e/mvp.spec.ts
+        env: { KEYCLOAK_E2E: '1' }
+      - if: failure()
+        run: docker compose logs --no-color > compose.log
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: compose-logs, path: compose.log }

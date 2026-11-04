@@ -1,10 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { authorizationUrl } from '@/lib/oidc';
+import { safeReturn } from '@/lib/redirect';
 import { putLoginTx } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
-
-const safeReturn = (v: string | null) => (v && /^\/(?!\/)[\w\-./?=&%]*$/.test(v) ? v : '/portal');
 
 export async function GET(req: NextRequest) {
   const a = await authorizationUrl(safeReturn(req.nextUrl.searchParams.get('returnTo')));

@@ -118,17 +118,15 @@ export async function rearmUpdateClock(
       due_at: due,
     } as never)
     .onConflict((oc) =>
-      oc
-        .columns(['case_id', 'metric'])
-        .doUpdateSet({
-          started_at: at,
-          due_at: due,
-          paused_ms: 0,
-          paused_at: null,
-          met_at: null,
-          breached_at: null,
-          last_warn_pct: 0,
-        } as never),
+      oc.columns(['case_id', 'metric']).doUpdateSet({
+        started_at: at,
+        due_at: due,
+        paused_ms: 0,
+        paused_at: null,
+        met_at: null,
+        breached_at: null,
+        last_warn_pct: 0,
+      } as never),
     )
     .execute();
 }

@@ -1,0 +1,23 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Design system/Overview" />
+
+# WatchDog design system
+
+Tokens live in `src/tokens.css` as CSS variables, so the brand team can change colours, radius and
+typography without touching components. Light and dark themes follow the operating system, or
+`data-theme="light|dark"` on `<html>`.
+
+| Token | Role |
+|---|---|
+| `--wd-navy` `#0B2545` | Primary brand, primary buttons, header |
+| `--wd-teal` `#13A89E` | Accent, focus ring, running SLA |
+| `--wd-amber` `#D9922E` | SLA warning (≥ 75 %) and internal notes |
+| `--wd-red` `#C2412D` | Breach, P1 |
+| `--wd-paper` / `--wd-surface` | Page and panel backgrounds |
+
+**Type.** IBM Plex Sans for interface text; IBM Plex Mono only for things engineers copy: case numbers,
+serial numbers, CLI output. Fonts are self-hosted, so air-gapped on-prem installs need no CDN.
+
+**Rules.** Status is never shown by colour alone: every badge and SLA bar has text. Every view has
+empty, loading and error states. Focus is always visible.

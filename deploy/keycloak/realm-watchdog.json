@@ -1,0 +1,488 @@
+{
+  "realm": "watchdog",
+  "enabled": true,
+  "displayName": "WatchDog Support",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "verifyEmail": true,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername and notEmail and passwordHistory(5)",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "en",
+    "hi"
+  ],
+  "defaultLocale": "en",
+  "attributes": {
+    "acr.loa.map": "{\"pwd\":1,\"mfa\":2}",
+    "frontendUrl": ""
+  },
+  "browserFlow": "browser-mfa",
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@watchdog.example",
+    "fromDisplayName": "WatchDog Support"
+  },
+  "clients": [
+    {
+      "clientId": "wd-web",
+      "name": "WatchDog Support Portal",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "change-me-web-client",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/auth/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000",
+        "minimum.acr.value": "mfa",
+        "default.acr.values": "mfa",
+        "use.refresh.tokens": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "wd-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "wd-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "wd-provisioner",
+      "name": "Portal user provisioning",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "change-me-provisioner",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-wd-provisioner",
+      "enabled": true,
+      "serviceAccountClientId": "wd-provisioner",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users"
+        ]
+      }
+    },
+    {
+      "username": "noc@kaveribank.example",
+      "email": "noc@kaveribank.example",
+      "firstName": "Lakshmi",
+      "lastName": "Nair",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "it.admin@kaveribank.example",
+      "email": "it.admin@kaveribank.example",
+      "firstName": "Suresh",
+      "lastName": "Gowda",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "admin@narmadacity.example",
+      "email": "admin@narmadacity.example",
+      "firstName": "Imran",
+      "lastName": "Shaikh",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "netops@narmadacity.example",
+      "email": "netops@narmadacity.example",
+      "firstName": "Kavya",
+      "lastName": "Patel",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "support@sahyadri-si.example",
+      "email": "support@sahyadri-si.example",
+      "firstName": "Nikhil",
+      "lastName": "Joshi",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "asha.l1@watchdog.example",
+      "email": "asha.l1@watchdog.example",
+      "firstName": "Asha",
+      "lastName": "Menon",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "vikram.l2@watchdog.example",
+      "email": "vikram.l2@watchdog.example",
+      "firstName": "Vikram",
+      "lastName": "Rao",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "farah.l3@watchdog.example",
+      "email": "farah.l3@watchdog.example",
+      "firstName": "Farah",
+      "lastName": "Qureshi",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "rohan.manager@watchdog.example",
+      "email": "rohan.manager@watchdog.example",
+      "firstName": "Rohan",
+      "lastName": "Iyer",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "meera.content@watchdog.example",
+      "email": "meera.content@watchdog.example",
+      "firstName": "Meera",
+      "lastName": "Pillai",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "arjun.rma@watchdog.example",
+      "email": "arjun.rma@watchdog.example",
+      "firstName": "Arjun",
+      "lastName": "Das",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "username": "neha.admin@watchdog.example",
+      "email": "neha.admin@watchdog.example",
+      "firstName": "Neha",
+      "lastName": "Kulkarni",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@WatchDog2026",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Demo authenticator",
+          "secretData": "{\"value\": \"WatchDogDemoTotpKey2026\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    }
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "browser-mfa",
+      "description": "Cookie, or password (LoA 1) then OTP (LoA 2)",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "browser-mfa forms",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "browser-mfa forms",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "CONDITIONAL",
+          "priority": 10,
+          "autheticatorFlow": true,
+          "flowAlias": "loa1 password",
+          "userSetupAllowed": false
+        },
+        {
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "loa2 otp",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "loa1 password",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-level-of-authentication",
+          "authenticatorConfig": "loa1",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-username-password-form",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "loa2 otp",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-level-of-authentication",
+          "authenticatorConfig": "loa2",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": true
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "loa1",
+      "config": {
+        "loa-condition-level": "1",
+        "loa-max-age": "36000"
+      }
+    },
+    {
+      "alias": "loa2",
+      "config": {
+        "loa-condition-level": "2",
+        "loa-max-age": "36000"
+      }
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "watchdog-entra",
+      "displayName": "WatchDog staff (Entra ID)",
+      "providerId": "oidc",
+      "enabled": false,
+      "trustEmail": true,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "issuer": "https://login.microsoftonline.com/TENANT_ID/v2.0",
+        "authorizationUrl": "https://login.microsoftonline.com/TENANT_ID/oauth2/v2.0/authorize",
+        "tokenUrl": "https://login.microsoftonline.com/TENANT_ID/oauth2/v2.0/token",
+        "clientId": "ENTRA_CLIENT_ID",
+        "clientSecret": "**set-in-admin-console**",
+        "defaultScope": "openid profile email",
+        "syncMode": "IMPORT",
+        "pkceEnabled": "true",
+        "pkceMethod": "S256"
+      }
+    }
+  ]
+}

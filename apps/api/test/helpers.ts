@@ -39,9 +39,7 @@ export interface TestApp {
     email: string,
     opts?: { acr?: string; emailVerified?: boolean; sub?: string },
   ): Promise<string>;
-  as(
-    email: string,
-  ): Promise<{
+  as(email: string): Promise<{
     get: (u: string) => request.Test;
     post: (u: string, body?: unknown) => request.Test;
   }>;

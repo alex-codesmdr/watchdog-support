@@ -1,0 +1,151 @@
+# WatchDog Support Portal — local stack.  `docker compose up` → http://localhost:3000
+#
+#   web       http://localhost:3000   Next.js portal (BFF)
+#   api       http://localhost:4000   REST API, docs at /api/docs
+#   keycloak  http://localhost:8080   identity (admin / admin)
+#   mailpit   http://localhost:8025   every email the portal sends
+#   minio     http://localhost:9001   object storage console (wd-minio / wd-minio-secret)
+#
+# Local-development credentials only. Production uses the Helm chart with secrets from the vault.
+name: watchdog-support
+
+x-api-env: &api-env
+  NODE_ENV: development
+  PUBLIC_WEB_URL: http://localhost:3000
+  PUBLIC_API_URL: http://localhost:4000
+  DATABASE_URL: postgres://wd_app:wd_app_dev@postgres:5432/watchdog
+  DATABASE_OWNER_URL: postgres://wd_owner:wd_owner_dev@postgres:5432/watchdog
+  REDIS_URL: redis://redis:6379
+  AUTH_ISSUER: http://localhost:8080/realms/watchdog
+  AUTH_JWKS_URL: http://keycloak:8080/realms/watchdog/protocol/openid-connect/certs
+  AUTH_AUDIENCE: wd-api
+  IDENTITY_PROVISIONER: keycloak
+  KEYCLOAK_ADMIN_URL: http://keycloak:8080
+  KEYCLOAK_REALM: watchdog
+  KEYCLOAK_ADMIN_CLIENT_ID: wd-provisioner
+  KEYCLOAK_ADMIN_CLIENT_SECRET: change-me-provisioner
+  STORAGE_DRIVER: s3
+  S3_ENDPOINT: http://minio:9000
+  S3_ACCESS_KEY: wd-minio
+  S3_SECRET_KEY: wd-minio-secret
+  AV_MODE: clamav
+  CLAMAV_HOST: clamav
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+  APP_SIGNING_KEY: dev-only-signing-key-replace-me-0123456789abcdef
+
+services:
+  postgres:
+    image: postgres:16.6-bookworm
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pg:/var/lib/postgresql/data
+      - ./deploy/postgres/00-roles.sql:/docker-entrypoint-initdb.d/00-roles.sql:ro
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "watchdog"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Browser-facing issuer is localhost:8080; containers reach it as keycloak:8080.
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./deploy/keycloak/realm-watchdog.json:/opt/keycloak/data/import/realm-watchdog.json:ro
+    ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      retries: 30
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: wd-minio
+      MINIO_ROOT_PASSWORD: wd-minio-secret
+    volumes: [minio:/data]
+    ports: ["9000:9000", "9001:9001"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+
+  minio-buckets:
+    image: minio/mc:RELEASE.2024-11-21T17-21-54Z
+    depends_on: { minio: { condition: service_healthy } }
+    entrypoint: >
+      /bin/sh -c "mc alias set wd http://minio:9000 wd-minio wd-minio-secret &&
+      mc mb -p wd/wd-quarantine wd/wd-attachments &&
+      mc anonymous set none wd/wd-quarantine && mc anonymous set none wd/wd-attachments &&
+      mc version enable wd/wd-attachments"
+
+  clamav:
+    image: clamav/clamav:1.4
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports: ["8025:8025", "1025:1025"]
+
+  migrate:
+    build: { context: ., dockerfile: deploy/docker/api.Dockerfile }
+    environment: *api-env
+    command: ["sh", "-c", "node dist/db/migrate.js up && node dist/db/seed.js"]
+    depends_on: { postgres: { condition: service_healthy } }
+
+  api:
+    build: { context: ., dockerfile: deploy/docker/api.Dockerfile }
+    environment: *api-env
+    ports: ["4000:4000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+      minio-buckets: { condition: service_completed_successfully }
+
+  worker:
+    build: { context: ., dockerfile: deploy/docker/api.Dockerfile }
+    environment: *api-env
+    command: ["node", "dist/src/worker.js"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      clamav: { condition: service_healthy }
+
+  web:
+    build: { context: ., dockerfile: deploy/docker/web.Dockerfile }
+    environment:
+      NODE_ENV: production
+      PUBLIC_WEB_URL: http://localhost:3000
+      API_INTERNAL_URL: http://api:4000
+      OIDC_ISSUER: http://keycloak:8080/realms/watchdog
+      OIDC_PUBLIC_ISSUER: http://localhost:8080/realms/watchdog
+      OIDC_CLIENT_ID: wd-web
+      OIDC_CLIENT_SECRET: change-me-web-client
+      SESSION_REDIS_URL: redis://redis:6379
+      SESSION_COOKIE_SECURE: "false"
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  pg: {}
+  minio: {}
