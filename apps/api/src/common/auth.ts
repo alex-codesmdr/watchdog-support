@@ -16,6 +16,7 @@ import type { AppConfig } from '../config.js';
 import type { Database } from '../db/database.js';
 import { CONFIG, DB, JWKS } from '../tokens.js';
 import { forbidden, ProblemError, unauthorized } from './errors.js';
+import { logger } from './logger.js';
 import type { Principal, RequestContext } from './principal.js';
 
 const PUBLIC = 'wd:public';
@@ -79,12 +80,26 @@ export class AuthGuard implements CanActivate {
         algorithms: ['RS256', 'PS256', 'ES256'],
         clockTolerance: 30,
       }));
-    } catch {
+    } catch (err) {
+      // Reason only (never the token): e.g. ERR_JWT_CLAIM_VALIDATION_FAILED "aud", ERR_JWKS_NO_MATCHING_KEY.
+      logger.warn(
+        {
+          code: (err as { code?: string }).code,
+          claim: (err as { claim?: string }).claim,
+          reason: (err as Error).message,
+        },
+        'token rejected',
+      );
       throw unauthorized('Invalid or expired token');
     }
     if (!claims.sub || !claims.email) throw unauthorized('Token is missing required claims');
-    if (this.cfg.AUTH_REQUIRE_MFA && !this.mfaAcr.has(String(claims.acr ?? '')))
+    if (this.cfg.AUTH_REQUIRE_MFA && !this.mfaAcr.has(String(claims.acr ?? ''))) {
+      logger.warn(
+        { acr: claims.acr ?? null, accepted: [...this.mfaAcr] },
+        'token rejected: authentication level below MFA',
+      );
       throw new ProblemError(401, 'mfa-required', 'Multi-factor authentication is required');
+    }
 
     req.wd!.principal = await this.resolve(claims);
     return true;
@@ -106,7 +121,13 @@ export class AuthGuard implements CanActivate {
       ),
     );
     const r = rows.rows[0];
-    if (!r) throw forbidden('Your account has not been provisioned for the support portal.');
+    if (!r) {
+      logger.warn(
+        { sub: c.sub, emailVerified: c.email_verified === true },
+        'no portal account for authenticated identity',
+      );
+      throw forbidden('Your account has not been provisioned for the support portal.');
+    }
     if (r.user_status !== 'active') throw forbidden('Your account is disabled.');
     if (r.org_status !== 'active')
       throw forbidden(
