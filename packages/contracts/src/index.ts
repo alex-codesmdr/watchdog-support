@@ -368,3 +368,118 @@ export const SlaReport = z.object({
   breaches: z.array(SlaBreachRow),
 });
 export type SlaReport = z.infer<typeof SlaReport>;
+
+// ---------- knowledge base ----------
+export const KbType = z.enum([
+  'howto',
+  'troubleshooting',
+  'config_guide',
+  'faq',
+  'known_issue',
+  'best_practice',
+]);
+export type KbType = z.infer<typeof KbType>;
+export const KB_TYPE_LABELS: Record<KbType, string> = {
+  howto: 'How-to',
+  troubleshooting: 'Troubleshooting',
+  config_guide: 'Configuration guide',
+  faq: 'FAQ',
+  known_issue: 'Known issue',
+  best_practice: 'Best practice',
+};
+export const KbVisibility = z.enum(['public', 'registered', 'partner', 'internal']);
+export const KbState = z.enum(['draft', 'review', 'published', 'archived']);
+
+export const KbSearchQuery = z.object({
+  q: z.string().trim().max(200).default(''),
+  type: KbType.optional(),
+  family: z.string().max(40).optional(),
+  page: z.coerce.number().int().min(1).max(50).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+});
+export const KbHit = z.object({
+  slug: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  type: KbType,
+  familyKey: z.string().nullable(),
+  familyName: z.string().nullable(),
+  publishedAt: IsoDateTime.nullable(),
+  /** Matched text with <mark> highlights (HTML-escaped otherwise). */
+  snippet: z.string(),
+});
+export type KbHit = z.infer<typeof KbHit>;
+export const KbSearchResult = z.object({
+  items: z.array(KbHit),
+  total: z.number().int(),
+  page: z.number().int(),
+  facets: z.object({
+    type: z.record(z.string(), z.number()),
+    family: z.record(z.string(), z.number()),
+  }),
+  didYouMean: z.string().nullable(),
+  tookMs: z.number(),
+});
+export type KbSearchResult = z.infer<typeof KbSearchResult>;
+
+export const KbArticleView = z.object({
+  id: Uuid,
+  slug: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  type: KbType,
+  visibility: KbVisibility,
+  state: KbState,
+  family: z.object({ key: z.string(), name: z.string() }).nullable(),
+  products: z.array(z.object({ sku: z.string(), modelName: z.string() })),
+  firmwareVersions: z.array(z.string()),
+  bodyHtml: z.string(),
+  version: z.number().int(),
+  publishedAt: IsoDateTime.nullable(),
+  updatedAt: IsoDateTime,
+  helpful: z.number().int(),
+  notHelpful: z.number().int(),
+  related: z.array(z.object({ slug: z.string(), title: z.string(), type: KbType })),
+});
+export type KbArticleView = z.infer<typeof KbArticleView>;
+
+export const KbFeedbackRequest = z.object({
+  helpful: z.boolean(),
+  comment: z.string().trim().max(2000).optional(),
+});
+
+export const KbDraftRequest = z.object({
+  title: z.string().trim().min(8).max(200),
+  summary: z.string().trim().max(500),
+  bodyMd: z.string().max(200_000),
+  type: KbType,
+  visibility: KbVisibility.default('public'),
+  familyKey: z.string().max(40).nullable().optional(),
+  productSkus: z.array(z.string().max(40)).max(50).default([]),
+  firmwareVersions: z.array(z.string().trim().max(40)).max(50).default([]),
+  changeNote: z.string().trim().max(500).optional(),
+});
+export type KbDraftRequest = z.infer<typeof KbDraftRequest>;
+
+export const KbEditorRow = z.object({
+  id: Uuid,
+  slug: z.string(),
+  title: z.string(),
+  type: KbType,
+  visibility: KbVisibility,
+  state: KbState,
+  currentVersion: z.number().int(),
+  publishedVersion: z.number().int().nullable(),
+  updatedAt: IsoDateTime,
+  authorName: z.string(),
+});
+export const KbEditorArticle = KbEditorRow.extend({
+  summary: z.string(),
+  bodyMd: z.string(),
+  familyKey: z.string().nullable(),
+  productSkus: z.array(z.string()),
+  firmwareVersions: z.array(z.string()),
+  previewHtml: z.string(),
+  sourceCaseNumber: z.string().nullable(),
+});
+export type KbEditorArticle = z.infer<typeof KbEditorArticle>;

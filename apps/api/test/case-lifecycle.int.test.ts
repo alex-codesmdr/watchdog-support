@@ -218,7 +218,7 @@ describe('case lifecycle (P1, mission-critical 24x7)', () => {
       tier: 'mission_critical',
       supportLevel: 1,
     });
-    expect(r.body.description).toContain('<pre><code>');
+    expect(r.body.description).toContain('<pre tabindex="0"><code>');
 
     // SLA timers: P1 mission-critical = 15 min first response, 24x7
     const fr = r.body.sla.find((s: { metric: string }) => s.metric === 'first_response');

@@ -4,7 +4,12 @@ import { getSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
-const PUBLIC = [/^v1\/public\//, /^v1\/catalog\/(families|products)$/, /^v1\/files\//];
+const PUBLIC = [
+  /^v1\/public\//,
+  /^v1\/catalog\/(families|products)$/,
+  /^v1\/files\//,
+  /^v1\/kb\/(search|suggest|articles\/[a-z0-9-]+(\/feedback)?)$/,
+];
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
 // Only these request headers are forwarded (tus + content negotiation).
 const FORWARD = [

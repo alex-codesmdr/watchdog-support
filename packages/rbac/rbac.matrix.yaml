@@ -32,6 +32,9 @@ permissions:
   - audit:read:org
   - audit:read:all
   - report:sla:read
+  - kb:read:internal
+  - kb:draft
+  - kb:publish
 
 roles:
   customer_user:
@@ -50,31 +53,31 @@ roles:
   l1_engineer:
     internal: true
     permissions: [catalog:read, case:create:on_behalf, case:read:all, case:reply:public, case:note:internal,
-                  case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all]
+                  case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all, kb:read:internal, kb:draft]
   l2_engineer:
     internal: true
     permissions: [catalog:read, case:create:on_behalf, case:read:all, case:reply:public, case:note:internal,
-                  case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all]
+                  case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all, kb:read:internal, kb:draft]
   l3_engineer:
     internal: true
     permissions: [catalog:read, case:create:on_behalf, case:read:all, case:reply:public, case:note:internal,
                   case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all,
-                  product:read:internal_ref]
+                  product:read:internal_ref, kb:read:internal, kb:draft]
   support_manager:
     internal: true
     permissions: [catalog:read, case:create:on_behalf, case:read:all, case:reply:public, case:note:internal,
                   case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all,
-                  audit:read:all, report:sla:read]
+                  audit:read:all, report:sla:read, kb:read:internal, kb:draft, kb:publish]
   content_editor:
     internal: true
-    permissions: [catalog:read]
+    permissions: [catalog:read, kb:read:internal, kb:draft, kb:publish]
   rma_coordinator:
     internal: true
-    permissions: [catalog:read, case:read:all, case:note:internal, asset:read:all, product:read:internal_ref]
+    permissions: [catalog:read, case:read:all, case:note:internal, asset:read:all, product:read:internal_ref, kb:read:internal]
   system_admin:
     internal: true
     permissions: [catalog:read, registration:approve, org:users:manage, audit:read:all,
-                  product:read:internal_ref, asset:read:all, report:sla:read]
+                  product:read:internal_ref, asset:read:all, report:sla:read, kb:read:internal]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.
 # allow: roles that must succeed against a resource in their reach. Every other role must get 403/404.
@@ -90,4 +93,6 @@ endpoints:
   - { id: case.transition,  method: POST,  path: "/api/v1/cases/:case/transition", allow: [l1_engineer, l2_engineer, l3_engineer, support_manager], tenant: true }
   - { id: registration.list, method: GET,  path: /api/v1/admin/registrations,      allow: [system_admin] }
   - { id: report.sla,       method: GET,   path: /api/v1/reports/sla,              allow: [support_manager, system_admin] }
+  - { id: kb.search,        method: GET,   path: "/api/v1/kb/search?q=switch",    allow: "*" }
+  - { id: kb.editor.list,   method: GET,   path: /api/v1/kb/editor/articles,       allow: [l1_engineer, l2_engineer, l3_engineer, support_manager, content_editor] }
   - { id: product.internal, method: GET,   path: "/api/v1/catalog/products/:sku/internal", allow: [l3_engineer, rma_coordinator, system_admin] }

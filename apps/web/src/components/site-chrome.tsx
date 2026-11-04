@@ -39,6 +39,9 @@ export async function SiteHeader({
               <Link className={link} href="/portal/cases">
                 {t('nav.myCases')}
               </Link>
+              <Link className={link} href="/search">
+                {t('nav.knowledge')}
+              </Link>
             </>
           )}
           {staff && (
@@ -46,6 +49,11 @@ export async function SiteHeader({
               <Link className={link} href="/workspace">
                 {t('nav.queue')}
               </Link>
+              {me?.permissions.includes('kb:draft') && (
+                <Link className={link} href="/workspace/kb">
+                  {t('nav.knowledge')}
+                </Link>
+              )}
               {me?.permissions.includes('report:sla:read') && (
                 <Link className={link} href="/workspace/sla">
                   {t('nav.sla')}

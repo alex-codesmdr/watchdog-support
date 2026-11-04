@@ -7,7 +7,7 @@ describe('sanitize', () => {
       'Hi <script>alert(1)</script>\n\n```\nshow run | inc <b>\n```\nUse `ping`',
     );
     expect(html).not.toContain('<script>');
-    expect(html).toContain('<pre><code>show run | inc &lt;b&gt;</code></pre>');
+    expect(html).toContain('<pre tabindex="0"><code>show run | inc &lt;b&gt;</code></pre>');
     expect(html).toContain('<code>ping</code>');
   });
   it('strips dangerous attributes and schemes', () => {

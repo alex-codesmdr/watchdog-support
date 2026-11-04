@@ -334,7 +334,57 @@ export interface EscalationContactT {
   active: boolean;
 }
 
+export interface KbArticleT {
+  id: Generated<string>;
+  slug: string;
+  type: string;
+  visibility: Generated<string>;
+  state: Generated<string>;
+  family_id: string | null;
+  current_version: Generated<number>;
+  published_version: number | null;
+  title: string | null;
+  summary: string | null;
+  search_vec: unknown;
+  firmware_versions: Generated<string[]>;
+  views: Generated<number>;
+  helpful: Generated<number>;
+  not_helpful: Generated<number>;
+  source_case_id: string | null;
+  created_by: string;
+  created_at: Ts;
+  updated_at: Ts;
+  published_at: TsNull;
+}
+export interface KbVersionT {
+  article_id: string;
+  version: number;
+  title: string;
+  summary: string;
+  body_md: string;
+  author_id: string;
+  reviewer_id: string | null;
+  change_note: string | null;
+  created_at: Ts;
+}
+export interface KbArticleProductT {
+  article_id: string;
+  product_id: string;
+}
+export interface KbFeedbackT {
+  id: Generated<string>;
+  article_id: string;
+  user_id: string | null;
+  helpful: boolean;
+  comment: string | null;
+  created_at: Ts;
+}
+
 export interface DB {
+  kb_article: KbArticleT;
+  kb_version: KbVersionT;
+  kb_article_product: KbArticleProductT;
+  kb_feedback: KbFeedbackT;
   escalation_rule: EscalationRuleT;
   escalation_contact: EscalationContactT;
   organization: OrganizationT;

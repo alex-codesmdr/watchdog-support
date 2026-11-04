@@ -24,10 +24,16 @@ export function sanitizeRichText(input: string): string {
       'hr',
       'span',
     ],
-    allowedAttributes: { a: ['href', 'title'], span: ['data-mention'], code: ['class'] },
+    allowedAttributes: {
+      a: ['href', 'title'],
+      span: ['data-mention'],
+      code: ['class'],
+      pre: ['tabindex'],
+    },
     allowedSchemes: ['https', 'http', 'mailto'],
     allowedClasses: { code: ['language-*'] },
     transformTags: {
+      pre: sanitizeHtml.simpleTransform('pre', { tabindex: '0' }),
       a: sanitizeHtml.simpleTransform('a', {
         rel: 'noopener noreferrer nofollow',
         target: '_blank',

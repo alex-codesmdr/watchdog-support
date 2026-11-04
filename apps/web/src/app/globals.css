@@ -23,3 +23,14 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Knowledge-base articles (server-rendered, sanitised markdown). */
+.wd-article h2 { @apply mt-8 text-xl font-semibold; }
+.wd-article h3 { @apply mt-6 text-lg font-semibold; }
+.wd-article ul { @apply my-3 list-disc pl-6; }
+.wd-article ol { @apply my-3 list-decimal pl-6; }
+.wd-article li { @apply my-1; }
+.wd-article table { @apply my-4 w-full border-collapse text-sm; }
+.wd-article th, .wd-article td { @apply border border-line px-3 py-2 text-left align-top; }
+.wd-article th { @apply bg-paper font-semibold; }
+.wd-article blockquote { @apply my-4 border-l-4 border-amber/60 pl-4 text-muted; }

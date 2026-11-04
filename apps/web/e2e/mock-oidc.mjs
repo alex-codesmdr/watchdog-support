@@ -17,6 +17,10 @@ const USERS = [
   ['asha.l1@watchdog.example', 'Asha Menon', 'L1 engineer'],
   ['vikram.l2@watchdog.example', 'Vikram Rao', 'L2 engineer'],
   ['rohan.manager@watchdog.example', 'Rohan Iyer', 'Support manager'],
+  ['farah.l3@watchdog.example', 'Farah Qureshi', 'L3 engineer'],
+  ['meera.content@watchdog.example', 'Meera Pillai', 'Content editor'],
+  ['arjun.rma@watchdog.example', 'Arjun Das', 'RMA coordinator'],
+  ['admin@narmadacity.example', 'Imran Shaikh', 'Customer admin, Narmada Smart City'],
   ['neha.admin@watchdog.example', 'Neha Kulkarni', 'System admin'],
 ];
 const { publicKey, privateKey } = await generateKeyPair('RS256');

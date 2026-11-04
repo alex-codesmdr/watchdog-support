@@ -38,6 +38,8 @@ import { NotificationsService } from './modules/notifications/notifications.serv
 import { SlaMonitorService } from './modules/sla/sla-monitor.service.js';
 import { SlaReportController } from './modules/sla/sla-report.controller.js';
 import { WarrantyController } from './modules/public/warranty.controller.js';
+import { KbController, KbEditorController } from './modules/kb/kb.controller.js';
+import { KbService } from './modules/kb/kb.service.js';
 
 /** Providers tests may replace (JWKS, transports, storage, AV, IdP, Redis). */
 export interface AppOverrides {
@@ -113,6 +115,8 @@ export class AppModule {
         DevController,
         SlaReportController,
         WarrantyController,
+        KbController,
+        KbEditorController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
@@ -122,6 +126,7 @@ export class AppModule {
         NotificationsService,
         EmailInService,
         SlaMonitorService,
+        KbService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_GUARD, useClass: RateLimitGuard },

@@ -8,6 +8,7 @@
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { loadMatrix } from '@wd/rbac';
+import { seedKb } from './seed-kb.js';
 
 export const SYSTEM_USER_ID = '00000000-0000-4000-8000-000000000001';
 export const INTERNAL_ORG_ID = '00000000-0000-4000-8000-000000000100';
@@ -331,6 +332,13 @@ export async function seed(url: string, opts: { reset?: boolean; log?: (s: strin
           [tier, level, name, title, email],
         );
     }
+
+    // Starter knowledge base (authored by the demo content editor if present, else the system user).
+    const editor =
+      (await q(`SELECT id FROM app_user WHERE email = 'meera.content@watchdog.example'`)).rows[0]
+        ?.id ?? SYSTEM_USER_ID;
+    const kbCount = await seedKb(q, editor);
+    if (kbCount) log(`  ${kbCount} knowledge-base articles seeded`);
 
     const hasDemo = (await q(`SELECT 1 FROM organization WHERE org_type <> 'internal' LIMIT 1`))
       .rowCount;

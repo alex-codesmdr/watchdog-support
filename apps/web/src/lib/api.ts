@@ -13,18 +13,22 @@ export class ApiError extends Error {
   }
 }
 
-/** Server-side API call for React Server Components, carrying the session's access token. */
+/**
+ * Server-side API call for React Server Components, carrying the session's access token.
+ * `public`: never send a token. `optionalAuth`: send it when signed in (audience-aware content).
+ */
 export async function api<T>(
   path: string,
-  init: RequestInit & { public?: boolean } = {},
+  init: RequestInit & { public?: boolean; optionalAuth?: boolean } = {},
 ): Promise<T> {
   const s = init.public ? null : await getSession();
-  if (!init.public && !s)
+  if (!init.public && !init.optionalAuth && !s)
     redirect(
       `/auth/login?returnTo=${encodeURIComponent(path.startsWith('/api') ? '/portal' : path)}`,
     );
+  const { public: _p, optionalAuth: _o, ...rest } = init;
   const r = await fetch(`${env().API_INTERNAL_URL}${path}`, {
-    ...init,
+    ...rest,
     headers: {
       accept: 'application/json',
       ...(s ? { authorization: `Bearer ${s.accessToken}` } : {}),

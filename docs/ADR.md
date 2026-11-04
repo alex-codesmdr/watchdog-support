@@ -103,3 +103,9 @@ Format: Context · Decision · Consequences · Alternatives. ADR-001…016: **Ac
 **Context.** MinIO stopped publishing community container images (pulls of `minio/mc` fail), which broke the local stack.
 **Decision.** Local and reference on-prem stack use SeaweedFS (Apache-2.0) through the standard S3 API. The code depends only on the S3 API, so production may use AWS S3, Ceph RGW, SeaweedFS or a licensed MinIO. Buckets can be created at start-up (`S3_ENSURE_BUCKETS`), and download URLs are signed against a browser-facing endpoint (`S3_PUBLIC_ENDPOINT`).
 **Consequences.** ADR-008's MinIO references now read "any S3-compatible store". Object lock for firmware (Phase 3) must be confirmed for the chosen production store.
+
+## ADR-023 Knowledge-base search on PostgreSQL first (amends ADR-007)
+**Context.** ADR-007 chose OpenSearch. Acceptance criterion 5 needs typo tolerance, facets and < 500 ms on 10,000 articles. The post-handover team is 3–5 developers and many installs are on-prem.
+**Decision.** Phase 3 implements search in PostgreSQL: weighted `tsvector` (title > summary/firmware > body; English stemming plus a verbatim copy of titles for model numbers and error codes), `pg_trgm` word similarity for typos, `GROUPING SETS` facets, audience filtering in the same query. The search lives behind `KbService.search`, so an OpenSearch adapter can replace it without API changes.
+**Evidence.** Integration test with 10,014 published articles: p50 87–142 ms, p95 221–259 ms end-to-end through the API (60 queries, three audiences).
+**Consequences.** One less cluster to run, back up and secure; search is transactionally consistent with publishing. Revisit when Phase 5 RAG needs vector search, or above ~250,000 articles, or for multilingual (Hindi) stemming.

@@ -42,6 +42,7 @@ export interface TestApp {
   as(email: string): Promise<{
     get: (u: string) => request.Test;
     post: (u: string, body?: unknown) => request.Test;
+    put: (u: string, body?: unknown) => request.Test;
   }>;
   drainOutbox(): Promise<number>;
   owner: pg.Pool;
@@ -120,6 +121,11 @@ export async function createTestApp(opts: { rateLimitScale?: number } = {}): Pro
         post: (u: string, body?: unknown) =>
           http
             .post(u)
+            .set('authorization', `Bearer ${t}`)
+            .send(body as object),
+        put: (u: string, body?: unknown) =>
+          http
+            .put(u)
             .set('authorization', `Bearer ${t}`)
             .send(body as object),
       };

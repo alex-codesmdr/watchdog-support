@@ -278,6 +278,27 @@ export function CaseView({
                 {TRANSITION_LABEL[to] ?? STATUS_LABELS[to]}
               </Button>
             ))}
+            {staff && (c.status === 'resolved' || c.status === 'closed') && (
+              <Button
+                variant="ghost"
+                busy={busy === 'kb'}
+                onClick={async () => {
+                  setBusy('kb');
+                  try {
+                    const d = await apiFetch<{ id: string }>(
+                      `/v1/kb/editor/from-case/${c.number}`,
+                      { method: 'POST', body: {} },
+                    );
+                    window.location.href = `/workspace/kb/${d.id}`;
+                  } catch (e) {
+                    setError(e instanceof ClientApiError ? e.title : 'Could not create the draft.');
+                    setBusy(null);
+                  }
+                }}
+              >
+                Draft a knowledge article
+              </Button>
+            )}
             {(c.can.escalate || c.can.customerEscalate) && (
               <Button variant="ghost" onClick={() => setEscalateOpen(true)}>
                 {staff

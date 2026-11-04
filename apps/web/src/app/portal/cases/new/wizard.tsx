@@ -82,6 +82,14 @@ export function NewCaseWizard({
     enabled: dSerial.length >= 6,
   });
   const dSubject = useDebounced(form.subject.trim(), 500);
+  const articles = useQuery({
+    queryKey: ['kb-suggest', dSubject],
+    queryFn: () =>
+      apiFetch<{ items: Array<{ slug: string; title: string }> }>(
+        `/v1/kb/suggest?q=${encodeURIComponent(dSubject)}`,
+      ),
+    enabled: dSubject.length >= 6,
+  });
   const similar = useQuery({
     queryKey: ['similar', dSubject],
     queryFn: () =>
@@ -305,6 +313,28 @@ export function NewCaseWizard({
                   <Input {...p} value={form.subject} onChange={set('subject')} maxLength={200} />
                 )}
               </Field>
+              {!!articles.data?.items.length && (
+                <div
+                  className="rounded-s border border-teal/40 bg-teal/5 p-3 text-sm"
+                  aria-live="polite"
+                >
+                  <p className="font-medium">These articles may solve it right away</p>
+                  <ul className="mt-1 list-disc pl-5">
+                    {articles.data.items.map((a) => (
+                      <li key={a.slug}>
+                        <a
+                          className="text-teal-ink underline underline-offset-2"
+                          href={`/kb/${a.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {a.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {!!similar.data?.items.length && (
                 <div
                   className="rounded-s border border-line bg-paper p-3 text-sm"
