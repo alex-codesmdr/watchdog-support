@@ -3,13 +3,26 @@ import { simpleParser, type AddressObject } from 'mailparser';
 import { sql } from 'kysely';
 import type { AppConfig } from '../../config.js';
 import type { Database } from '../../db/database.js';
-import { CONFIG, DB } from '../../tokens.js';
+import { CONFIG, DB, OBJECT_STORE } from '../../tokens.js';
+import type { ObjectStore } from '../files/object-store.js';
+import { randomBytes } from 'node:crypto';
 import { logger } from '../../common/logger.js';
 import { emit } from '../../common/outbox.js';
 import { textToHtml } from '../../common/sanitize.js';
 import { Signer } from '../../common/signing.js';
 import { resumeAll } from '../cases/sla.js';
 import { caseNumberFromSubject, findReplyToken, stripQuoted } from './parse.js';
+
+const EMAIL_ATTACHMENT_MAX_COUNT = 10;
+const EMAIL_ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
+/** Mail clients send all sorts of names; keep it printable, path-free and within limits. */
+export function safeFileName(n: string | undefined): string {
+  const base = [...(n ?? '').replace(/[\\/]/g, '_')]
+    .filter((ch) => ch.charCodeAt(0) >= 32 && ch.charCodeAt(0) !== 127)
+    .join('')
+    .trim();
+  return (base || 'attachment').slice(-200);
+}
 
 export type IngestResult =
   | { status: 'appended'; caseId: string; messageId: string }
@@ -27,6 +40,7 @@ export class EmailInService {
   constructor(
     @Inject(CONFIG) private readonly cfg: AppConfig,
     @Inject(DB) private readonly db: Database,
+    @Inject(OBJECT_STORE) private readonly store: ObjectStore,
   ) {
     this.signer = new Signer(cfg.APP_SIGNING_KEY);
   }
@@ -116,7 +130,46 @@ export class EmailInService {
         })
         .returning('id')
         .executeTakeFirstOrThrow();
-      if (mail.attachments.length) {
+      // Attachments go through the same quarantine → antivirus → secret-masking pipeline as portal
+      // uploads. Inline images (signatures, logos) are ignored; oversized or excess files are noted.
+      const files = mail.attachments.filter(
+        (a) => !(a.contentDisposition === 'inline' && a.contentType.startsWith('image/')),
+      );
+      const maxBytes = Math.min(EMAIL_ATTACHMENT_MAX_BYTES, this.cfg.UPLOAD_MAX_BYTES);
+      const accepted = files.filter((a) => a.size <= maxBytes).slice(0, EMAIL_ATTACHMENT_MAX_COUNT);
+      for (const a of accepted) {
+        const id = randomBytes(16).toString('hex');
+        const name = safeFileName(a.filename);
+        await this.store.put('quarantine', id, a.content);
+        await tx
+          .insertInto('upload')
+          .values({
+            id,
+            org_id: c.org_id,
+            user_id: userId,
+            file_name: name,
+            size_bytes: a.size,
+            completed: true,
+            bound_at: new Date(),
+          })
+          .execute();
+        const att = await tx
+          .insertInto('case_attachment')
+          .values({
+            case_id: c.id,
+            message_id: msg.id,
+            upload_id: id,
+            file_name: name,
+            size_bytes: a.size,
+            quarantine_key: id,
+            visibility: 'public',
+            uploaded_by: userId,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await emit(tx, 'attachment.scan', null, { attachmentId: att.id });
+      }
+      if (files.length > accepted.length) {
         await tx
           .insertInto('case_event')
           .values({
@@ -124,7 +177,10 @@ export class EmailInService {
             type: 'email_attachments_skipped',
             visibility: 'public',
             actor_id: userId,
-            data: JSON.stringify({ count: mail.attachments.length }),
+            data: JSON.stringify({
+              count: files.length - accepted.length,
+              reason: `Email attachments are limited to ${EMAIL_ATTACHMENT_MAX_COUNT} files of up to ${Math.round(maxBytes / 1_048_576)} MB each. Upload larger files in the portal.`,
+            }),
           } as never)
           .execute();
       }

@@ -58,7 +58,7 @@ const EVENT: Record<string, (d: Record<string, unknown>) => string> = {
   sla_breached: (d) =>
     `SLA breached: ${METRIC[String(d.metric)] ?? d.metric}${d.escalatedTo ? `, auto-escalated to L${d.escalatedTo}` : ''}`,
   email_attachments_skipped: (d) =>
-    `${d.count} email attachment(s) not imported. Upload them in the portal.`,
+    `${d.count} email attachment(s) not imported (too large, or more than 10 files). Upload them in the portal.`,
 };
 const TRANSITION_LABEL: Partial<Record<CaseStatus, string>> = {
   triage: 'Move to triage',

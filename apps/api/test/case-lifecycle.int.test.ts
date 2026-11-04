@@ -365,6 +365,50 @@ describe('case lifecycle (P1, mission-critical 24x7)', () => {
     expect(c.body.sla.every((s: { paused: boolean }) => !s.paused)).toBe(true);
   });
 
+  it('email attachments join the case after the same scan and secret masking as uploads', async () => {
+    const token = signer.replyToken(num);
+    const b64 = (x: string) => Buffer.from(x).toString('base64');
+    const raw = [
+      `From: Lakshmi Nair <${USERS.kaveriUser}>`,
+      `To: case+${token}@support.watchdog.example`,
+      `Subject: Re: [${num}] logs attached`,
+      'Message-ID: <reply-att-1@kaveribank.example>',
+      'MIME-Version: 1.0',
+      'Content-Type: multipart/mixed; boundary="b1"',
+      '',
+      '--b1',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'Config and a signature logo attached.',
+      '--b1',
+      'Content-Type: text/plain; name="core-sw1.cfg"',
+      'Content-Disposition: attachment; filename="core-sw1.cfg"',
+      'Content-Transfer-Encoding: base64',
+      '',
+      b64('hostname core-sw1\nsnmp-agent community read S3cretRO\n'),
+      '--b1',
+      'Content-Type: image/png; name="logo.png"',
+      'Content-Disposition: inline; filename="logo.png"',
+      'Content-ID: <logo@x>',
+      'Content-Transfer-Encoding: base64',
+      '',
+      b64('\x89PNG fake'),
+      '--b1--',
+      '',
+    ].join('\r\n');
+    const svc = t.app.get(
+      (await import('../src/modules/email-in/email-in.service.js')).EmailInService,
+    );
+    expect((await svc.ingest(raw)).status).toBe('appended');
+    await t.drainOutbox();
+    const c = await (await t.as(USERS.kaveriUser)).get(`/api/v1/cases/${num}`).expect(200);
+    const msg = c.body.messages.find((m: { bodyHtml: string }) =>
+      m.bodyHtml.includes('Config and a signature logo'),
+    );
+    expect(msg.attachments.map((a: { fileName: string }) => a.fileName)).toEqual(['core-sw1.cfg']);
+    expect(msg.attachments[0]).toMatchObject({ scanStatus: 'clean', secretsMasked: true });
+  });
+
   it('holds spoofed or unthreadable inbound email instead of posting it', async () => {
     const svc = t.app.get(
       (await import('../src/modules/email-in/email-in.service.js')).EmailInService,
