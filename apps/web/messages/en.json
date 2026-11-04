@@ -15,7 +15,8 @@
     "sla": "SLA report",
     "skip": "Skip to content",
     "devices": "Devices",
-    "imports": "Device import"
+    "imports": "Device import",
+    "releases": "Releases"
   },
   "home": {
     "title": "What is your network telling you?",

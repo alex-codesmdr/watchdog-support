@@ -83,6 +83,12 @@ export class ReleasesAdminController {
     return this.svc.adminList(p);
   }
 
+  @Get('eulas')
+  @RequirePermission('release:manage')
+  eulas() {
+    return this.svc.eulas();
+  }
+
   @Post()
   @RequirePermission('release:manage')
   create(@CurrentPrincipal() p: Principal, @Ctx() ctx: RequestContext, @Body() body: unknown) {

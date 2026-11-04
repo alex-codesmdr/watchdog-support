@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { CaseSummary } from '@wd/contracts';
+import type { CaseSummary, Me } from '@wd/contracts';
 import { EmptyState } from '@wd/ui';
 import { CaseList } from '@/components/case/case-list';
 import { api } from '@/lib/api';
@@ -17,6 +17,41 @@ export default async function Queue({
   searchParams: Promise<{ view?: string; severity?: string; q?: string }>;
 }) {
   const sp = await searchParams;
+  const me = await api<Me>('/api/v1/me');
+  // Staff without case access (content editors) land here after sign-in: show their tools instead.
+  if (!me.permissions.includes('case:read:all')) {
+    const tools = [
+      ['kb:draft', '/workspace/kb', 'Knowledge base editor', 'Write and publish articles.'],
+      [
+        'release:manage',
+        '/admin/releases',
+        'Releases',
+        'Publish firmware, software and documents.',
+      ],
+      [
+        'asset:import',
+        '/admin/imports',
+        'Device import',
+        'Register customer devices from a spreadsheet.',
+      ],
+    ].filter(([perm]) => me.permissions.includes(perm!));
+    return (
+      <div className="max-w-2xl">
+        <h1 className="text-2xl font-semibold">Welcome, {me.displayName}</h1>
+        <p className="mt-1 text-muted">Your role does not work the case queue. Your tools:</p>
+        <ul className="mt-6 divide-y divide-line border-y border-line">
+          {tools.map(([, href, label, desc]) => (
+            <li key={href} className="py-3">
+              <Link href={href!} className="font-medium text-teal-ink underline underline-offset-2">
+                {label}
+              </Link>
+              <p className="text-sm text-muted">{desc}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
   const view = VIEWS.some(([k]) => k === sp.view) ? sp.view! : 'queue';
   const qs = new URLSearchParams({
     status: 'open',

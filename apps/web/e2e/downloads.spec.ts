@@ -58,3 +58,48 @@ test('a customer without switch coverage is pointed to a renewal quote', async (
   await page.goto('/portal');
   await signOut(page);
 });
+
+test('a content editor publishes a release with a checked file', async ({ page }) => {
+  const version = `2.4.${Date.now() % 100000}`;
+  await signIn(page, 'meera.content@watchdog.example', '/workspace');
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Releases' }).click();
+  await page.getByRole('link', { name: 'New release' }).click();
+  await page.getByLabel(/Product family/).selectOption({ label: 'Wireless' });
+  await page.getByLabel(/^Title/).fill('AirPack firmware');
+  await page.getByLabel(/^Version/).fill(version);
+  await page.getByLabel(/Who can download/).selectOption('registered');
+  await page.getByLabel('WatchDog AirPack AP720 (Wi-Fi 6E)').check();
+  await page.getByLabel(/Release notes/).fill('## Fixed\n- Roaming between 6 GHz radios');
+  await page.getByRole('button', { name: 'Create draft' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: `AirPack firmware ${version}` }),
+  ).toBeVisible();
+  const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+  expect(r.violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+
+  await page.getByLabel('Add a file').setInputFiles({
+    name: `airpack-${version}.bin`,
+    mimeType: 'application/octet-stream',
+    buffer: Buffer.from('AIRPACK'.repeat(4096)),
+  });
+  await page.getByRole('button', { name: 'Upload' }).click();
+  await expect(page.getByText(/The virus check runs now/)).toBeVisible();
+  await expect(async () => {
+    await page.reload();
+    await expect(page.getByText('Checked', { exact: true })).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Publish' }).click();
+  await expect(page.getByText('Status: Published')).toBeVisible();
+  await page.goto('/workspace');
+  await signOut(page);
+
+  await signIn(page, 'noc@kaveribank.example');
+  await page.goto(`/downloads?family=wireless&q=${version}`);
+  await expect(
+    release(page, 'AirPack firmware', version).getByRole('button', {
+      name: `Download airpack-${version}.bin`,
+    }),
+  ).toBeVisible();
+  await page.goto('/portal');
+  await signOut(page);
+});

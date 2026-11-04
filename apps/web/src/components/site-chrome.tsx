@@ -62,6 +62,11 @@ export async function SiteHeader({
                   {t('nav.sla')}
                 </Link>
               )}
+              {me?.permissions.includes('release:manage') && (
+                <Link className={link} href="/admin/releases">
+                  {t('nav.releases')}
+                </Link>
+              )}
               {me?.permissions.includes('asset:import') && (
                 <Link className={link} href="/admin/imports">
                   {t('nav.imports')}

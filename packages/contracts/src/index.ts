@@ -604,6 +604,8 @@ export const ReleaseView = z.object({
     .object({ id: Uuid, title: z.string(), version: z.string(), accepted: z.boolean() })
     .nullable(),
   notesHtml: z.string().optional(),
+  /** Staff only: Markdown source for editing. */
+  notesMd: z.string().optional(),
 });
 export type ReleaseView = z.infer<typeof ReleaseView>;
 export const ReleaseListQuery = z.object({

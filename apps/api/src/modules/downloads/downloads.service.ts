@@ -195,14 +195,15 @@ export class DownloadsService {
 
   async get(p: Principal | undefined, id: string): Promise<ReleaseView> {
     return run(this.db, p, async (tx) => {
-      let s = this.base(tx).select('r.notes_html').where('r.id', '=', id);
+      let s = this.base(tx).select(['r.notes_html', 'r.notes_md']).where('r.id', '=', id);
       if (!p?.isInternal)
         s = s
           .where('r.status', 'in', ['published', 'deprecated'])
           .where('r.visibility', '!=', 'internal');
-      const r = (await s.executeTakeFirst()) as ReleaseRow | undefined;
+      const r = (await s.executeTakeFirst()) as (ReleaseRow & { notes_md: string }) | undefined;
       if (!r) throw notFound('Release');
-      return (await this.view(tx, p, [r]))[0]!;
+      const v = (await this.view(tx, p, [r]))[0]!;
+      return p?.isInternal ? { ...v, notesMd: r.notes_md } : v;
     });
   }
 
@@ -323,6 +324,16 @@ export class DownloadsService {
   }
 
   // ------------------------------------------------------------------ staff authoring
+
+  async eulas() {
+    return this.db.withAnonymous(async (tx) => ({
+      items: await tx
+        .selectFrom('eula')
+        .select(['id', 'title', 'version'])
+        .orderBy('created_at', 'desc')
+        .execute(),
+    }));
+  }
 
   async adminList(p: Principal): Promise<{ items: ReleaseView[] }> {
     return this.db.withTenant(p, async (tx) => {
