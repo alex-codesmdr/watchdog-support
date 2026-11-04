@@ -1,0 +1,15 @@
+# Secret scanning (CI: gitleaks). Default rules + an allowlist for LOCAL-DEVELOPMENT-ONLY credentials
+# that are intentionally committed so `docker compose up` works out of the box. None of these values
+# are valid anywhere else; production secrets come from the secret store and are never committed.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Local docker-compose / demo realm credentials (dev only)"
+paths = [
+  '''^deploy/seaweedfs/s3\.json$''',
+  '''^deploy/keycloak/realm-watchdog\.json$''',
+  '''^deploy/postgres/00-roles\.sql$''',
+  '''^docker-compose\.yml$''',
+  '''^\.env\.example$''',
+]

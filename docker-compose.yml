@@ -79,7 +79,7 @@ services:
   # S3-compatible object storage for local/on-prem use (SeaweedFS, Apache-2.0).
   # Any S3 API works in production: AWS S3, Ceph RGW, SeaweedFS or a commercial MinIO.
   seaweedfs:
-    image: chrislusf/seaweedfs:4.49
+    image: chrislusf/seaweedfs:4.05
     command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json", "-master.volumeSizeLimitMB=1024"]
     volumes:
       - s3data:/data
