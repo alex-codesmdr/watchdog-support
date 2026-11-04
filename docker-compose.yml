@@ -121,6 +121,10 @@ services:
     build: { context: ., dockerfile: deploy/docker/api.Dockerfile }
     environment: *api-env
     command: ["dist/src/worker.js"]
+    # The image's HTTP health check is for the API; the worker serves no HTTP. Liveness = process alive.
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 15s
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
