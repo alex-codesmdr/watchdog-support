@@ -42,6 +42,11 @@ export async function SiteHeader({
               <Link className={link} href="/portal/assets">
                 {t('nav.devices')}
               </Link>
+              {me.permissions.includes('rma:request') && (
+                <Link className={link} href="/portal/rmas">
+                  {t('nav.rmas')}
+                </Link>
+              )}
               <Link className={link} href="/search">
                 {t('nav.knowledge')}
               </Link>
@@ -52,6 +57,11 @@ export async function SiteHeader({
               <Link className={link} href="/workspace">
                 {t('nav.queue')}
               </Link>
+              {me?.permissions.includes('rma:manage') && (
+                <Link className={link} href="/workspace/rmas">
+                  {t('nav.rmas')}
+                </Link>
+              )}
               {me?.permissions.includes('kb:draft') && (
                 <Link className={link} href="/workspace/kb">
                   {t('nav.knowledge')}

@@ -125,6 +125,7 @@ export interface AssetT {
   mac: string | null;
   purchase_date: TsNull;
   current_version: string | null;
+  retired_at: TsNull;
   created_at: Ts;
 }
 export interface EntitlementT {
@@ -391,6 +392,53 @@ export interface RenewalRequestT {
   status: Generated<string>;
   created_at: Ts;
 }
+export interface RmaT {
+  id: Generated<string>;
+  number: Generated<string>;
+  org_id: string;
+  case_id: string;
+  asset_id: string;
+  type: 'standard' | 'advance';
+  status: Generated<
+    | 'requested'
+    | 'approved'
+    | 'return_in_transit'
+    | 'received'
+    | 'replacement_shipped'
+    | 'closed'
+    | 'rejected'
+    | 'cancelled'
+  >;
+  fault_description: string;
+  contact_name: string;
+  contact_phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  replacement_serial: string | null;
+  replacement_asset_id: string | null;
+  outbound_courier: string | null;
+  outbound_tracking: string | null;
+  inbound_courier: string | null;
+  inbound_tracking: string | null;
+  shipped_at: TsNull;
+  received_at: TsNull;
+  requested_by: string;
+  version: Generated<number>;
+  created_at: Ts;
+  updated_at: Ts;
+}
+export interface RmaEventT {
+  id: Generated<string>;
+  rma_id: string;
+  org_id: string;
+  from_status: string | null;
+  to_status: string;
+  actor_id: string | null;
+  note: string | null;
+  at: Ts;
+}
 export interface IdempotencyKeyT {
   user_id: string;
   key: string;
@@ -473,6 +521,8 @@ export interface DB {
   entitlement_reminder: EntitlementReminderT;
   eula: EulaT;
   idempotency_key: IdempotencyKeyT;
+  rma: RmaT;
+  rma_event: RmaEventT;
   software_release: SoftwareReleaseT;
   release_product: ReleaseProductT;
   release_file: ReleaseFileT;

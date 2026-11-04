@@ -1,5 +1,7 @@
 'use client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { RMA_STATUS_LABELS, type RmaStatus } from '@wd/contracts';
+import { RmaPanel } from '@/components/rma/rma-panel';
 import { useState } from 'react';
 import {
   OPEN_STATUSES,
@@ -57,6 +59,10 @@ const EVENT: Record<string, (d: Record<string, unknown>) => string> = {
     `SLA warning: ${METRIC[String(d.metric)] ?? d.metric} at ${d.threshold}% of target`,
   sla_breached: (d) =>
     `SLA breached: ${METRIC[String(d.metric)] ?? d.metric}${d.escalatedTo ? `, auto-escalated to L${d.escalatedTo}` : ''}`,
+  rma_status: (d) =>
+    d.from
+      ? `${d.rma}: ${RMA_STATUS_LABELS[d.to as RmaStatus] ?? d.to}`
+      : `Replacement requested (${d.rma})`,
   email_attachments_skipped: (d) =>
     `${d.count} email attachment(s) not imported (too large, or more than 10 files). Upload them in the portal.`,
 };
@@ -76,11 +82,14 @@ export function CaseView({
   staff,
   meId,
   justCreated,
+  canRma = false,
 }: {
   initial: CaseDetail;
   staff: boolean;
   meId: string;
   justCreated?: boolean;
+  /** The viewer may request (or manage) RMAs. */
+  canRma?: boolean;
 }) {
   const qc = useQueryClient();
   const key = ['case', initial.number];
@@ -250,6 +259,15 @@ export function CaseView({
             <dd className="font-mono">{c.softwareVersion ?? '—'}</dd>
           </dl>
         </section>
+
+        {canRma && (
+          <RmaPanel
+            caseNumber={c.number}
+            base={staff ? '/workspace/rmas' : '/portal/rmas'}
+            canRequest={canRma && !!c.serialNumber}
+            caseOpen={c.status !== 'closed'}
+          />
+        )}
 
         {(c.allowedTransitions.length > 0 ||
           c.can.escalate ||

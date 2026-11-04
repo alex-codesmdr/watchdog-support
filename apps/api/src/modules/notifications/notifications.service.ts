@@ -1,5 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { SEVERITY_LABELS, STATUS_LABELS, type CaseStatusKey, type Severity } from '@wd/contracts';
+import {
+  RMA_STATUS_LABELS,
+  RMA_TYPE_LABELS,
+  SEVERITY_LABELS,
+  STATUS_LABELS,
+  type CaseStatusKey,
+  type RmaStatus,
+  type Severity,
+} from '@wd/contracts';
 import type { AppConfig } from '../../config.js';
 import type { Database, Tx } from '../../db/database.js';
 import { CONFIG, DB, IDENTITY_PROVISIONER, MAIL_TRANSPORT, SMS_ADAPTER } from '../../tokens.js';
@@ -76,6 +84,8 @@ export class NotificationsService {
         );
       case 'renewal.requested':
         return this.renewal(String(payload.renewalId));
+      case 'rma.status_changed':
+        return this.rmaChanged(String(payload.rmaId), payload.to as RmaStatus);
       case 'coverage.expiring':
         return this.coverageExpiring(
           String(payload.orgId),
@@ -85,6 +95,95 @@ export class NotificationsService {
       default:
         return;
     }
+  }
+
+  /**
+   * RMA updates go to the requester and the case requester; new requests also alert the RMA
+   * coordinators. Shipping details are included so the customer need not sign in.
+   */
+  private async rmaChanged(id: string, to: RmaStatus) {
+    const h = (v: string) => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    await this.db.withSystem(async (tx) => {
+      const r = await tx
+        .selectFrom('rma as r')
+        .innerJoin('support_case as c', 'c.id', 'r.case_id')
+        .innerJoin('asset as a', 'a.id', 'r.asset_id')
+        .innerJoin('product as p', 'p.id', 'a.product_id')
+        .innerJoin('organization as o', 'o.id', 'r.org_id')
+        .select([
+          'r.number',
+          'r.org_id',
+          'r.type',
+          'r.requested_by',
+          'r.fault_description',
+          'r.replacement_serial',
+          'r.outbound_courier',
+          'r.outbound_tracking',
+          'c.number as case_number',
+          'c.requester_id',
+          'a.serial_number',
+          'p.model_name',
+          'o.name as org_name',
+        ])
+        .where('r.id', '=', id)
+        .executeTakeFirst();
+      if (!r) return;
+      const url = `${this.cfg.PUBLIC_WEB_URL}/portal/rmas/${r.number}`;
+      if (to === 'requested') {
+        for (const m of await this.usersWithRole(tx, ['rma_coordinator']))
+          await this.send({
+            to: m.email,
+            orgId: null,
+            userId: m.id,
+            key: 'rma_requested',
+            vars: {
+              rma: r.number,
+              org: r.org_name,
+              typeLabel: RMA_TYPE_LABELS[r.type].toLowerCase(),
+              model: r.model_name,
+              serial: r.serial_number,
+              caseNumber: r.case_number,
+              fault: r.fault_description.slice(0, 300),
+              url: `${this.cfg.PUBLIC_WEB_URL}/workspace/rmas/${r.number}`,
+            },
+          });
+      }
+      const DETAIL: Partial<Record<RmaStatus, string>> = {
+        requested:
+          'We received your request. An RMA coordinator reviews it within one business day.',
+        approved:
+          r.type === 'advance'
+            ? 'Approved. We will ship the replacement first and tell you when it leaves our warehouse.'
+            : 'Approved. Download the RMA form from the RMA page, pack the faulty unit with the form, and enter the courier tracking number once it is on its way.',
+        rejected: 'This request was not approved. The reason is on the RMA page.',
+        cancelled: 'This RMA was cancelled.',
+        received: 'We received the faulty unit.',
+        replacement_shipped: `Replacement serial ${h(r.replacement_serial ?? '')} has shipped${r.outbound_courier ? ` with ${h(r.outbound_courier)}` : ''}, tracking number <b>${h(r.outbound_tracking ?? '')}</b>. Support coverage has moved to the new serial.`,
+        closed: 'This RMA is complete.',
+      };
+      const users = await tx
+        .selectFrom('app_user')
+        .select(['id', 'email', 'locale', 'status'])
+        .where('id', 'in', [r.requested_by, r.requester_id])
+        .execute();
+      for (const u of users.filter((x) => x.status === 'active'))
+        await this.send({
+          to: u.email,
+          orgId: r.org_id,
+          userId: u.id,
+          key: 'rma_update',
+          locale: u.locale,
+          vars: {
+            rma: r.number,
+            statusLabel: RMA_STATUS_LABELS[to],
+            model: r.model_name,
+            serial: r.serial_number,
+            caseNumber: r.case_number,
+            detailHtml: DETAIL[to] ?? '',
+            url,
+          },
+        });
+    });
   }
 
   /** Renewal quote request → the renewals/sales mailbox (CRM adapter replaces this in Phase 4). */

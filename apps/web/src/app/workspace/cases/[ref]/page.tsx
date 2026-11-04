@@ -22,7 +22,13 @@ export default async function CasePage({
       api<Me>('/api/v1/me'),
     ]);
     return (
-      <CaseView initial={c} staff={me.isInternal} meId={me.id} justCreated={created === '1'} />
+      <CaseView
+        initial={c}
+        staff={me.isInternal}
+        meId={me.id}
+        justCreated={created === '1'}
+        canRma={me.permissions.includes('rma:request') || me.permissions.includes('rma:manage')}
+      />
     );
   } catch (e) {
     if (e instanceof ApiError && (e.status === 404 || e.status === 400)) notFound();

@@ -37,6 +37,7 @@ test('customer admin adds a site, moves a device and requests a renewal quote', 
   // The expired device needs attention; the quote can only be requested once.
   const row = page.locator('li', { hasText: 'WDSW3100D0004' });
   const ask = row.getByRole('button', { name: /Request a renewal quote/ });
+  await expect(ask.or(row.getByText('Quote requested'))).toBeVisible();
   if (await ask.isVisible()) {
     await ask.click();
     const r = page.getByRole('dialog', { name: 'Request a renewal quote' });

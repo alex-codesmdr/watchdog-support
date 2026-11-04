@@ -39,6 +39,8 @@ permissions:
   - asset:import
   - renewal:request
   - release:manage # publish firmware, software and documents in the download centre
+  - rma:request # ask for a replacement on a case the user can see
+  - rma:manage # approve, ship, receive and close RMAs
 
 roles:
   customer_user:
@@ -55,6 +57,7 @@ roles:
         attachment:upload,
         asset:read:org,
         renewal:request,
+        rma:request,
       ]
   customer_admin:
     internal: false
@@ -74,6 +77,7 @@ roles:
         audit:read:org,
         renewal:request,
         asset:manage:org,
+        rma:request,
       ]
   partner:
     internal: false
@@ -89,6 +93,7 @@ roles:
         attachment:upload,
         asset:read:delegated,
         renewal:request,
+        rma:request,
       ]
   l1_engineer:
     internal: true
@@ -123,6 +128,7 @@ roles:
         asset:read:all,
         kb:read:internal,
         kb:draft,
+        rma:request,
       ]
   l3_engineer:
     internal: true
@@ -141,6 +147,7 @@ roles:
         product:read:internal_ref,
         kb:read:internal,
         kb:draft,
+        rma:request,
       ]
   support_manager:
     internal: true
@@ -163,6 +170,8 @@ roles:
         kb:publish,
         asset:import,
         release:manage,
+        rma:request,
+        rma:manage,
       ]
   content_editor:
     internal: true
@@ -177,6 +186,8 @@ roles:
         asset:read:all,
         product:read:internal_ref,
         kb:read:internal,
+        rma:request,
+        rma:manage,
       ]
   system_admin:
     internal: true
@@ -342,4 +353,19 @@ endpoints:
       method: GET,
       path: /api/v1/admin/releases,
       allow: [support_manager, content_editor, system_admin],
+    }
+  - {
+      id: rma.list,
+      method: GET,
+      path: /api/v1/rmas,
+      allow:
+        [
+          customer_user,
+          customer_admin,
+          partner,
+          l2_engineer,
+          l3_engineer,
+          support_manager,
+          rma_coordinator,
+        ],
     }

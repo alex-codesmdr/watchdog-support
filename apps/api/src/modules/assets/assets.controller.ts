@@ -76,6 +76,8 @@ export class AssetsController {
       .orderBy('a.serial_number')
       .limit(500);
     // RLS already limits to visible orgs; customers see their own org unless they pick a delegated one.
+    // Devices returned under an RMA stay on record but are no longer installed.
+    q = q.where('a.retired_at', 'is', null);
     const org = f.orgId ?? (p.isInternal ? undefined : p.orgId);
     if (org) q = q.where('a.org_id', '=', org);
     if (f.serial) q = q.where('a.serial_number', '=', f.serial);

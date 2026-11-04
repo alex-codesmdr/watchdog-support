@@ -48,6 +48,8 @@ import {
   ReleasesAdminController,
 } from './modules/downloads/downloads.controller.js';
 import { DownloadsService } from './modules/downloads/downloads.service.js';
+import { RmaController } from './modules/rma/rma.controller.js';
+import { RmaService } from './modules/rma/rma.service.js';
 
 /** Providers tests may replace (JWKS, transports, storage, AV, IdP, Redis). */
 export interface AppOverrides {
@@ -129,6 +131,7 @@ export class AppModule {
         AssetImportController,
         DownloadsController,
         ReleasesAdminController,
+        RmaController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
@@ -141,6 +144,7 @@ export class AppModule {
         KbService,
         RemindersService,
         DownloadsService,
+        RmaService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_GUARD, useClass: RateLimitGuard },

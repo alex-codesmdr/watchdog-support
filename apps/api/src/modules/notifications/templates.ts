@@ -19,7 +19,9 @@ export type TemplateKey =
   | 'sla_warning'
   | 'sla_breached'
   | 'renewal_requested'
-  | 'coverage_expiring';
+  | 'coverage_expiring'
+  | 'rma_update'
+  | 'rma_requested';
 
 interface Rendered {
   subject: string;
@@ -114,6 +116,18 @@ const EN: Strings = {
     heading: 'Coverage is ending soon',
     body: 'Support coverage for {{count}} device(s) at <b>{{org}}</b> ends within {{days}} days, the earliest on {{earliest}}:<br>{{listHtml}}<br>Request a renewal quote from the Devices page to keep 24×7 support and software updates.',
     cta: 'Review devices',
+  },
+  rma_update: {
+    subject: '[{{rma}}] {{statusLabel}}',
+    heading: '{{rma}}: {{statusLabel}}',
+    body: '{{model}}, serial {{serial}} (case {{caseNumber}}).<br>{{detailHtml}}',
+    cta: 'View RMA',
+  },
+  rma_requested: {
+    subject: '[Action] {{rma}} requested by {{org}}',
+    heading: 'New RMA request',
+    body: '{{org}} asked for a {{typeLabel}} of {{model}}, serial {{serial}} (case {{caseNumber}}). Fault: "{{fault}}"',
+    cta: 'Review RMA',
   },
 };
 

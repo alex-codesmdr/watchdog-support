@@ -7,6 +7,8 @@
 import { z } from 'zod';
 
 export * from './case-lifecycle.js';
+export * from './rma-lifecycle.js';
+import { RMA_STATUSES, RMA_TYPES } from './rma-lifecycle.js';
 import { CASE_STATUSES } from './case-lifecycle.js';
 
 // ---------- primitives ----------
@@ -640,3 +642,84 @@ export const DownloadLink = z.object({
   sha256: z.string(),
 });
 export type DownloadLink = z.infer<typeof DownloadLink>;
+
+// ---------- RMA ----------
+export const RmaStatusSchema = z.enum(RMA_STATUSES);
+export const RmaTypeSchema = z.enum(RMA_TYPES);
+const Pincode = z
+  .string()
+  .trim()
+  .regex(/^[1-9][0-9]{5}$/, 'Enter a 6-digit PIN code');
+const IndianPhone = z
+  .string()
+  .trim()
+  .regex(/^\+?[0-9 -]{10,16}$/, 'Enter a phone number');
+export const RmaCreateRequest = z.object({
+  /** Defaults to the device on the case. */
+  assetId: Uuid.optional(),
+  type: RmaTypeSchema.default('standard'),
+  faultDescription: z.string().trim().min(10).max(4000),
+  contactName: z.string().trim().min(2).max(120),
+  contactPhone: IndianPhone,
+  address: z.string().trim().min(5).max(300),
+  city: z.string().trim().min(2).max(80),
+  state: z.string().trim().min(2).max(80),
+  pincode: Pincode,
+});
+export type RmaCreateRequest = z.infer<typeof RmaCreateRequest>;
+export const RmaTransitionRequest = z.object({
+  to: RmaStatusSchema,
+  note: z.string().trim().max(2000).optional(),
+  courier: z.string().trim().max(80).optional(),
+  trackingNumber: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9-]{4,40}$/, 'Use letters, digits and hyphens')
+    .optional(),
+  /** Required when shipping the replacement: the new unit's serial number. */
+  replacementSerial: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9-]{6,32}$/)
+    .optional(),
+});
+export type RmaTransitionRequest = z.infer<typeof RmaTransitionRequest>;
+export const RmaSummary = z.object({
+  id: Uuid,
+  number: z.string(),
+  caseNumber: z.string(),
+  org: z.object({ id: Uuid, name: z.string() }),
+  serialNumber: z.string(),
+  modelName: z.string(),
+  type: RmaTypeSchema,
+  status: RmaStatusSchema,
+  createdAt: IsoDateTime,
+  updatedAt: IsoDateTime,
+});
+export type RmaSummary = z.infer<typeof RmaSummary>;
+export const RmaView = RmaSummary.extend({
+  faultDescription: z.string(),
+  shipTo: z.object({
+    contactName: z.string(),
+    contactPhone: z.string(),
+    address: z.string(),
+    city: z.string(),
+    state: z.string(),
+    pincode: z.string(),
+  }),
+  replacementSerial: z.string().nullable(),
+  outbound: z.object({ courier: z.string().nullable(), trackingNumber: z.string().nullable() }),
+  inbound: z.object({ courier: z.string().nullable(), trackingNumber: z.string().nullable() }),
+  events: z.array(
+    z.object({
+      at: IsoDateTime,
+      from: RmaStatusSchema.nullable(),
+      to: RmaStatusSchema,
+      actor: z.string(),
+      note: z.string().nullable(),
+    }),
+  ),
+  next: z.array(RmaStatusSchema),
+});
+export type RmaView = z.infer<typeof RmaView>;

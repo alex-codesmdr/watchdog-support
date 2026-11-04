@@ -16,7 +16,8 @@
     "skip": "Skip to content",
     "devices": "Devices",
     "imports": "Device import",
-    "releases": "Releases"
+    "releases": "Releases",
+    "rmas": "Replacements"
   },
   "home": {
     "title": "What is your network telling you?",
