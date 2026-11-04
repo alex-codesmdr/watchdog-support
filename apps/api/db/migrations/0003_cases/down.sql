@@ -1,0 +1,14 @@
+DROP FUNCTION IF EXISTS wd.display_names(uuid[]);
+DROP TABLE IF EXISTS inbound_email_hold;
+DROP TABLE IF EXISTS notification;
+DROP TABLE IF EXISTS csat_response;
+DROP TABLE IF EXISTS sla_clock;
+DROP TABLE IF EXISTS case_event;
+DROP TABLE IF EXISTS case_attachment;
+DROP TABLE IF EXISTS upload;
+DROP TABLE IF EXISTS case_message;
+DROP FUNCTION IF EXISTS wd.inherit_case_org();
+DROP TABLE IF EXISTS support_case;
+DROP FUNCTION IF EXISTS wd.next_case_number();
+DROP SEQUENCE IF EXISTS support_case_number_seq;
+DROP TABLE IF EXISTS queue;

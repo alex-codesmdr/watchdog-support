@@ -1,0 +1,91 @@
+# WatchDog Support Portal — RBAC matrix (source of truth).
+# Roles are bundles of atomic permissions. Seeds, the API ability builder and the
+# generated authorization test-suite all read this file. Review changes as data diffs.
+#
+# Scope suffixes:  :own = records the user requested  :org = the user's organisation
+#                  :delegated = customer orgs that granted this partner access  :all = every tenant (staff)
+version: 1
+
+permissions:
+  - catalog:read
+  - case:create
+  - case:create:on_behalf          # staff opening a case for a customer
+  - case:read:own
+  - case:read:org
+  - case:read:delegated
+  - case:read:all
+  - case:reply:public
+  - case:note:internal
+  - case:transition:staff
+  - case:transition:customer
+  - case:escalate:customer         # customer "Escalate" button (justification mandatory)
+  - case:escalate:level            # L1 -> L2 -> L3 -> Engineering
+  - case:assign
+  - case:csat:submit
+  - attachment:upload
+  - asset:read:org
+  - asset:read:delegated
+  - asset:read:all
+  - org:users:manage
+  - registration:approve
+  - product:read:internal_ref
+  - audit:read:org
+  - audit:read:all
+
+roles:
+  customer_user:
+    internal: false
+    permissions: [catalog:read, case:create, case:read:own, case:reply:public, case:transition:customer,
+                  case:escalate:customer, case:csat:submit, attachment:upload, asset:read:org]
+  customer_admin:
+    internal: false
+    permissions: [catalog:read, case:create, case:read:own, case:read:org, case:reply:public,
+                  case:transition:customer, case:escalate:customer, case:csat:submit, attachment:upload,
+                  asset:read:org, org:users:manage, audit:read:org]
+  partner:
+    internal: false
+    permissions: [catalog:read, case:create, case:read:own, case:read:delegated, case:reply:public,
+                  case:transition:customer, case:escalate:customer, attachment:upload, asset:read:delegated]
+  l1_engineer:
+    internal: true
+    permissions: [catalog:read, case:create:on_behalf, case:read:all, case:reply:public, case:note:internal,
+                  case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all]
+  l2_engineer:
+    internal: true
+    permissions: [catalog:read, case:create:on_behalf, case:read:all, case:reply:public, case:note:internal,
+                  case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all]
+  l3_engineer:
+    internal: true
+    permissions: [catalog:read, case:create:on_behalf, case:read:all, case:reply:public, case:note:internal,
+                  case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all,
+                  product:read:internal_ref]
+  support_manager:
+    internal: true
+    permissions: [catalog:read, case:create:on_behalf, case:read:all, case:reply:public, case:note:internal,
+                  case:transition:staff, case:escalate:level, case:assign, attachment:upload, asset:read:all,
+                  audit:read:all]
+  content_editor:
+    internal: true
+    permissions: [catalog:read]
+  rma_coordinator:
+    internal: true
+    permissions: [catalog:read, case:read:all, case:note:internal, asset:read:all, product:read:internal_ref]
+  system_admin:
+    internal: true
+    permissions: [catalog:read, registration:approve, org:users:manage, audit:read:all,
+                  product:read:internal_ref, asset:read:all]
+
+# Endpoint expectations used to GENERATE the authorization test-suite.
+# allow: roles that must succeed against a resource in their reach. Every other role must get 403/404.
+# Cross-tenant: every customer-side role is additionally tested against another org's resource (expect 404).
+endpoints:
+  - { id: me,               method: GET,   path: /api/v1/me,                       allow: "*" }
+  - { id: case.list,        method: GET,   path: /api/v1/cases,                    allow: [customer_user, customer_admin, partner, l1_engineer, l2_engineer, l3_engineer, support_manager, rma_coordinator] }
+  - { id: case.create,      method: POST,  path: /api/v1/cases,                    allow: [customer_user, customer_admin, partner, l1_engineer, l2_engineer, l3_engineer, support_manager] }
+  - { id: case.get,         method: GET,   path: "/api/v1/cases/:case",            allow: [customer_user, customer_admin, partner, l1_engineer, l2_engineer, l3_engineer, support_manager, rma_coordinator], tenant: true }
+  - { id: case.reply,       method: POST,  path: "/api/v1/cases/:case/messages",   allow: [customer_user, customer_admin, partner, l1_engineer, l2_engineer, l3_engineer, support_manager], tenant: true }
+  - { id: case.note,        method: POST,  path: "/api/v1/cases/:case/messages#internal", allow: [l1_engineer, l2_engineer, l3_engineer, support_manager, rma_coordinator], tenant: true }
+  - { id: case.escalate,    method: POST,  path: "/api/v1/cases/:case/escalate",   allow: [customer_user, customer_admin, partner, l1_engineer, l2_engineer, l3_engineer, support_manager], tenant: true }
+  - { id: case.transition,  method: POST,  path: "/api/v1/cases/:case/transition", allow: [l1_engineer, l2_engineer, l3_engineer, support_manager], tenant: true }
+  - { id: registration.list, method: GET,  path: /api/v1/admin/registrations,      allow: [system_admin] }
+  - { id: product.internal, method: GET,   path: "/api/v1/catalog/products/:sku/internal", allow: [l3_engineer, rma_coordinator, system_admin] }

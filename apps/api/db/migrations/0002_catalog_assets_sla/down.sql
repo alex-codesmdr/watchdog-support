@@ -1,0 +1,11 @@
+DROP TABLE IF EXISTS sla_target;
+DROP TABLE IF EXISTS sla_policy;
+DROP TABLE IF EXISTS calendar_holiday;
+DROP TABLE IF EXISTS business_calendar;
+DROP FUNCTION IF EXISTS wd.warranty_lookup(text);
+DROP TABLE IF EXISTS entitlement;
+DROP TABLE IF EXISTS asset;
+DROP TABLE IF EXISTS site;
+DROP FUNCTION IF EXISTS wd.product_internal_ref(text);
+DROP TABLE IF EXISTS product;
+DROP TABLE IF EXISTS product_family;
