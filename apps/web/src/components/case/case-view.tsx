@@ -2,13 +2,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RMA_STATUS_LABELS, type RmaStatus } from '@wd/contracts';
 import { RmaPanel } from '@/components/rma/rma-panel';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   OPEN_STATUSES,
   STATUS_LABELS,
   type AttachmentView,
   type CaseDetail,
   type CaseStatus,
+  type SavedReply,
 } from '@wd/contracts';
 import {
   Button,
@@ -81,12 +82,14 @@ export function CaseView({
   initial,
   staff,
   meId,
+  meName = '',
   justCreated,
   canRma = false,
 }: {
   initial: CaseDetail;
   staff: boolean;
   meId: string;
+  meName?: string;
   justCreated?: boolean;
   /** The viewer may request (or manage) RMAs. */
   canRma?: boolean;
@@ -200,6 +203,7 @@ export function CaseView({
           <Composer
             c={c}
             staff={staff}
+            myName={meName}
             busy={busy}
             onSend={(body) => act('reply', '/messages', body)}
           />
@@ -399,18 +403,90 @@ function Attachments({ items }: { items: AttachmentView[] }) {
   );
 }
 
+/** Fills a saved reply's placeholders from the case and hands the text to the reply box. */
+function SavedReplyPicker({
+  c,
+  myName,
+  onPick,
+}: {
+  c: CaseDetail;
+  myName: string;
+  onPick: (text: string) => void;
+}) {
+  const q = useQuery({
+    queryKey: ['saved-replies'],
+    queryFn: () => apiFetch<{ items: SavedReply[] }>('/v1/saved-replies'),
+    staleTime: 60_000,
+  });
+  const items = q.data?.items ?? [];
+  const fill = (t: string) =>
+    t
+      .replaceAll('{{customer_name}}', c.requesterName)
+      .replaceAll('{{organisation}}', c.orgName)
+      .replaceAll('{{case_ref}}', c.number)
+      .replaceAll('{{my_name}}', myName);
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <label className="flex items-center gap-2">
+        <span className="text-muted">Insert a saved reply</span>
+        <select
+          value=""
+          disabled={!items.length}
+          onChange={(e) => {
+            const r = items.find((i) => i.id === e.target.value);
+            if (r) onPick(fill(r.body));
+          }}
+          className="h-9 max-w-xs rounded-s border border-line bg-surface px-2"
+        >
+          <option value="">
+            {q.isLoading ? 'Loading…' : items.length ? 'Choose…' : 'None saved yet'}
+          </option>
+          {items.some((i) => !i.shared) && (
+            <optgroup label="Yours">
+              {items
+                .filter((i) => !i.shared)
+                .map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.title}
+                  </option>
+                ))}
+            </optgroup>
+          )}
+          {items.some((i) => i.shared) && (
+            <optgroup label="Shared">
+              {items
+                .filter((i) => i.shared)
+                .map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.title}
+                  </option>
+                ))}
+            </optgroup>
+          )}
+        </select>
+      </label>
+      <a href="/workspace/saved-replies" className="text-teal-ink underline underline-offset-2">
+        Manage saved replies
+      </a>
+    </div>
+  );
+}
+
 function Composer({
   c,
   staff,
+  myName,
   busy,
   onSend,
 }: {
   c: CaseDetail;
   staff: boolean;
+  myName: string;
   busy: string | null;
   onSend: (b: unknown) => Promise<boolean>;
 }) {
   const [body, setBody] = useState('');
+  const box = useRef<HTMLTextAreaElement>(null);
   const [internal, setInternal] = useState(false);
   const [status, setStatus] = useState<CaseStatus | ''>('');
   const [files, setFiles] = useState<UploadItem[]>([]);
@@ -463,8 +539,33 @@ function Composer({
         label={internal ? 'Internal note' : staff ? 'Reply to customer' : 'Add a reply'}
         hint={internal ? 'Only WatchDog staff can see this.' : 'Wrap CLI output in ``` lines.'}
       >
-        {(p) => <Textarea {...p} value={body} onChange={(e) => setBody(e.target.value)} rows={5} />}
+        {(p) => (
+          <Textarea
+            {...p}
+            ref={box}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={5}
+          />
+        )}
       </Field>
+      {staff && c.can.internalNote && (
+        <SavedReplyPicker
+          c={c}
+          myName={myName}
+          onPick={(text) => {
+            const el = box.current;
+            const at = el ? el.selectionStart : body.length;
+            const end = el ? el.selectionEnd : body.length;
+            const next = body.slice(0, at) + text + body.slice(end);
+            setBody(next);
+            requestAnimationFrame(() => {
+              el?.focus();
+              el?.setSelectionRange(at + text.length, at + text.length);
+            });
+          }}
+        />
+      )}
       <Uploader items={files} onChange={setFiles} />
       <div className="flex flex-wrap items-center gap-3">
         {staff && !internal && c.allowedTransitions.length > 0 && (

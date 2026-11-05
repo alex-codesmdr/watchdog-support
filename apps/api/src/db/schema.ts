@@ -594,7 +594,32 @@ export interface AssetImportT {
   created_at: Ts;
 }
 
+export interface AnnouncementT {
+  id: Generated<string>;
+  title: string;
+  body: Generated<string>;
+  link_url: string | null;
+  tone: Generated<'info' | 'maintenance' | 'incident'>;
+  audience: Generated<'everyone' | 'customers' | 'staff'>;
+  starts_at: Ts;
+  ends_at: TsNull;
+  created_by: string;
+  updated_at: Ts;
+  created_at: Ts;
+}
+export interface SavedReplyT {
+  id: Generated<string>;
+  owner_id: string | null;
+  title: string;
+  body: string;
+  created_by: string;
+  updated_at: Ts;
+  created_at: Ts;
+}
+
 export interface DB {
+  announcement: AnnouncementT;
+  saved_reply: SavedReplyT;
   renewal_request: RenewalRequestT;
   entitlement_reminder: EntitlementReminderT;
   eula: EulaT;

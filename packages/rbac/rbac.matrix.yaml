@@ -46,6 +46,8 @@ permissions:
   - rma:read # read-only RMA access; granted only through API-key scopes
   - advisory:manage # write and publish security advisories (PSIRT)
   - integration:manage # organisation API keys and webhooks
+  - announcement:manage # portal banners for maintenance and notices
+  - reply:template:share # create and edit saved replies shared with every engineer
 
 roles:
   customer_user:
@@ -182,11 +184,21 @@ roles:
         rma:manage,
         advisory:manage,
         report:ops:read:all,
+        announcement:manage,
+        reply:template:share,
       ]
   content_editor:
     internal: true
     permissions:
-      [catalog:read, kb:read:internal, kb:draft, kb:publish, release:manage, advisory:manage]
+      [
+        catalog:read,
+        kb:read:internal,
+        kb:draft,
+        kb:publish,
+        release:manage,
+        advisory:manage,
+        announcement:manage,
+      ]
   rma_coordinator:
     internal: true
     permissions:
@@ -216,6 +228,7 @@ roles:
         release:manage,
         advisory:manage,
         report:ops:read:all,
+        announcement:manage,
       ]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.
@@ -389,12 +402,7 @@ endpoints:
       path: /api/v1/admin/advisories,
       allow: [l3_engineer, support_manager, content_editor, system_admin],
     }
-  - {
-      id: integrations.keys,
-      method: GET,
-      path: /api/v1/org/api-keys,
-      allow: [customer_admin],
-    }
+  - { id: integrations.keys, method: GET, path: /api/v1/org/api-keys, allow: [customer_admin] }
   - {
       id: report.ops,
       method: GET,
@@ -406,4 +414,16 @@ endpoints:
       method: GET,
       path: /api/v1/audit-log,
       allow: [customer_admin, support_manager, system_admin],
+    }
+  - {
+      id: announcement.admin,
+      method: GET,
+      path: /api/v1/admin/announcements,
+      allow: [support_manager, content_editor, system_admin],
+    }
+  - {
+      id: saved_reply.list,
+      method: GET,
+      path: /api/v1/saved-replies,
+      allow: [l1_engineer, l2_engineer, l3_engineer, support_manager, rma_coordinator],
     }

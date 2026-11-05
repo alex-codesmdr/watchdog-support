@@ -68,7 +68,7 @@ test('engineer triages, adds an internal note and replies', async ({ page }) => 
   await page
     .getByLabel('Reply to customer', { exact: true })
     .fill('Please check the PSU 2 LED and send `display power`.');
-  await page.getByRole('combobox').selectOption('awaiting_customer');
+  await page.getByRole('combobox', { name: /set status/ }).selectOption('awaiting_customer');
   await page.getByRole('button', { name: 'Send reply' }).click();
   await expect(page.getByText('Awaiting Customer').first()).toBeVisible();
   await signOut(page);

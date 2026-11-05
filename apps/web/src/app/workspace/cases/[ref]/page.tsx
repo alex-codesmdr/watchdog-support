@@ -26,6 +26,7 @@ export default async function CasePage({
         initial={c}
         staff={me.isInternal}
         meId={me.id}
+        meName={me.displayName}
         justCreated={created === '1'}
         canRma={me.permissions.includes('rma:request') || me.permissions.includes('rma:manage')}
       />

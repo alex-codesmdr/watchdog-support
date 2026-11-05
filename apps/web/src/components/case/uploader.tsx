@@ -117,6 +117,7 @@ export function Uploader({
           type="file"
           multiple
           accept={ALLOWED}
+          aria-label="Attach files"
           className="sr-only"
           onChange={(e) => void start(e.target.files)}
           tabIndex={-1}

@@ -193,6 +193,40 @@ export const DEMO_USERS: Array<[string, string, string, string, string[]]> = [
   ],
 ];
 
+/** Starter replies every engineer can use; support managers edit them in the portal. */
+const SHARED_REPLIES: [string, string][] = [
+  [
+    'Ask for diagnostic logs',
+    `Hello {{customer_name}},
+
+To look into this further, please attach the diagnostic file from the device to case {{case_ref}}. Files up to 2 GB can be uploaded straight to the case.
+
+Regards,
+{{my_name}}
+WatchDog Support`,
+  ],
+  [
+    'Fix confirmed, closing soon',
+    `Hello {{customer_name}},
+
+Glad to hear this is working again. I will mark case {{case_ref}} as resolved. If the problem comes back, you can reopen the case for 14 days after it closes.
+
+Regards,
+{{my_name}}
+WatchDog Support`,
+  ],
+  [
+    'Waiting for your reply',
+    `Hello {{customer_name}},
+
+We have not heard back on case {{case_ref}}. Could you let us know whether the suggested steps helped, so we can continue or close it?
+
+Regards,
+{{my_name}}
+WatchDog Support`,
+  ],
+];
+
 export async function seed(url: string, opts: { reset?: boolean; log?: (s: string) => void } = {}) {
   const log = opts.log ?? console.log;
   const c = new pg.Client({ connectionString: url });
@@ -351,6 +385,14 @@ export async function seed(url: string, opts: { reset?: boolean; log?: (s: strin
     const relCount = await seedDownloads(q, SYSTEM_USER_ID);
     if (relCount) log(`  ${relCount} download-centre releases seeded`);
     if (await seedAdvisories(q, SYSTEM_USER_ID)) log('  demo advisory seeded');
+    if (!(await q('SELECT 1 FROM saved_reply WHERE owner_id IS NULL LIMIT 1')).rowCount) {
+      for (const [title, body] of SHARED_REPLIES)
+        await q(
+          'INSERT INTO saved_reply (owner_id, title, body, created_by) VALUES (NULL, $1, $2, $3)',
+          [title, body, SYSTEM_USER_ID],
+        );
+      log('  shared saved replies seeded');
+    }
     await q('COMMIT');
     log('seed complete');
   } catch (e) {

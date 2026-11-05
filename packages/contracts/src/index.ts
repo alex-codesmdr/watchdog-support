@@ -946,3 +946,77 @@ export const AuditPage = z.object({
   nextBefore: z.number().int().nullable(),
 });
 export type AuditPage = z.infer<typeof AuditPage>;
+
+// ---- Phase 4d: announcements (portal banners)
+export const AnnouncementTone = z.enum(['info', 'maintenance', 'incident']);
+export type AnnouncementTone = z.infer<typeof AnnouncementTone>;
+export const AnnouncementAudience = z.enum(['everyone', 'customers', 'staff']);
+export type AnnouncementAudience = z.infer<typeof AnnouncementAudience>;
+export const AnnouncementRequest = z
+  .object({
+    title: z.string().trim().min(3).max(120),
+    body: z.string().trim().max(500).default(''),
+    /** A portal path ("/advisories/…") or an https link. */
+    linkUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .regex(/^(\/(?!\/)|https:\/\/)/, 'Use a portal path starting with / or an https:// link')
+      .nullable()
+      .default(null),
+    tone: AnnouncementTone.default('info'),
+    audience: AnnouncementAudience.default('everyone'),
+    startsAt: IsoDateTime.nullable().default(null),
+    endsAt: IsoDateTime.nullable().default(null),
+  })
+  .refine((a) => !a.endsAt || !a.startsAt || a.endsAt > a.startsAt, {
+    message: 'The end must be after the start',
+    path: ['endsAt'],
+  });
+export type AnnouncementRequest = z.input<typeof AnnouncementRequest>;
+/** What a reader sees in the banner. */
+export const Announcement = z.object({
+  id: Uuid,
+  title: z.string(),
+  body: z.string(),
+  linkUrl: z.string().nullable(),
+  tone: AnnouncementTone,
+  /** Incidents stay up until they end; everything else can be dismissed. */
+  dismissible: z.boolean(),
+});
+export type Announcement = z.infer<typeof Announcement>;
+export const AnnouncementAdmin = Announcement.extend({
+  audience: AnnouncementAudience,
+  startsAt: IsoDateTime,
+  endsAt: IsoDateTime.nullable(),
+  state: z.enum(['scheduled', 'live', 'ended']),
+  createdBy: z.string(),
+  updatedAt: IsoDateTime,
+});
+export type AnnouncementAdmin = z.infer<typeof AnnouncementAdmin>;
+
+// ---- Phase 4d: engineers' saved replies
+export const SavedReplyRequest = z.object({
+  title: z.string().trim().min(3).max(80),
+  body: z.string().trim().min(1).max(5000),
+  /** Shared with every engineer (needs reply:template:share) or personal. */
+  shared: z.boolean().default(false),
+});
+export type SavedReplyRequest = z.input<typeof SavedReplyRequest>;
+export const SavedReply = z.object({
+  id: Uuid,
+  title: z.string(),
+  body: z.string(),
+  shared: z.boolean(),
+  /** Whether the viewer may edit or delete it. */
+  editable: z.boolean(),
+  updatedAt: IsoDateTime,
+});
+export type SavedReply = z.infer<typeof SavedReply>;
+/** Placeholders a saved reply may use; filled from the case when inserted. */
+export const SAVED_REPLY_PLACEHOLDERS = {
+  '{{customer_name}}': 'The person who raised the case',
+  '{{organisation}}': 'Their organisation',
+  '{{case_ref}}': 'The case reference',
+  '{{my_name}}': 'Your name',
+} as const;
