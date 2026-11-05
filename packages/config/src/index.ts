@@ -64,10 +64,10 @@ export const apiEnvSchema = z.object({
   MAIL_FROM: z.string().default('WatchDog Support <support@watchdog.example>'),
   /** Sales/renewals mailbox that receives renewal-quote requests (CRM adapter in Phase 4). */
   RENEWALS_EMAIL: z.string().email().default('renewals@watchdog.example'),
-  /** Where customers send faulty units; printed on the RMA form. Set the real address before go-live. */
+  /** Where customers send faulty units; printed on the RMA form. */
   RMA_RETURN_ADDRESS: z
     .string()
-    .default('WatchDog Returns Centre, Apollo Infoways Pvt. Ltd., India (address not configured)'),
+    .default('Apollo Infoways Pvt. Ltd., H-102, 3rd Floor, Sector 63, Noida, Uttar Pradesh'),
   MAIL_REPLY_DOMAIN: z.string().default('support.watchdog.example'),
   MAIL_REPLY_LOCALPART: z.string().default('case'),
   IMAP_HOST: z.string().optional(),
