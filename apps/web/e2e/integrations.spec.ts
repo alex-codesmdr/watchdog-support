@@ -10,8 +10,9 @@ test('customer admin connects a system with an API key and a webhook', async ({
   await signIn(page, 'it.admin@kaveribank.example');
   await page
     .getByRole('navigation', { name: 'Main' })
-    .getByRole('link', { name: 'Integrations' })
+    .getByRole('link', { name: 'Administration' })
     .click();
+  await page.getByRole('link', { name: 'API keys and webhooks' }).click();
   await expect(
     page.getByRole('heading', { level: 1, name: 'API keys and webhooks' }),
   ).toBeVisible();

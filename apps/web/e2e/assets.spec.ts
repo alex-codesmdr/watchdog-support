@@ -61,6 +61,7 @@ test('a regular customer user sees devices but cannot change sites', async ({ pa
 
 test('support manager checks and imports a device spreadsheet', async ({ page }) => {
   await signIn(page, 'rohan.manager@watchdog.example', '/workspace');
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Admin' }).click();
   await page.getByRole('link', { name: 'Device import' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Device import' })).toBeVisible();
   await axe(page);

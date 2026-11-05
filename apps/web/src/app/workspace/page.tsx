@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { STAFF_TOOLS, toolsFor } from '@/lib/tools';
 import type { CaseSummary, Me } from '@wd/contracts';
 import { EmptyState } from '@wd/ui';
 import { CaseList } from '@/components/case/case-list';
@@ -20,21 +21,12 @@ export default async function Queue({
   const me = await api<Me>('/api/v1/me');
   // Staff without case access (content editors) land here after sign-in: show their tools instead.
   if (!me.permissions.includes('case:read:all')) {
-    const tools = [
-      ['kb:draft', '/workspace/kb', 'Knowledge base editor', 'Write and publish articles.'],
-      [
-        'release:manage',
-        '/admin/releases',
-        'Releases',
-        'Publish firmware, software and documents.',
-      ],
-      [
-        'asset:import',
-        '/admin/imports',
-        'Device import',
-        'Register customer devices from a spreadsheet.',
-      ],
-    ].filter(([perm]) => me.permissions.includes(perm!));
+    const tools = toolsFor(STAFF_TOOLS, me.permissions).map((x) => [
+      x.perm,
+      x.href,
+      x.label,
+      x.desc,
+    ]);
     return (
       <div className="max-w-2xl">
         <h1 className="text-2xl font-semibold">Welcome, {me.displayName}</h1>

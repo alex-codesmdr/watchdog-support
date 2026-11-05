@@ -62,10 +62,8 @@ test('a customer without switch coverage is pointed to a renewal quote', async (
 test('a content editor publishes a release with a checked file', async ({ page }) => {
   const version = `2.4.${Date.now() % 100000}`;
   await signIn(page, 'meera.content@watchdog.example', '/workspace');
-  await page
-    .getByRole('navigation', { name: 'Main' })
-    .getByRole('link', { name: 'Releases' })
-    .click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Admin' }).click();
+  await page.getByRole('link', { name: 'Releases' }).click();
   await page.getByRole('link', { name: 'New release' }).click();
   await page.getByLabel(/Product family/).selectOption({ label: 'Wireless' });
   await page.getByLabel(/^Title/).fill('AirPack firmware');

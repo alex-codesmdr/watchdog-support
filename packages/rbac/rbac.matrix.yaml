@@ -401,3 +401,9 @@ endpoints:
       path: /api/v1/reports/operations,
       allow: [customer_admin, support_manager, system_admin],
     }
+  - {
+      id: audit.list,
+      method: GET,
+      path: /api/v1/audit-log,
+      allow: [customer_admin, support_manager, system_admin],
+    }

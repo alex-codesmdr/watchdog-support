@@ -913,3 +913,36 @@ export const OpsReport = z.object({
   topOrganisations: z.array(Count),
 });
 export type OpsReport = z.infer<typeof OpsReport>;
+
+// ---------- audit trail ----------
+export const AuditQuery = z.object({
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+  action: z.string().trim().max(60).optional(),
+  actor: z.string().trim().max(120).optional(),
+  targetType: z.string().trim().max(40).optional(),
+  /** Staff only. */
+  orgId: Uuid.optional(),
+  /** Cursor: entries older than this sequence number. */
+  before: z.coerce.number().int().positive().optional(),
+});
+export const AuditEntry = z.object({
+  seq: z.number().int(),
+  at: IsoDateTime,
+  orgName: z.string().nullable(),
+  actor: z.string(),
+  /** Staff viewers only. */
+  actorEmail: z.string().nullable(),
+  action: z.string(),
+  targetType: z.string().nullable(),
+  targetId: z.string().nullable(),
+  /** Staff viewers only: the recorded change. */
+  diff: z.record(z.string(), z.unknown()).nullable(),
+  ip: z.string().nullable(),
+});
+export type AuditEntry = z.infer<typeof AuditEntry>;
+export const AuditPage = z.object({
+  items: z.array(AuditEntry),
+  nextBefore: z.number().int().nullable(),
+});
+export type AuditPage = z.infer<typeof AuditPage>;

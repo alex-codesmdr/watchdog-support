@@ -20,7 +20,9 @@
     "rmas": "Replacements",
     "psirt": "Advisories",
     "integrations": "Integrations",
-    "reports": "Reports"
+    "reports": "Reports",
+    "admin": "Admin",
+    "administration": "Administration"
   },
   "home": {
     "title": "What is your network telling you?",

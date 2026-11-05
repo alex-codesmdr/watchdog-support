@@ -14,8 +14,11 @@ test('customer admin reads the report for their organisation and downloads the C
   await signIn(page, 'it.admin@kaveribank.example');
   await page
     .getByRole('navigation', { name: 'Main' })
-    .getByRole('link', { name: 'Reports' })
+    .getByRole('link', { name: 'Administration' })
     .click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Administration' })).toBeVisible();
+  await axe(page);
+  await page.getByRole('link', { name: 'Support report' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Support report' })).toBeVisible();
   await expect(page.getByText(/Kaveri Cooperative Bank/).first()).toBeVisible();
   await expect(page.getByLabel('Customer')).toHaveCount(0);

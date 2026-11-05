@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CUSTOMER_ADMIN_TOOLS, STAFF_TOOLS, toolsFor } from '@/lib/tools';
 import type { Me } from '@wd/contracts';
 import { Wordmark } from '@wd/ui';
 import { t } from '@/lib/i18n';
@@ -42,16 +43,6 @@ export async function SiteHeader({
               <Link className={link} href="/portal/assets">
                 {t('nav.devices')}
               </Link>
-              {me.permissions.includes('report:ops:read:org') && (
-                <Link className={link} href="/portal/reports">
-                  {t('nav.reports')}
-                </Link>
-              )}
-              {me.permissions.includes('integration:manage') && (
-                <Link className={link} href="/portal/integrations">
-                  {t('nav.integrations')}
-                </Link>
-              )}
               {me.permissions.includes('rma:request') && (
                 <Link className={link} href="/portal/rmas">
                   {t('nav.rmas')}
@@ -60,21 +51,18 @@ export async function SiteHeader({
               <Link className={link} href="/search">
                 {t('nav.knowledge')}
               </Link>
+              {toolsFor(CUSTOMER_ADMIN_TOOLS, me.permissions).length > 0 && (
+                <Link className={link} href="/portal/admin">
+                  {t('nav.administration')}
+                </Link>
+              )}
             </>
           )}
           {staff && (
             <>
-              <Link className={link} href="/workspace">
-                {t('nav.queue')}
-              </Link>
-              {me?.permissions.includes('report:ops:read:all') && (
-                <Link className={link} href="/workspace/reports">
-                  {t('nav.reports')}
-                </Link>
-              )}
-              {me?.permissions.includes('advisory:manage') && (
-                <Link className={link} href="/admin/advisories">
-                  {t('nav.psirt')}
+              {me?.permissions.includes('case:read:all') && (
+                <Link className={link} href="/workspace">
+                  {t('nav.queue')}
                 </Link>
               )}
               {me?.permissions.includes('rma:manage') && (
@@ -82,29 +70,12 @@ export async function SiteHeader({
                   {t('nav.rmas')}
                 </Link>
               )}
-              {me?.permissions.includes('kb:draft') && (
-                <Link className={link} href="/workspace/kb">
-                  {t('nav.knowledge')}
-                </Link>
-              )}
-              {me?.permissions.includes('report:sla:read') && (
-                <Link className={link} href="/workspace/sla">
-                  {t('nav.sla')}
-                </Link>
-              )}
-              {me?.permissions.includes('release:manage') && (
-                <Link className={link} href="/admin/releases">
-                  {t('nav.releases')}
-                </Link>
-              )}
-              {me?.permissions.includes('asset:import') && (
-                <Link className={link} href="/admin/imports">
-                  {t('nav.imports')}
-                </Link>
-              )}
-              {me?.permissions.includes('registration:approve') && (
-                <Link className={link} href="/admin/registrations">
-                  {t('nav.registrations')}
+              <Link className={link} href="/search">
+                {t('nav.knowledge')}
+              </Link>
+              {me && toolsFor(STAFF_TOOLS, me.permissions).length > 0 && (
+                <Link className={link} href="/admin">
+                  {t('nav.admin')}
                 </Link>
               )}
             </>

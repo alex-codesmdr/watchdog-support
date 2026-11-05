@@ -50,6 +50,7 @@ import {
 import { DownloadsService } from './modules/downloads/downloads.service.js';
 import { RmaController } from './modules/rma/rma.controller.js';
 import { AdvisoriesController } from './modules/advisories/advisories.controller.js';
+import { AuditController } from './modules/audit/audit.controller.js';
 import { OpsReportController } from './modules/reports/ops-report.controller.js';
 import { IntegrationsController } from './modules/integrations/integrations.controller.js';
 import { WebhooksService } from './modules/integrations/webhooks.service.js';
@@ -140,6 +141,7 @@ export class AppModule {
         AdvisoriesController,
         IntegrationsController,
         OpsReportController,
+        AuditController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
