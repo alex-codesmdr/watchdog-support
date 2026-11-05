@@ -89,14 +89,6 @@ export default async function Dashboard() {
             <p className="mt-3 text-sm text-ok">All devices are covered for at least 90 days.</p>
           )}
         </section>
-        <section aria-labelledby="ann">
-          <h2 id="ann" className="text-lg font-semibold">
-            Announcements
-          </h2>
-          <p className="mt-2 text-sm text-muted">
-            Insight NMS cloud is read-only on Sun 15 Nov, 02:00–04:00 IST for planned maintenance.
-          </p>
-        </section>
       </aside>
     </div>
   );

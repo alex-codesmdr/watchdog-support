@@ -69,13 +69,6 @@ export default async function Home() {
           </div>
         </section>
 
-        <div role="region" aria-label="Announcement" className="border-b border-line bg-surface">
-          <p className="mx-auto max-w-6xl px-4 py-3 text-sm text-ink">
-            <span className="font-semibold">Planned maintenance:</span> Insight NMS cloud will be
-            read-only on Sun 15 Nov, 02:00–04:00 IST. Case management is unaffected.
-          </p>
-        </div>
-
         <section className="mx-auto max-w-6xl px-4 pt-12" aria-labelledby="fam">
           <h2 id="fam" className="text-xl font-semibold">
             {t('home.families')}

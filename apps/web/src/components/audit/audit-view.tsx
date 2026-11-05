@@ -5,6 +5,8 @@ import { VerifyChain } from './verify-chain';
 
 /** Plain-language names for recorded actions; unknown codes are shown as they are. */
 const ACTION: Record<string, string> = {
+  'case.reply': 'Replied on a case',
+  'case.note': 'Added an internal note',
   'case.create': 'Opened a case',
   'case.transition': 'Changed case status',
   'case.assign': 'Assigned a case',
@@ -34,6 +36,9 @@ const ACTION: Record<string, string> = {
   'kb.edit': 'Edited an article',
   'kb.publish': 'Published an article',
   'advisory.create': 'Drafted an advisory',
+  'announcement.create': 'Posted an announcement',
+  'announcement.update': 'Edited an announcement',
+  'announcement.end': 'Took down an announcement',
   'advisory.update': 'Revised an advisory',
   'advisory.publish': 'Published an advisory',
   'advisory.withdraw': 'Withdrew an advisory',
