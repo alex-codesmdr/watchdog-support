@@ -49,6 +49,7 @@ test('an L3 engineer drafts and publishes; a customer sees their exposure', asyn
   await expect(page.getByText(/of your installed devices (is an|are) affected/)).toBeVisible();
   await expect(page.getByText('Found in internal fuzzing.')).toHaveCount(0);
   await page.goto('/advisories');
+  await page.waitForLoadState('networkidle'); // a click before hydration is reset
   await page.getByRole('checkbox', { name: 'Switching' }).check();
   await page.getByLabel('Minimum severity').selectOption('high');
   await page.getByRole('button', { name: /Turn on alerts|Save alerts/ }).click();
