@@ -68,6 +68,13 @@ export const STAFF_TOOLS: Tool[] = [
     group: 'Content',
   },
   {
+    perm: 'routing:manage',
+    href: '/admin/routing',
+    label: 'Case routing',
+    desc: 'Rules that send new cases to the right queue and engineers.',
+    group: 'Portal',
+  },
+  {
     perm: 'announcement:manage',
     href: '/admin/announcements',
     label: 'Announcements',

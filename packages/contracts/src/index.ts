@@ -1062,3 +1062,38 @@ export const SAVED_REPLY_PLACEHOLDERS = {
   '{{case_ref}}': 'The case reference',
   '{{my_name}}': 'Your name',
 } as const;
+
+// ---- Phase 4: automatic case routing
+export const RoutingRuleRequest = z.object({
+  name: z.string().trim().min(3).max(120),
+  enabled: z.boolean().default(true),
+  severities: z.array(Severity).max(4).default([]),
+  categories: z.array(CaseCategory).max(10).default([]),
+  familyIds: z.array(Uuid).max(50).default([]),
+  orgIds: z.array(Uuid).max(200).default([]),
+  queueId: Uuid.nullable().default(null),
+  assigneeIds: z.array(Uuid).max(50).default([]),
+});
+export type RoutingRuleRequest = z.input<typeof RoutingRuleRequest>;
+export const RoutingRule = z.object({
+  id: Uuid,
+  name: z.string(),
+  position: z.number().int(),
+  enabled: z.boolean(),
+  severities: z.array(Severity),
+  categories: z.array(CaseCategory),
+  familyIds: z.array(Uuid),
+  orgIds: z.array(Uuid),
+  queueId: Uuid.nullable(),
+  assigneeIds: z.array(Uuid),
+  updatedAt: IsoDateTime,
+});
+export type RoutingRule = z.infer<typeof RoutingRule>;
+/** Choices for the rule editor. */
+export const RoutingOptions = z.object({
+  queues: z.array(z.object({ id: Uuid, name: z.string() })),
+  families: z.array(z.object({ id: Uuid, name: z.string() })),
+  engineers: z.array(z.object({ id: Uuid, name: z.string(), openCases: z.number().int() })),
+  organizations: z.array(z.object({ id: Uuid, name: z.string() })),
+});
+export type RoutingOptions = z.infer<typeof RoutingOptions>;

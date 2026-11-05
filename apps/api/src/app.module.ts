@@ -54,6 +54,7 @@ import { AuditController } from './modules/audit/audit.controller.js';
 import { AnnouncementsController } from './modules/announcements/announcements.controller.js';
 import { SavedRepliesController } from './modules/saved-replies/saved-replies.controller.js';
 import { TeamController } from './modules/identity/team.controller.js';
+import { RoutingController } from './modules/routing/routing.controller.js';
 import { OpsReportController } from './modules/reports/ops-report.controller.js';
 import { IntegrationsController } from './modules/integrations/integrations.controller.js';
 import { WebhooksService } from './modules/integrations/webhooks.service.js';
@@ -148,6 +149,7 @@ export class AppModule {
         AnnouncementsController,
         SavedRepliesController,
         TeamController,
+        RoutingController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),

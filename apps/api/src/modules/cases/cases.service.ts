@@ -146,6 +146,8 @@ export class CasesService {
         tier,
         onBehalf: p.userId !== requesterId,
       });
+      // Routing rules may set the queue and assign the least busy engineer straight away.
+      await sql`SELECT * FROM wd.route_case(${c.id}::uuid)`.execute(tx);
       await emit(tx, 'case.created', orgId, {
         caseId: c.id,
         number: c.number,

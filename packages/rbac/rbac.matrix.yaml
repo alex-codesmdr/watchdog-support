@@ -47,6 +47,7 @@ permissions:
   - advisory:manage # write and publish security advisories (PSIRT)
   - integration:manage # organisation API keys and webhooks
   - announcement:manage # portal banners for maintenance and notices
+  - routing:manage # rules that send new cases to queues and engineers
   - reply:template:share # create and edit saved replies shared with every engineer
 
 roles:
@@ -186,6 +187,7 @@ roles:
         report:ops:read:all,
         announcement:manage,
         reply:template:share,
+        routing:manage,
       ]
   content_editor:
     internal: true
@@ -229,6 +231,7 @@ roles:
         advisory:manage,
         report:ops:read:all,
         announcement:manage,
+        routing:manage,
       ]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.
@@ -428,3 +431,9 @@ endpoints:
       allow: [l1_engineer, l2_engineer, l3_engineer, support_manager, rma_coordinator],
     }
   - { id: team.list, method: GET, path: /api/v1/org/users, allow: [customer_admin] }
+  - {
+      id: routing.rules,
+      method: GET,
+      path: /api/v1/admin/routing/rules,
+      allow: [support_manager, system_admin],
+    }

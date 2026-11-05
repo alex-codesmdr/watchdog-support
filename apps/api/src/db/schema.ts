@@ -617,7 +617,24 @@ export interface SavedReplyT {
   created_at: Ts;
 }
 
+export interface RoutingRuleT {
+  id: Generated<string>;
+  name: string;
+  position: number;
+  enabled: Generated<boolean>;
+  severities: string[] | null;
+  categories: string[] | null;
+  family_ids: string[] | null;
+  org_ids: string[] | null;
+  queue_id: string | null;
+  assignee_ids: Generated<string[]>;
+  created_by: string;
+  updated_at: Ts;
+  created_at: Ts;
+}
+
 export interface DB {
+  routing_rule: RoutingRuleT;
   announcement: AnnouncementT;
   saved_reply: SavedReplyT;
   renewal_request: RenewalRequestT;

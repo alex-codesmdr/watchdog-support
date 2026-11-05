@@ -54,7 +54,8 @@ const EVENT: Record<string, (d: Record<string, unknown>) => string> = {
   status_changed: (d) => `Status changed to ${STATUS_LABELS[d.to as CaseStatus] ?? d.to}`,
   escalated: (d) => `Escalated to ${Number(d.toLevel) >= 4 ? 'Engineering' : `L${d.toLevel}`}`,
   customer_escalated: () => 'Escalated to WatchDog management',
-  assigned: () => 'Assigned',
+  assigned: (d) => (d.auto ? 'Assigned automatically' : 'Assigned'),
+  routed: (d) => `Routed by the rule "${String(d.rule ?? '')}"`,
   csat_submitted: (d) => `Rated ${d.score} of 5`,
   sla_warning: (d) =>
     `SLA warning: ${METRIC[String(d.metric)] ?? d.metric} at ${d.threshold}% of target`,
