@@ -47,9 +47,11 @@ function useDebounced<T>(v: T, ms: number) {
 }
 
 export function NewCaseWizard({
+  p1Phone,
   initialSubject,
   initialSerial,
 }: {
+  p1Phone: string;
   initialSubject: string;
   initialSerial: string;
 }) {
@@ -320,7 +322,7 @@ export function NewCaseWizard({
                 )}
                 {form.severity === 'P1' && (
                   <Notice tone="warning" className="mt-3">
-                    After submitting, also call 1800-000-0000 so an engineer engages immediately.
+                    After submitting, also call {p1Phone} so an engineer engages immediately.
                   </Notice>
                 )}
               </fieldset>

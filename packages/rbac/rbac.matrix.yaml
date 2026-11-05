@@ -48,6 +48,7 @@ permissions:
   - integration:manage # organisation API keys and webhooks
   - announcement:manage # portal banners for maintenance and notices
   - routing:manage # rules that send new cases to queues and engineers
+  - settings:manage # portal contact details and feature switches
   - reply:template:share # create and edit saved replies shared with every engineer
 
 roles:
@@ -188,6 +189,7 @@ roles:
         announcement:manage,
         reply:template:share,
         routing:manage,
+        settings:manage,
       ]
   content_editor:
     internal: true
@@ -232,6 +234,7 @@ roles:
         report:ops:read:all,
         announcement:manage,
         routing:manage,
+        settings:manage,
       ]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.
@@ -435,5 +438,11 @@ endpoints:
       id: routing.rules,
       method: GET,
       path: /api/v1/admin/routing/rules,
+      allow: [support_manager, system_admin],
+    }
+  - {
+      id: settings.admin,
+      method: GET,
+      path: /api/v1/admin/settings,
       allow: [support_manager, system_admin],
     }

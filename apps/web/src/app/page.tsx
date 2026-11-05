@@ -3,6 +3,7 @@ import { ConsoleSearch } from '@/components/console-search';
 import { SiteFooter, SiteHeader } from '@/components/site-chrome';
 import { api } from '@/lib/api';
 import { t, tl } from '@/lib/i18n';
+import { portalSettings } from '@/lib/settings';
 
 export const revalidate = 300;
 
@@ -30,7 +31,8 @@ const ACTIONS: Array<[string, string]> = [
 ];
 
 export default async function Home() {
-  const fams = await families();
+  const [fams, cfg] = await Promise.all([families(), portalSettings()]);
+  const actions = ACTIONS.filter(([k]) => k !== 'warranty' || cfg.publicWarrantyCheck);
   return (
     <>
       <SiteHeader />
@@ -48,7 +50,7 @@ export default async function Home() {
             </div>
             <nav aria-label="Quick actions">
               <ul className="divide-y divide-white/10 border-y border-white/10">
-                {ACTIONS.map(([k, href]) => {
+                {actions.map(([k, href]) => {
                   const [title, desc] = tl(`home.actions.${k}`);
                   return (
                     <li key={k}>
@@ -125,18 +127,18 @@ export default async function Home() {
             <tbody>
               <tr className="border-b border-line">
                 <td className="py-3 font-semibold text-danger">P1 outage</td>
-                <td className="py-3 font-mono">1800-000-0000</td>
+                <td className="py-3 font-mono">{cfg.p1Phone}</td>
                 <td className="py-3">24×7, all regions</td>
               </tr>
               <tr className="border-b border-line">
                 <td className="py-3 font-semibold">P2 degraded</td>
-                <td className="py-3 font-mono">1800-000-0001</td>
+                <td className="py-3 font-mono">{cfg.p2Phone}</td>
                 <td className="py-3">24×7 for Premium and Mission-Critical</td>
               </tr>
               <tr>
                 <td className="py-3">P3 / P4</td>
                 <td className="py-3">Online case</td>
-                <td className="py-3">Mon–Sat business hours, IST</td>
+                <td className="py-3">{cfg.businessHours}</td>
               </tr>
             </tbody>
           </table>

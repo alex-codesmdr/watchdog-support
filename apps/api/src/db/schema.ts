@@ -633,7 +633,15 @@ export interface RoutingRuleT {
   created_at: Ts;
 }
 
+export interface PortalSettingT {
+  key: string;
+  value: unknown;
+  updated_by: string | null;
+  updated_at: Generated<Date>;
+}
+
 export interface DB {
+  portal_setting: PortalSettingT;
   routing_rule: RoutingRuleT;
   announcement: AnnouncementT;
   saved_reply: SavedReplyT;

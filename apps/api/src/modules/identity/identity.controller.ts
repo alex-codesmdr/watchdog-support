@@ -17,12 +17,16 @@ import { emit } from '../../common/outbox.js';
 import type { Principal, RequestContext } from '../../common/principal.js';
 import { RateLimit } from '../../common/rate-limit.js';
 import { parse } from '../../common/zod.js';
+import { SettingsService } from '../settings/settings.service.js';
 
 export const PRIVACY_NOTICE_VERSION = '2026-11-01';
 
 @Controller('api/v1')
 export class IdentityController {
-  constructor(@Inject(DB) private readonly db: Database) {}
+  constructor(
+    @Inject(DB) private readonly db: Database,
+    @Inject(SettingsService) private readonly settings: SettingsService,
+  ) {}
 
   @Get('me')
   async me(@CurrentPrincipal() p: Principal): Promise<Me> {
@@ -79,6 +83,8 @@ export class IdentityController {
   @HttpCode(202)
   @RateLimit('register', 5, 3600)
   async register(@Ctx() ctx: RequestContext, @Body() body: unknown) {
+    if (!(await this.settings.get()).selfRegistration)
+      throw forbidden('New registrations are closed. Contact your WatchDog account manager.');
     const b = parse(RegistrationRequest, body);
     if (b.consentNoticeVersion !== PRIVACY_NOTICE_VERSION)
       throw conflict(

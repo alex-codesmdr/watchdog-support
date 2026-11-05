@@ -5,6 +5,7 @@ import { SiteFooter, SiteHeader } from '@/components/site-chrome';
 import { api, currentUser } from '@/lib/api';
 import { Severity } from './severity';
 import { Subscribe } from './subscribe';
+import { portalSettings } from '@/lib/settings';
 
 export const metadata = {
   title: 'Security advisories',
@@ -34,7 +35,7 @@ export default async function AdvisoriesPage({
     ...(sp.family ? { family: sp.family } : {}),
     ...(sp.q ? { q: sp.q.slice(0, 100) } : {}),
   });
-  const [list, fams, me] = await Promise.all([
+  const [list, fams, me, cfg] = await Promise.all([
     api<{ items: AdvisorySummary[] }>(`/api/v1/advisories?${qs}`, { optionalAuth: true }).catch(
       () => ({ items: [] as AdvisorySummary[] }),
     ),
@@ -42,6 +43,7 @@ export default async function AdvisoriesPage({
       items: [] as Family[],
     })),
     currentUser(),
+    portalSettings(),
   ]);
   const filtered = Boolean(sev || sp.family || sp.q);
 
@@ -184,10 +186,10 @@ export default async function AdvisoriesPage({
               <p className="mt-1">
                 Email{' '}
                 <a
-                  href="mailto:psirt@watchdog.example"
+                  href={`mailto:${cfg.securityEmail}`}
                   className="font-medium text-teal-ink underline underline-offset-2"
                 >
-                  psirt@watchdog.example
+                  {cfg.securityEmail}
                 </a>{' '}
                 with the product, version and steps to reproduce. We reply within two business days
                 and credit reporters in the advisory if they wish. Please give us time to release a

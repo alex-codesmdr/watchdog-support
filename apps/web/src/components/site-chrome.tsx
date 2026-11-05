@@ -4,6 +4,7 @@ import type { Me } from '@wd/contracts';
 import { Wordmark } from '@wd/ui';
 import { t } from '@/lib/i18n';
 import { getSession } from '@/lib/session';
+import { portalSettings } from '@/lib/settings';
 import { api } from '@/lib/api';
 import { AnnouncementBanners } from '@/components/announcements/banner';
 import type { Announcement } from '@wd/contracts';
@@ -19,11 +20,12 @@ export async function SiteHeader({
 }) {
   const s = await getSession();
   const staff = me?.isInternal;
-  const notices = await api<{ items: Announcement[] }>('/api/v1/announcements', {
-    optionalAuth: true,
-  })
-    .then((r) => r.items)
-    .catch(() => []);
+  const [notices, cfg] = await Promise.all([
+    api<{ items: Announcement[] }>('/api/v1/announcements', { optionalAuth: true })
+      .then((r) => r.items)
+      .catch(() => []),
+    portalSettings(),
+  ]);
   return (
     <>
       <header className="bg-navy text-white">
@@ -128,9 +130,11 @@ export async function SiteHeader({
               </>
             ) : (
               <>
-                <Link className={link} href="/register">
-                  {t('nav.register')}
-                </Link>
+                {cfg.selfRegistration && (
+                  <Link className={link} href="/register">
+                    {t('nav.register')}
+                  </Link>
+                )}
                 <a
                   className="inline-flex h-9 items-center rounded-s bg-white px-3 text-sm font-semibold text-navy hover:bg-white/90"
                   href="/auth/login"

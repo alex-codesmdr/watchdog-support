@@ -55,6 +55,8 @@ import { AnnouncementsController } from './modules/announcements/announcements.c
 import { SavedRepliesController } from './modules/saved-replies/saved-replies.controller.js';
 import { TeamController } from './modules/identity/team.controller.js';
 import { RoutingController } from './modules/routing/routing.controller.js';
+import { SettingsController } from './modules/settings/settings.controller.js';
+import { SettingsService } from './modules/settings/settings.service.js';
 import { OpsReportController } from './modules/reports/ops-report.controller.js';
 import { IntegrationsController } from './modules/integrations/integrations.controller.js';
 import { WebhooksService } from './modules/integrations/webhooks.service.js';
@@ -150,6 +152,7 @@ export class AppModule {
         SavedRepliesController,
         TeamController,
         RoutingController,
+        SettingsController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
@@ -165,6 +168,7 @@ export class AppModule {
         RmaService,
         AdvisoriesService,
         WebhooksService,
+        SettingsService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_GUARD, useClass: RateLimitGuard },

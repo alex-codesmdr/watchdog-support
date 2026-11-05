@@ -1,9 +1,11 @@
 import { SiteFooter, SiteHeader } from '@/components/site-chrome';
+import { portalSettings } from '@/lib/settings';
 import { RegisterForm } from './register-form';
 
 export const metadata = { title: 'Register your organisation' };
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const cfg = await portalSettings();
   return (
     <>
       <SiteHeader />
@@ -29,7 +31,18 @@ export default function RegisterPage() {
             </li>
           </ol>
         </div>
-        <RegisterForm />
+        {cfg.selfRegistration ? (
+          <RegisterForm />
+        ) : (
+          <div className="self-start rounded-m border border-line bg-surface p-5">
+            <h2 className="font-semibold">New registrations are closed</h2>
+            <p className="mt-2 text-muted">
+              To get access for your organisation, write to{' '}
+              <span className="font-medium text-ink">{cfg.supportEmail}</span> or contact your
+              WatchDog account manager.
+            </p>
+          </div>
+        )}
       </main>
       <SiteFooter />
     </>

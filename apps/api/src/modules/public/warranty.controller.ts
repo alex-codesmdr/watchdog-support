@@ -11,12 +11,14 @@ import { ProblemError } from '../../common/errors.js';
 import { RateLimit } from '../../common/rate-limit.js';
 import { parse } from '../../common/zod.js';
 import { Captcha } from './captcha.js';
+import { SettingsService } from '../settings/settings.service.js';
 
 /**
  * Public warranty check (acceptance criterion 4). Returns coverage only: model, contract kind,
  * tier, end date. Never the owning organisation, site, contract number or anything that identifies
  * a customer. Rate-limited per client IP and protected by a single-use proof-of-work challenge.
  */
+
 @Controller('api/v1/public')
 export class WarrantyController {
   private readonly captcha: Captcha;
@@ -24,6 +26,7 @@ export class WarrantyController {
     @Inject(DB) private readonly db: Database,
     @Inject(CONFIG) cfg: AppConfig,
     @Inject(REDIS) redis: Redis | null,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {
     this.captcha = new Captcha(`captcha:${cfg.APP_SIGNING_KEY}`, redis);
   }
@@ -40,6 +43,12 @@ export class WarrantyController {
   @HttpCode(200)
   @RateLimit('warranty-lookup', 20, 3600)
   async lookup(@Body() body: unknown): Promise<z.infer<typeof WarrantyLookupResponse>> {
+    if (!(await this.settings.get()).publicWarrantyCheck)
+      throw new ProblemError(
+        404,
+        'not_found',
+        'The public warranty check is switched off. Sign in to see your devices.',
+      );
     const b = parse(WarrantyLookupRequest, body);
     if (!(await this.captcha.verify(b.captchaToken)))
       throw new ProblemError(400, 'captcha', 'Verification failed. Reload the page and try again.');

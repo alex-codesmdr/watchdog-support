@@ -1097,3 +1097,22 @@ export const RoutingOptions = z.object({
   organizations: z.array(z.object({ id: Uuid, name: z.string() })),
 });
 export type RoutingOptions = z.infer<typeof RoutingOptions>;
+
+// ---- Portal settings (contact details and feature switches; all public)
+const Phone = z
+  .string()
+  .trim()
+  .regex(/^[0-9+ ()-]{6,24}$/, 'Use digits, spaces, + ( ) and - only');
+export const PortalSettings = z.object({
+  p1Phone: Phone.default('1800-000-0000'),
+  p2Phone: Phone.default('1800-000-0001'),
+  businessHours: z.string().trim().min(3).max(80).default('Mon–Sat, 9:00 to 18:00 IST'),
+  supportEmail: z.string().trim().toLowerCase().email().default('support@watchdog.example'),
+  securityEmail: z.string().trim().toLowerCase().email().default('psirt@watchdog.example'),
+  /** New organisations can apply to join from the website. */
+  selfRegistration: z.boolean().default(true),
+  /** Anyone can check a serial number's warranty without signing in. */
+  publicWarrantyCheck: z.boolean().default(true),
+});
+export type PortalSettings = z.infer<typeof PortalSettings>;
+export const PORTAL_SETTING_DEFAULTS: PortalSettings = PortalSettings.parse({});

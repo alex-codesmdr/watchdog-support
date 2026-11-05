@@ -68,6 +68,13 @@ export const STAFF_TOOLS: Tool[] = [
     group: 'Content',
   },
   {
+    perm: 'settings:manage',
+    href: '/admin/settings',
+    label: 'Portal settings',
+    desc: 'Support phone numbers, emails, hours, and features to switch on or off.',
+    group: 'Portal',
+  },
+  {
     perm: 'routing:manage',
     href: '/admin/routing',
     label: 'Case routing',
