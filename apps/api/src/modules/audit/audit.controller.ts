@@ -50,7 +50,8 @@ export class AuditController {
       ])
       .orderBy('l.seq', 'desc')
       .limit(limit);
-    if (!full) s = s.where('l.org_id', '=', p.orgId);
+    // Customers never learn that internal notes exist.
+    if (!full) s = s.where('l.org_id', '=', p.orgId).where('l.action', 'not like', '%.note%');
     else if (q.orgId) s = s.where('l.org_id', '=', q.orgId);
     if (q.before) s = s.where('l.seq', '<', String(q.before));
     if (q.from)

@@ -19,6 +19,14 @@ beforeAll(async () => {
     .post(`/api/v1/cases/${caseNo}/transition`, { to: 'in_progress' })
     .expect(200);
   await (
+    await t.as(USERS.l2)
+  )
+    .post(`/api/v1/cases/${caseNo}/messages`, {
+      visibility: 'internal',
+      body: 'Staff-only triage note',
+    })
+    .expect(201);
+  await (
     await t.as(USERS.narmadaUser)
   )
     .post('/api/v1/cases', caseBody(SERIAL.narmadaPremium, { subject: 'Narmada audit case' }))
@@ -110,4 +118,15 @@ it('exports CSV for the same scope', async () => {
   expect(r.headers['content-type']).toContain('text/csv');
   expect(r.text).not.toContain('Narmada');
   expect(r.text).not.toContain(USERS.l2);
+});
+
+it('customers never see that internal notes were added', async () => {
+  const staff = await (
+    await t.as(USERS.manager)
+  )
+    .get('/api/v1/audit-log?action=case.note')
+    .expect(200);
+  expect(staff.body.items.length).toBeGreaterThan(0);
+  const cust = await (await t.as(USERS.kaveriAdmin)).get('/api/v1/audit-log').expect(200);
+  expect(cust.body.items.some((e: { action: string }) => e.action.includes('note'))).toBe(false);
 });
