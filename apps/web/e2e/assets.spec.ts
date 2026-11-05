@@ -26,10 +26,13 @@ test('customer admin adds a site, moves a device and requests a renewal quote', 
   await page.getByLabel('PIN code').fill('590001');
   await page.getByRole('button', { name: 'Add site' }).click();
   await expect(page.getByRole('region', { name: 'Sites' }).getByText(site)).toBeVisible();
+  // Let the page refresh that follows adding a site settle, or it can reset the dialog's choice.
+  await page.waitForLoadState('networkidle');
 
   await page.getByRole('button', { name: 'Change the site of WDFW3100B0002' }).click();
   const dlg = page.getByRole('dialog', { name: 'Change site' });
   await dlg.getByLabel('Site').selectOption({ label: `${site}, Belagavi` });
+  await expect(dlg.getByLabel('Site').locator('option:checked')).toHaveText(`${site}, Belagavi`);
   await dlg.getByRole('button', { name: 'Save site' }).click();
   await expect(dlg).toBeHidden();
   await expect(page.locator('li', { hasText: 'WDFW3100B0002' })).toContainText(site);
