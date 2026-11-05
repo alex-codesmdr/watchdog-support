@@ -880,3 +880,36 @@ export const WebhookView = z.object({
   ),
 });
 export type WebhookView = z.infer<typeof WebhookView>;
+
+// ---------- operations report ----------
+export const OpsReportQuery = z.object({
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+  /** Staff only: limit to one customer organisation. */
+  orgId: Uuid.optional(),
+});
+const Count = z.object({ key: z.string(), label: z.string(), count: z.number().int() });
+export const OpsReport = z.object({
+  from: z.string(),
+  to: z.string(),
+  scope: z.object({ orgId: Uuid.nullable(), orgName: z.string().nullable() }),
+  totals: z.object({
+    opened: z.number().int(),
+    resolved: z.number().int(),
+    openNow: z.number().int(),
+    medianFirstResponseMinutes: z.number().nullable(),
+    medianResolutionHours: z.number().nullable(),
+    csatAverage: z.number().nullable(),
+    csatResponses: z.number().int(),
+    rmasOpened: z.number().int(),
+  }),
+  weekly: z.array(
+    z.object({ weekStart: z.string(), opened: z.number().int(), resolved: z.number().int() }),
+  ),
+  bySeverity: z.array(Count),
+  byFamily: z.array(Count),
+  byCategory: z.array(Count),
+  backlogAge: z.array(Count),
+  topOrganisations: z.array(Count),
+});
+export type OpsReport = z.infer<typeof OpsReport>;

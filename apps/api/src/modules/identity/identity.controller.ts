@@ -82,6 +82,22 @@ export class IdentityController {
     };
   }
 
+  /** Staff: customer and partner organisations, for filters and pickers. */
+  @Get('organizations')
+  @RequirePermission('case:read:all', 'report:ops:read:all', 'asset:import')
+  async allOrganizations(@CurrentPrincipal() p: Principal) {
+    return this.db.withTenant(p, async (tx) => ({
+      items: await tx
+        .selectFrom('organization')
+        .select(['id', 'name', 'org_type as type'])
+        .where('org_type', '!=', 'internal')
+        .where('status', '=', 'active')
+        .orderBy('name')
+        .limit(2000)
+        .execute(),
+    }));
+  }
+
   /** Organisations the user can open cases for: their own, plus delegating customers (partners). */
   @Get('me/organizations')
   async organizations(@CurrentPrincipal() p: Principal) {

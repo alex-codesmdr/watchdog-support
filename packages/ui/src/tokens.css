@@ -17,6 +17,9 @@
   --wd-red: 194 65 45;        /* #C2412D SLA breach / P1 */
   --wd-green: 34 128 82;      /* #228052 met */
   --wd-focus: 19 168 158;
+  /* Chart series (validated: lightness band, chroma, colour-blind separation, 3:1 on surface). */
+  --wd-chart-1: 46 107 198;   /* #2E6BC6 */
+  --wd-chart-2: 184 100 10;   /* #B8640A */
   --wd-radius-s: 4px;
   --wd-radius-m: 8px;
   color-scheme: light;
@@ -32,6 +35,8 @@
     --wd-teal-ink: 77 208 196;
     --wd-amber-ink: 240 186 104;
     --wd-navy-2: 34 70 120;
+    --wd-chart-1: 91 139 218;  /* #5B8BDA */
+    --wd-chart-2: 200 116 42;  /* #C8742A */
     color-scheme: dark;
   }
 }
@@ -44,5 +49,7 @@
   --wd-teal-ink: 77 208 196;
   --wd-amber-ink: 240 186 104;
   --wd-navy-2: 34 70 120;
+  --wd-chart-1: 91 139 218;
+  --wd-chart-2: 200 116 42;
   color-scheme: dark;
 }

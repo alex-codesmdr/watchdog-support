@@ -25,4 +25,4 @@ Status: **in progress**. Last updated 2026-11-04.
 
 ## Tests at this point
 
-API integration: 385 (including 9 RMA, 8 advisories, 12 integrations, 3 API description) plus 24 unit. Browser: 53 on desktop and mobile with axe checks.
+API integration: 398 (including 9 RMA, 8 advisories, 12 integrations, 3 API description, 3 reports) plus 24 unit. Browser: 55 on desktop and mobile with axe checks.

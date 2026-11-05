@@ -32,6 +32,8 @@ permissions:
   - audit:read:org
   - audit:read:all
   - report:sla:read
+  - report:ops:read:org # operations report for the user's own organisation
+  - report:ops:read:all # operations report across customers
   - kb:read:internal
   - kb:draft
   - kb:publish
@@ -82,6 +84,7 @@ roles:
         asset:manage:org,
         rma:request,
         integration:manage,
+        report:ops:read:org,
       ]
   partner:
     internal: false
@@ -178,6 +181,7 @@ roles:
         rma:request,
         rma:manage,
         advisory:manage,
+        report:ops:read:all,
       ]
   content_editor:
     internal: true
@@ -211,6 +215,7 @@ roles:
         asset:import,
         release:manage,
         advisory:manage,
+        report:ops:read:all,
       ]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.
@@ -389,4 +394,10 @@ endpoints:
       method: GET,
       path: /api/v1/org/api-keys,
       allow: [customer_admin],
+    }
+  - {
+      id: report.ops,
+      method: GET,
+      path: /api/v1/reports/operations,
+      allow: [customer_admin, support_manager, system_admin],
     }

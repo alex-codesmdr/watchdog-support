@@ -42,6 +42,11 @@ export async function SiteHeader({
               <Link className={link} href="/portal/assets">
                 {t('nav.devices')}
               </Link>
+              {me.permissions.includes('report:ops:read:org') && (
+                <Link className={link} href="/portal/reports">
+                  {t('nav.reports')}
+                </Link>
+              )}
               {me.permissions.includes('integration:manage') && (
                 <Link className={link} href="/portal/integrations">
                   {t('nav.integrations')}
@@ -62,6 +67,11 @@ export async function SiteHeader({
               <Link className={link} href="/workspace">
                 {t('nav.queue')}
               </Link>
+              {me?.permissions.includes('report:ops:read:all') && (
+                <Link className={link} href="/workspace/reports">
+                  {t('nav.reports')}
+                </Link>
+              )}
               {me?.permissions.includes('advisory:manage') && (
                 <Link className={link} href="/admin/advisories">
                   {t('nav.psirt')}

@@ -6,7 +6,7 @@ module.exports = {
       colors: {
         navy: c('navy'), 'navy-2': c('navy-2'), teal: c('teal'), 'teal-ink': c('teal-ink'),
         paper: c('paper'), surface: c('surface'), line: c('line'), ink: c('ink'), muted: c('muted'),
-        amber: c('amber'), 'amber-ink': c('amber-ink'), danger: c('red'), ok: c('green'), focus: c('focus'),
+        amber: c('amber'), 'amber-ink': c('amber-ink'), danger: c('red'), ok: c('green'), focus: c('focus'), 'chart-1': c('chart-1'), 'chart-2': c('chart-2'),
       },
       fontFamily: {
         sans: ['IBM Plex Sans', 'Segoe UI', 'system-ui', 'sans-serif'],

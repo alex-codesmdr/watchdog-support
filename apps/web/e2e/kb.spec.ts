@@ -54,7 +54,8 @@ test('content editor writes and publishes an article', async ({ page }) => {
     .getByLabel('Article')
     .fill('## Steps\n\n```\nntp-service unicast-server 10.0.0.1\n```');
   await page.getByRole('button', { name: 'Create draft' }).click();
-  await expect(page.getByText('Draft created.')).toBeVisible();
+  // Creating a draft moves to the editor; the confirmation can vanish with that navigation.
+  await expect(page.getByText(/Draft, version 1/)).toBeVisible();
   await page.getByRole('button', { name: 'Publish version 1' }).click();
   await expect(page.getByText('Published. Readers now see this version.')).toBeVisible();
   await signOut(page);

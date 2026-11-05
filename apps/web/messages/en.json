@@ -19,7 +19,8 @@
     "releases": "Releases",
     "rmas": "Replacements",
     "psirt": "Advisories",
-    "integrations": "Integrations"
+    "integrations": "Integrations",
+    "reports": "Reports"
   },
   "home": {
     "title": "What is your network telling you?",

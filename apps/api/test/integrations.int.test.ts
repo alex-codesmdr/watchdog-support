@@ -29,7 +29,8 @@ beforeAll(async () => {
       } else res.writeHead(204).end();
     });
   });
-  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  // All interfaces: 'localhost' may resolve to ::1 first on some machines.
+  await new Promise<void>((r) => server.listen(0, r));
   base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
 });
 afterAll(async () => {
