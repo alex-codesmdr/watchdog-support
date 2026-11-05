@@ -42,6 +42,11 @@ export async function SiteHeader({
               <Link className={link} href="/portal/assets">
                 {t('nav.devices')}
               </Link>
+              {me.permissions.includes('integration:manage') && (
+                <Link className={link} href="/portal/integrations">
+                  {t('nav.integrations')}
+                </Link>
+              )}
               {me.permissions.includes('rma:request') && (
                 <Link className={link} href="/portal/rmas">
                   {t('nav.rmas')}

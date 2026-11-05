@@ -76,6 +76,9 @@ export const apiEnvSchema = z.object({
   IMAP_PASSWORD: z.string().optional(),
   SMS_ADAPTER: z.enum(['mock']).default('mock'),
 
+  /** Allow webhooks to private/loopback addresses. Local development and tests only. */
+  WEBHOOK_ALLOW_PRIVATE_TARGETS: bool.default(false),
+  WEBHOOK_TIMEOUT_MS: z.coerce.number().int().default(10_000),
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().default(300),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });

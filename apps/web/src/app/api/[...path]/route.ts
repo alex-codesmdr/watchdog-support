@@ -9,6 +9,7 @@ const PUBLIC = [
   /^v1\/catalog\/(families|products)$/,
   /^v1\/files\//,
   /^v1\/kb\/(search|suggest|articles\/[a-z0-9-]+(\/feedback)?)$/,
+  /^openapi\.json$/,
   /^v1\/advisories(\/rss\.xml|\/WDSA-\d{4}-\d{4,})?$/,
   /^v1\/downloads(\/(releases|eulas)\/[0-9a-f-]{36}|\/files\/[0-9a-f-]{36}\/link)?$/,
 ];
@@ -52,6 +53,10 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
   if (path.some((p) => p === '..' || p.includes('\\')))
     return NextResponse.json({ title: 'Bad request' }, { status: 400 });
   const isPublic = PUBLIC.some((re) => re.test(sub));
+  // Machine clients authenticate with an organisation API key. No cookie is involved, so the
+  // browser-session checks (Origin, CSRF) do not apply and the session token is never attached.
+  const apiKey = req.headers.get('authorization');
+  if (apiKey?.startsWith('WD-Key ') && sub.startsWith('v1/')) return forward(req, sub, apiKey);
   const s = await getSession();
   if (!SAFE.has(req.method)) {
     if (req.headers.get('origin') !== env().PUBLIC_WEB_URL)
@@ -68,12 +73,16 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
       { status: 401 },
     );
 
+  return forward(req, sub, s ? `Bearer ${s.accessToken}` : null);
+}
+
+async function forward(req: NextRequest, sub: string, authorization: string | null) {
   const headers = new Headers();
   for (const h of FORWARD) {
     const v = req.headers.get(h);
     if (v) headers.set(h, v);
   }
-  if (s) headers.set('authorization', `Bearer ${s.accessToken}`);
+  if (authorization) headers.set('authorization', authorization);
   const fwd = req.headers.get('x-forwarded-for');
   if (fwd) headers.set('x-forwarded-for', fwd);
 

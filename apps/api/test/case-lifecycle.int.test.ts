@@ -309,7 +309,7 @@ describe('case lifecycle (P1, mission-critical 24x7)', () => {
     const l1 = await t.as(USERS.l1);
     const r = await l1
       .post(`/api/v1/cases/${num}/messages`, {
-        body: 'Please run `display diagnostic-information` and attach it.',
+        body: 'Please collect the diagnostic file from the device and attach it.',
         setStatus: 'awaiting_customer',
       })
       .expect(201);
@@ -349,7 +349,7 @@ describe('case lifecycle (P1, mission-critical 24x7)', () => {
       'Diagnostics collected, PSU 2 shows a fault LED.',
       '',
       'On Wed, 4 Nov 2026 at 11:00, WatchDog Support wrote:',
-      '> Please run display diagnostic-information',
+      '> Please collect the diagnostic file from the device',
     ].join('\r\n');
     const svc = t.app.get(
       (await import('../src/modules/email-in/email-in.service.js')).EmailInService,
@@ -586,8 +586,8 @@ describe('case lifecycle (P1, mission-critical 24x7)', () => {
 });
 
 describe('API documentation', () => {
-  it('serves an OpenAPI 3.1 document covering the case API', async () => {
-    const r = await t.http.get('/api/openapi.json').expect(200);
+  it('serves a full OpenAPI 3.1 document covering the case API (outside production)', async () => {
+    const r = await t.http.get('/api/openapi.full.json').expect(200);
     expect(r.body.openapi).toBe('3.1.0');
     for (const p of [
       '/api/v1/cases',

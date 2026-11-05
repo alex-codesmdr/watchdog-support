@@ -22,7 +22,7 @@ export class RmaController {
   ) {}
 
   @Get('rmas')
-  @RequirePermission('rma:request', 'rma:manage')
+  @RequirePermission('rma:request', 'rma:manage', 'rma:read')
   list(
     @CurrentPrincipal() p: Principal,
     @Query('status') status?: string,
@@ -50,7 +50,7 @@ export class RmaController {
   }
 
   @Get('rmas/:number')
-  @RequirePermission('rma:request', 'rma:manage')
+  @RequirePermission('rma:request', 'rma:manage', 'rma:read')
   get(@CurrentPrincipal() p: Principal, @Param('number') n: string) {
     return this.rma.get(p, RMA_NO.parse(n));
   }

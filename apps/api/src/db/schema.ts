@@ -392,6 +392,46 @@ export interface RenewalRequestT {
   status: Generated<string>;
   created_at: Ts;
 }
+export interface ApiKeyT {
+  id: Generated<string>;
+  org_id: string;
+  name: string;
+  prefix: string;
+  secret_hash: string;
+  scopes: ColumnType<string[], string[], string[]>;
+  created_by: string;
+  expires_at: TsNull;
+  last_used_at: TsNull;
+  revoked_at: TsNull;
+  created_at: Ts;
+}
+export interface WebhookT {
+  id: Generated<string>;
+  org_id: string;
+  url: string;
+  events: ColumnType<string[], string[], string[]>;
+  secret_enc: string;
+  active: Generated<boolean>;
+  disabled_reason: string | null;
+  consecutive_failures: Generated<number>;
+  created_by: string;
+  created_at: Ts;
+}
+export interface WebhookDeliveryT {
+  id: Generated<string>;
+  webhook_id: string;
+  org_id: string;
+  event_id: string;
+  event_type: string;
+  body: string;
+  status: Generated<'pending' | 'succeeded' | 'failed'>;
+  attempts: Generated<number>;
+  last_status: number | null;
+  last_error: string | null;
+  next_attempt_at: Ts;
+  delivered_at: TsNull;
+  created_at: Ts;
+}
 export interface AdvisoryT {
   id: Generated<string>;
   wd_id: Generated<string>;
@@ -561,6 +601,9 @@ export interface DB {
   idempotency_key: IdempotencyKeyT;
   rma: RmaT;
   advisory: AdvisoryT;
+  api_key: ApiKeyT;
+  webhook: WebhookT;
+  webhook_delivery: WebhookDeliveryT;
   advisory_affected: AdvisoryAffectedT;
   advisory_internal: AdvisoryInternalT;
   advisory_subscription: AdvisorySubscriptionT;

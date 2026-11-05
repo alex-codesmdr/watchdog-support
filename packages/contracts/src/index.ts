@@ -807,3 +807,76 @@ export const AdvisorySubscriptionBody = z.object({
   minSeverity: AdvisorySeverity.default('medium'),
 });
 export type AdvisorySubscriptionBody = z.infer<typeof AdvisorySubscriptionBody>;
+
+// ---------- integrations: API keys and webhooks ----------
+export const API_KEY_SCOPES = ['cases:read', 'cases:write', 'assets:read', 'rmas:read'] as const;
+export const ApiKeyScope = z.enum(API_KEY_SCOPES);
+export const API_KEY_SCOPE_LABELS: Record<(typeof API_KEY_SCOPES)[number], string> = {
+  'cases:read': 'Read cases',
+  'cases:write': 'Open cases and reply',
+  'assets:read': 'Read devices and coverage',
+  'rmas:read': 'Read replacements (RMA)',
+};
+export const ApiKeyCreateRequest = z.object({
+  name: z.string().trim().min(2).max(80),
+  scopes: z.array(ApiKeyScope).min(1).max(API_KEY_SCOPES.length),
+  /** Days until expiry; default 365, at most two years. */
+  expiresInDays: z.number().int().min(1).max(730).default(365),
+});
+export const ApiKeyView = z.object({
+  id: Uuid,
+  name: z.string(),
+  prefix: z.string(),
+  scopes: z.array(ApiKeyScope),
+  createdBy: z.string(),
+  createdAt: IsoDateTime,
+  expiresAt: IsoDateTime.nullable(),
+  lastUsedAt: IsoDateTime.nullable(),
+  revokedAt: IsoDateTime.nullable(),
+});
+export type ApiKeyView = z.infer<typeof ApiKeyView>;
+
+export const WEBHOOK_EVENTS = [
+  'case.created',
+  'case.status_changed',
+  'case.message.public_created',
+  'sla.breached',
+  'rma.status_changed',
+  'advisory.published',
+  'entitlement.expiring',
+] as const;
+export const WebhookEvent = z.enum(WEBHOOK_EVENTS);
+export type WebhookEvent = z.infer<typeof WebhookEvent>;
+export const WEBHOOK_EVENT_LABELS: Record<WebhookEvent, string> = {
+  'case.created': 'A case is opened',
+  'case.status_changed': 'A case changes status',
+  'case.message.public_created': 'A new public reply on a case',
+  'sla.breached': 'A case misses its response or resolution target',
+  'rma.status_changed': 'A replacement (RMA) changes status',
+  'advisory.published': 'A security advisory is published or updated',
+  'entitlement.expiring': 'Device coverage ends within 90, 60 or 30 days',
+};
+export const WebhookCreateRequest = z.object({
+  url: z.string().trim().url().max(500),
+  events: z.array(WebhookEvent).min(1),
+});
+export const WebhookView = z.object({
+  id: Uuid,
+  url: z.string(),
+  events: z.array(WebhookEvent),
+  active: z.boolean(),
+  disabledReason: z.string().nullable(),
+  createdAt: IsoDateTime,
+  recent: z.array(
+    z.object({
+      id: Uuid,
+      eventType: z.string(),
+      status: z.enum(['pending', 'succeeded', 'failed']),
+      attempts: z.number().int(),
+      lastStatus: z.number().int().nullable(),
+      lastError: z.string().nullable(),
+      createdAt: IsoDateTime,
+    }),
+  ),
+});
+export type WebhookView = z.infer<typeof WebhookView>;

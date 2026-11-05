@@ -131,5 +131,10 @@ createServer(async (req, res) => {
     res.writeHead(302, { location: url.searchParams.get('post_logout_redirect_uri') ?? '/' });
     return res.end();
   }
+  // Webhook receiver for E2E: accepts any signed POST.
+  if (url.pathname === '/webhook-sink' && req.method === 'POST') {
+    req.resume();
+    return void req.on('end', () => res.writeHead(204).end());
+  }
   res.writeHead(404).end();
 }).listen(PORT, () => console.log(`mock OIDC on ${ISSUER}`));

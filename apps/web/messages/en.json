@@ -18,7 +18,8 @@
     "imports": "Device import",
     "releases": "Releases",
     "rmas": "Replacements",
-    "psirt": "Advisories"
+    "psirt": "Advisories",
+    "integrations": "Integrations"
   },
   "home": {
     "title": "What is your network telling you?",

@@ -41,7 +41,9 @@ permissions:
   - release:manage # publish firmware, software and documents in the download centre
   - rma:request # ask for a replacement on a case the user can see
   - rma:manage # approve, ship, receive and close RMAs
+  - rma:read # read-only RMA access; granted only through API-key scopes
   - advisory:manage # write and publish security advisories (PSIRT)
+  - integration:manage # organisation API keys and webhooks
 
 roles:
   customer_user:
@@ -79,6 +81,7 @@ roles:
         renewal:request,
         asset:manage:org,
         rma:request,
+        integration:manage,
       ]
   partner:
     internal: false
@@ -380,4 +383,10 @@ endpoints:
       method: GET,
       path: /api/v1/admin/advisories,
       allow: [l3_engineer, support_manager, content_editor, system_admin],
+    }
+  - {
+      id: integrations.keys,
+      method: GET,
+      path: /api/v1/org/api-keys,
+      allow: [customer_admin],
     }

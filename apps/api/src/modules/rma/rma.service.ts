@@ -33,7 +33,8 @@ export class RmaService {
   private scope(p: Principal) {
     return (eb: ExpressionBuilder<Schema & { c: Schema['support_case'] }, 'c'>) => {
       const ors = [eb('c.requester_id', '=', p.userId)];
-      if (has(p, 'case:read:org')) ors.push(eb('c.org_id', '=', p.orgId));
+      // API keys with the rmas:read scope see the organisation's RMAs.
+      if (has(p, 'case:read:org') || has(p, 'rma:read')) ors.push(eb('c.org_id', '=', p.orgId));
       if (has(p, 'case:read:delegated') && p.delegatedOrgIds.length)
         ors.push(eb('c.org_id', 'in', p.delegatedOrgIds));
       return eb.or(ors);

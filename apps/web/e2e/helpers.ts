@@ -31,6 +31,8 @@ export async function signIn(page: Page, email: string, returnTo = '/portal') {
     await page.locator(`button[value="${email}"]`).click();
   }
   await expect(page).toHaveURL(new RegExp(returnTo.replace(/\//g, '\\/')));
+  // Typing before React hydrates is lost; let the landing page finish loading first.
+  await page.waitForLoadState('networkidle');
 }
 
 export async function signOut(page: Page) {

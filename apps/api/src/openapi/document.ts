@@ -10,7 +10,8 @@ extendZodWithOpenApi(z);
 
 /**
  * OpenAPI 3.1 generated from the same Zod contracts the API validates with (ADR-010).
- * Every endpoint is registered here; CI fails if a controller route is missing (see test/openapi.int.test.ts).
+ * `buildOpenApi` is the full staff document (non-production only); `buildIntegratorOpenApi` is the
+ * public document for customer systems using API keys (test/openapi.int.test.ts checks both).
  */
 export function buildOpenApi(serverUrl: string): Record<string, unknown> {
   const r = new OpenAPIRegistry();
@@ -194,7 +195,7 @@ export function buildOpenApi(serverUrl: string): Record<string, unknown> {
             schema: C.ReplyRequest,
             example: {
               visibility: 'public',
-              body: 'Please share `display diagnostic-information`.',
+              body: 'Please attach the diagnostic file from the device.',
               setStatus: 'awaiting_customer',
             },
           },
@@ -327,6 +328,78 @@ export function buildOpenApi(serverUrl: string): Record<string, unknown> {
     responses: { 200: json(z.object({ status: z.string() })) },
   });
 
+  const rmaNo = z.string().describe('RMA number, e.g. RMA-2026-000042');
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/rmas',
+    tags: ['RMA'],
+    summary: 'Replacements (RMA) the caller can see',
+    security: sec,
+    request: {
+      query: z.object({
+        status: z.enum(['open', 'closed']).optional(),
+        case: z.string().optional(),
+      }),
+    },
+    responses: {
+      200: json(z.object({ items: z.array(C.RmaSummary) })),
+      401: problem,
+      403: problem,
+    },
+  });
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/rmas/{number}',
+    tags: ['RMA'],
+    security: sec,
+    request: { params: z.object({ number: rmaNo }) },
+    responses: { 200: json(C.RmaView), 404: problem },
+  });
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/cases/{ref}/rmas',
+    tags: ['RMA'],
+    summary: 'Request a hardware replacement from a case (staff only via API)',
+    security: sec,
+    request: {
+      params: z.object({ ref }),
+      body: { content: { 'application/json': { schema: C.RmaCreateRequest } } },
+    },
+    responses: { 201: json(C.RmaView), 409: problem, 422: problem },
+  });
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/rmas/{number}/transition',
+    tags: ['RMA'],
+    security: sec,
+    request: {
+      params: z.object({ number: rmaNo }),
+      body: { content: { 'application/json': { schema: C.RmaTransitionRequest } } },
+    },
+    responses: { 200: json(C.RmaView), 409: problem, 422: problem },
+  });
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/advisories',
+    tags: ['Security advisories'],
+    summary: 'Published security advisories (public)',
+    request: {
+      query: z.object({
+        severity: C.AdvisorySeverity.optional(),
+        family: z.string().optional(),
+        q: z.string().optional(),
+      }),
+    },
+    responses: { 200: json(z.object({ items: z.array(C.AdvisorySummary) })) },
+  });
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/advisories/{id}',
+    tags: ['Security advisories'],
+    request: { params: z.object({ id: z.string().describe('e.g. WDSA-2026-0001') }) },
+    responses: { 200: json(C.AdvisoryView), 404: problem },
+  });
+
   return new OpenApiGeneratorV31(r.definitions).generateDocument({
     openapi: '3.1.0',
     info: {
@@ -337,4 +410,169 @@ export function buildOpenApi(serverUrl: string): Record<string, unknown> {
     },
     servers: [{ url: serverUrl }],
   }) as unknown as Record<string, unknown>;
+}
+
+/** Endpoints a customer system can call with an organisation API key. */
+const INTEGRATOR_PATHS: Record<string, string[]> = {
+  '/api/v1/me': ['get'],
+  '/api/v1/cases': ['get', 'post'],
+  '/api/v1/cases/{ref}': ['get'],
+  '/api/v1/cases/{ref}/messages': ['post'],
+  '/api/v1/cases/{ref}/transition': ['post'],
+  '/api/v1/assets': ['get'],
+  '/api/v1/assets/validate': ['get'],
+  '/api/v1/catalog/families': ['get'],
+  '/api/v1/catalog/products': ['get'],
+  '/api/v1/rmas': ['get'],
+  '/api/v1/rmas/{number}': ['get'],
+  '/api/v1/advisories': ['get'],
+  '/api/v1/advisories/{id}': ['get'],
+};
+
+/** Removes component schemas that no remaining path refers to (directly or through other schemas). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generated JSON document
+function prune(doc: Record<string, any>) {
+  const schemas: Record<string, unknown> = doc.components?.schemas ?? {};
+  const used = new Set<string>();
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === 'object')
+      for (const [k, x] of Object.entries(v)) {
+        if (k === '$ref' && typeof x === 'string') {
+          const name = x.split('/').pop()!;
+          if (!used.has(name)) {
+            used.add(name);
+            walk(schemas[name]);
+          }
+        } else walk(x);
+      }
+  };
+  walk(doc.paths);
+  walk(doc.webhooks);
+  for (const k of Object.keys(schemas)) if (!used.has(k)) delete schemas[k];
+}
+
+/**
+ * Public API description for integrators: API-key authentication, only the endpoints a key can
+ * reach, and the signed webhook events. Nothing staff-only appears here.
+ */
+export function buildIntegratorOpenApi(serverUrl: string): Record<string, unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const doc = buildOpenApi(serverUrl) as Record<string, any>;
+  const paths: Record<string, Record<string, unknown>> = {};
+  for (const [p, methods] of Object.entries(INTEGRATOR_PATHS)) {
+    const item = doc.paths[p];
+    if (!item) continue;
+    paths[p] = {};
+    for (const m of methods)
+      if (item[m])
+        paths[p][m] = { ...item[m], ...(item[m].security ? { security: [{ apiKey: [] }] } : {}) };
+  }
+  doc.paths = paths;
+  doc.info = {
+    title: 'WatchDog Support API for integrations',
+    version: '1.0.0',
+    description: [
+      'Connect your ticketing, monitoring or asset system to WatchDog Support.',
+      '',
+      'Authenticate with an organisation API key created by your administrator under Integrations:',
+      '`Authorization: WD-Key wdk_…`. A key acts as the administrator who created it, limited to its',
+      'scopes (`cases:read`, `cases:write`, `assets:read`, `rmas:read`). Errors use RFC 9457',
+      'problem+json. Requests are rate limited; respect `Retry-After`.',
+      '',
+      'Webhooks: every event is POSTed as JSON with headers `X-WD-Event`, `X-WD-Delivery` and',
+      '`X-WD-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256 of "t.body" with your signing secret>`.',
+      'Verify the signature, reject events older than five minutes, and answer 2xx within 10 seconds.',
+      'Failed deliveries are retried for about a day; the same `id` may arrive more than once.',
+    ].join('\n'),
+  };
+  doc.components.securitySchemes = {
+    apiKey: {
+      type: 'apiKey',
+      in: 'header',
+      name: 'Authorization',
+      description: 'Value: `WD-Key wdk_<prefix>_<secret>`',
+    },
+  };
+  const envelope = (type: string, data: Record<string, unknown>) => ({
+    post: {
+      summary: C.WEBHOOK_EVENT_LABELS[type as C.WebhookEvent],
+      requestBody: {
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['id', 'type', 'createdAt', 'data'],
+              properties: {
+                id: {
+                  type: 'string',
+                  format: 'uuid',
+                  description: 'Event ID; use it to ignore duplicates',
+                },
+                type: { const: type },
+                createdAt: { type: 'string', format: 'date-time' },
+                data: { type: 'object', properties: data },
+              },
+            },
+          },
+        },
+      },
+      responses: { '2XX': { description: 'Received' } },
+    },
+  });
+  const caseData = {
+    number: { type: 'string' },
+    subject: { type: 'string' },
+    severity: { type: 'string', enum: ['P1', 'P2', 'P3', 'P4'] },
+    status: { type: 'string' },
+    url: { type: 'string', format: 'uri' },
+  };
+  doc.webhooks = {
+    'case.created': envelope('case.created', caseData),
+    'case.status_changed': envelope('case.status_changed', caseData),
+    'case.message.public_created': envelope('case.message.public_created', {
+      case: { type: 'object', properties: caseData },
+      messageId: { type: ['string', 'null'] },
+    }),
+    'sla.breached': envelope('sla.breached', {
+      case: { type: 'object', properties: caseData },
+      metric: { type: 'string', enum: ['first_response', 'resolution'] },
+    }),
+    'rma.status_changed': envelope('rma.status_changed', {
+      number: { type: 'string' },
+      status: { type: 'string', enum: [...C.RMA_STATUSES] },
+      previousStatus: { type: ['string', 'null'] },
+      type: { type: 'string', enum: [...C.RMA_TYPES] },
+      caseNumber: { type: 'string' },
+      serialNumber: { type: 'string' },
+      replacementSerial: { type: ['string', 'null'] },
+      trackingNumber: { type: ['string', 'null'] },
+    }),
+    'advisory.published': envelope('advisory.published', {
+      id: { type: 'string' },
+      title: { type: 'string' },
+      severity: { type: 'string' },
+      cvssScore: { type: ['number', 'null'] },
+      cveIds: { type: 'array', items: { type: 'string' } },
+      revision: { type: 'integer' },
+      url: { type: 'string', format: 'uri' },
+    }),
+    'entitlement.expiring': envelope('entitlement.expiring', {
+      daysBefore: { type: 'integer', enum: [90, 60, 30] },
+      devices: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            serialNumber: { type: 'string' },
+            kind: { type: 'string' },
+            tier: { type: 'string' },
+            endsOn: { type: 'string', format: 'date' },
+          },
+        },
+      },
+    }),
+  };
+  prune(doc);
+  return doc;
 }

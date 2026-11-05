@@ -11,6 +11,8 @@ export interface Principal {
   permissions: string[];
   delegatedOrgIds: string[];
   ability: AppAbility;
+  /** Set when the request authenticated with an organisation API key instead of a user session. */
+  apiKeyId?: string;
 }
 
 export interface RequestContext {

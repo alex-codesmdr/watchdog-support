@@ -11,6 +11,9 @@ Status: **in progress**. Last updated 2026-11-04.
 
 ## Decisions
 
+- ADR-026: API keys and webhooks (see `docs/ADR.md`).
+- The public API description lists only what an API key can reach; the full staff description and interactive docs are available outside production only.
+
 - A runtime brand guard rejects third-party vendor names in published advisories, knowledge-base articles and download releases, using the same one-way fingerprints as CI. PSIRT internal notes are exempt because they never leave staff screens.
 - Withdrawn advisories stay public, marked as withdrawn with the reason, so nobody is left wondering where one went.
 - Demo data includes one advisory labelled "(demo)" with no CVE ID; real advisories come only from the PSIRT workflow.
@@ -22,4 +25,4 @@ Status: **in progress**. Last updated 2026-11-04.
 
 ## Tests at this point
 
-API integration: 360 (including 9 RMA and 8 advisories) plus 24 unit. Browser: 52 on desktop and mobile with axe checks.
+API integration: 385 (including 9 RMA, 8 advisories, 12 integrations, 3 API description) plus 24 unit. Browser: 53 on desktop and mobile with axe checks.

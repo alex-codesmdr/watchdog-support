@@ -10,7 +10,7 @@ import { ProblemFilter } from './common/problem.filter.js';
 import { logger } from './common/logger.js';
 import type { AppConfig } from './config.js';
 import { CONFIG } from './tokens.js';
-import { buildOpenApi } from './openapi/document.js';
+import { buildIntegratorOpenApi, buildOpenApi } from './openapi/document.js';
 
 /** Builds the HTTP app (shared by main.ts and the integration tests). */
 export async function createHttpApp(o: AppOverrides = {}): Promise<NestExpressApplication> {
@@ -78,9 +78,13 @@ export async function createHttpApp(o: AppOverrides = {}): Promise<NestExpressAp
   );
   app.use(express.json({ limit: '1mb', type: ['application/json', 'application/*+json'] }));
 
-  // API docs: public in non-production; behind the internal ingress in production.
+  // Public: the integrator description (API-key endpoints and webhook events only).
+  // The full staff description and the interactive docs exist only outside production.
+  const integrator = buildIntegratorOpenApi(cfg.PUBLIC_WEB_URL);
+  app.use('/api/openapi.json', (_req: Request, res: Response) => void res.json(integrator));
   const doc = buildOpenApi(cfg.PUBLIC_API_URL);
-  app.use('/api/openapi.json', (_req: Request, res: Response) => void res.json(doc));
+  if (cfg.NODE_ENV !== 'production')
+    app.use('/api/openapi.full.json', (_req: Request, res: Response) => void res.json(doc));
   if (cfg.NODE_ENV !== 'production') {
     app.use(
       '/api/docs',

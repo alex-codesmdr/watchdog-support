@@ -8,6 +8,7 @@ import { EmailInService } from './modules/email-in/email-in.service.js';
 import { ImapPoller } from './modules/email-in/imap-poller.js';
 import { ScanService } from './modules/files/scan.service.js';
 import { SlaMonitorService } from './modules/sla/sla-monitor.service.js';
+import { WebhooksService } from './modules/integrations/webhooks.service.js';
 import { DownloadsService } from './modules/downloads/downloads.service.js';
 import { RemindersService } from './modules/assets/reminders.service.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
@@ -29,6 +30,7 @@ async function bootstrap() {
   const notifications = ctx.get(NotificationsService);
   const scan = ctx.get(ScanService);
   const downloads = ctx.get(DownloadsService);
+  const webhooks = ctx.get(WebhooksService);
   const relay = new OutboxRelay(db, { kind: 'bullmq', connection });
   const workers = startConsumers(connection, {
     notifications: (topic, payload) => notifications.handle(topic, payload),
@@ -39,10 +41,14 @@ async function bootstrap() {
           : await scan.process(String(payload.attachmentId));
       if (r === 'error') throw new Error('scan failed; will retry');
     },
+    webhooks: async (topic, payload, meta) => {
+      await webhooks.fanOut(topic, payload, meta);
+    },
   });
   relay.start();
   const stopSla = ctx.get(SlaMonitorService).start(30_000);
   const stopReminders = ctx.get(RemindersService).start();
+  const stopWebhookRetries = webhooks.start();
   const imap = new ImapPoller(cfg, ctx.get(EmailInService));
   imap.start();
   logger.info('WatchDog Support worker started');
@@ -52,6 +58,7 @@ async function bootstrap() {
     imap.stop();
     stopSla();
     stopReminders();
+    stopWebhookRetries();
     await relay.stop();
     await Promise.all(workers.map((w) => w.close()));
     await ctx.close();

@@ -3,7 +3,26 @@ import { Queue, Worker, type ConnectionOptions } from 'bullmq';
 import type { Database } from '../db/database.js';
 import { logger } from '../common/logger.js';
 
-export type Handler = (topic: string, payload: Record<string, unknown>) => Promise<void>;
+export interface EventMeta {
+  eventId: string;
+  orgId: string | null;
+}
+export type Handler = (
+  topic: string,
+  payload: Record<string, unknown>,
+  meta: EventMeta,
+) => Promise<void>;
+
+/** Topics that customers can receive as webhooks: fanned out to the `webhooks` queue as well. */
+const WEBHOOK_FANOUT = new Set([
+  'case.created',
+  'case.status_changed',
+  'case.message.public_created',
+  'sla.breached',
+  'rma.status_changed',
+  'advisory.published',
+  'coverage.expiring',
+]);
 
 const QUEUE_FOR: Record<string, string> = {
   'attachment.scan': 'file-scan',
@@ -48,7 +67,7 @@ export class OutboxRelay {
     return this.db.withSystem(async (tx) => {
       const rows = await tx
         .selectFrom('outbox_event')
-        .select(['id', 'topic', 'payload', 'attempts'])
+        .select(['id', 'topic', 'payload', 'attempts', 'org_id'])
         .where('published_at', 'is', null)
         .where('available_at', '<=', new Date())
         .orderBy('created_at')
@@ -58,9 +77,22 @@ export class OutboxRelay {
         .execute();
       for (const r of rows) {
         try {
+          const meta: EventMeta = { eventId: r.id, orgId: r.org_id };
           if (this.mode.kind === 'inline')
-            await this.mode.handler(r.topic, r.payload as Record<string, unknown>);
-          else await this.queue(queueFor(r.topic)).add(r.topic, r.payload, { jobId: r.id });
+            await this.mode.handler(r.topic, r.payload as Record<string, unknown>, meta);
+          else {
+            await this.queue(queueFor(r.topic)).add(
+              r.topic,
+              { ...(r.payload as object), __meta: meta },
+              { jobId: r.id },
+            );
+            if (WEBHOOK_FANOUT.has(r.topic))
+              await this.queue('webhooks').add(
+                r.topic,
+                { ...(r.payload as object), __meta: meta },
+                { jobId: `${r.id}-wh` },
+              );
+          }
           await tx
             .updateTable('outbox_event')
             .set({ published_at: new Date() })
@@ -110,10 +142,17 @@ export function startConsumers(
   handlers: Record<string, Handler>,
 ): Worker[] {
   return Object.entries(handlers).map(([name, handler]) => {
-    const w = new Worker(name, (job) => handler(job.name, job.data as Record<string, unknown>), {
-      connection,
-      concurrency: name === 'file-scan' ? 2 : 10,
-    });
+    const w = new Worker(
+      name,
+      (job) => {
+        const { __meta, ...payload } = job.data as Record<string, unknown> & { __meta?: EventMeta };
+        return handler(job.name, payload, __meta ?? { eventId: String(job.id), orgId: null });
+      },
+      {
+        connection,
+        concurrency: name === 'file-scan' ? 2 : 10,
+      },
+    );
     w.on('failed', (job, err) => logger.error({ err, queue: name, job: job?.id }, 'job failed'));
     return w;
   });

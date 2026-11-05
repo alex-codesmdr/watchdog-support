@@ -13,6 +13,7 @@ import type { Database } from '../src/db/database.js';
 import { MockProvisioner } from '../src/modules/identity/provisioner.js';
 import { MemoryTransport, MockSmsAdapter } from '../src/modules/notifications/mailer.js';
 import { NotificationsService } from '../src/modules/notifications/notifications.service.js';
+import { WebhooksService } from '../src/modules/integrations/webhooks.service.js';
 import { DownloadsService } from '../src/modules/downloads/downloads.service.js';
 import { ScanService } from '../src/modules/files/scan.service.js';
 import { DevAvScanner } from '../src/modules/files/clamav.js';
@@ -52,7 +53,9 @@ export interface TestApp {
   close(): Promise<void>;
 }
 
-export async function createTestApp(opts: { rateLimitScale?: number } = {}): Promise<TestApp> {
+export async function createTestApp(
+  opts: { rateLimitScale?: number; allowPrivateWebhooks?: boolean } = {},
+): Promise<TestApp> {
   const { publicKey, privateKey } = await generateKeyPair('RS256');
   const jwk: JWK = { ...(await exportJWK(publicKey)), kid: 'test', alg: 'RS256', use: 'sig' };
   const config = apiEnvSchema.parse({
@@ -67,6 +70,8 @@ export async function createTestApp(opts: { rateLimitScale?: number } = {}): Pro
     UPLOAD_MAX_BYTES: '10485760',
     PUBLIC_WEB_URL: 'https://support.watchdog.example',
     PUBLIC_API_URL: 'https://support.watchdog.example',
+    WEBHOOK_ALLOW_PRIVATE_TARGETS: opts.allowPrivateWebhooks ? 'true' : 'false',
+    WEBHOOK_TIMEOUT_MS: '3000',
   });
   const mail = new MemoryTransport();
   const sms = new MockSmsAdapter();
@@ -90,11 +95,14 @@ export async function createTestApp(opts: { rateLimitScale?: number } = {}): Pro
   const scan = app.get(ScanService);
   const relay = new OutboxRelay(db, {
     kind: 'inline',
-    handler: async (topic, payload) => {
+    handler: async (topic, payload, meta) => {
       if (topic === 'attachment.scan') await scan.process(String(payload.attachmentId));
       else if (topic === 'release.file.scan')
         await app.get(DownloadsService).scanFile(String(payload.fileId));
-      else await notifications.handle(topic, payload);
+      else {
+        await notifications.handle(topic, payload);
+        await app.get(WebhooksService).fanOut(topic, payload, meta);
+      }
     },
   });
 
