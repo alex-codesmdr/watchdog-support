@@ -20,7 +20,7 @@ Status: **in progress**. Last updated 2026-11-05.
 
 - RMA visibility follows case visibility: whoever can read the case can read its RMAs.
 - RMAs created by a coordinator start approved; everyone else's start as requests.
-- The returns address on the RMA form is Apollo Infoways Pvt. Ltd., H-102, 3rd Floor, Sector 63, Noida, Uttar Pradesh (configurable as `RMA_RETURN_ADDRESS`).
+- The returns address on the RMA form is Apollo Infoways Pvt. Ltd., H-102, 3rd Floor, Sector 63, Noida, Uttar Pradesh 201301 (configurable as `RMA_RETURN_ADDRESS`).
 - The RMA form is generated with built-in PDF fonts (no font files, works offline) and contains only WatchDog names; a test checks it against the prohibited-name fingerprints.
 
 - The audit trail shown to customer administrators covers only their organisation; WatchDog staff appear as "WatchDog Support", and change detail and addresses for staff or system actions are withheld.

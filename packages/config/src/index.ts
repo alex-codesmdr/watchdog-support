@@ -67,7 +67,7 @@ export const apiEnvSchema = z.object({
   /** Where customers send faulty units; printed on the RMA form. */
   RMA_RETURN_ADDRESS: z
     .string()
-    .default('Apollo Infoways Pvt. Ltd., H-102, 3rd Floor, Sector 63, Noida, Uttar Pradesh'),
+    .default('Apollo Infoways Pvt. Ltd., H-102, 3rd Floor, Sector 63, Noida, Uttar Pradesh 201301'),
   MAIL_REPLY_DOMAIN: z.string().default('support.watchdog.example'),
   MAIL_REPLY_LOCALPART: z.string().default('case'),
   IMAP_HOST: z.string().optional(),
