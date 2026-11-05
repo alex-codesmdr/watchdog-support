@@ -1,6 +1,7 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Put, Query } from '@nestjs/common';
 import { sql } from 'kysely';
 import {
+  MyAccountUpdate,
   RegistrationDecision,
   RegistrationRequest,
   type Me,
@@ -11,7 +12,7 @@ import type { Database } from '../../db/database.js';
 import { DB } from '../../tokens.js';
 import { Ctx, CurrentPrincipal, Public, RequirePermission } from '../../common/auth.js';
 import { audit } from '../../common/audit.js';
-import { conflict, notFound } from '../../common/errors.js';
+import { conflict, forbidden, notFound } from '../../common/errors.js';
 import { emit } from '../../common/outbox.js';
 import type { Principal, RequestContext } from '../../common/principal.js';
 import { RateLimit } from '../../common/rate-limit.js';
@@ -35,6 +36,7 @@ export class IdentityController {
           'u.display_name',
           'u.locale',
           'u.timezone',
+          'u.phone',
           'o.id as org_id',
           'o.name as org_name',
           'o.org_type',
@@ -51,8 +53,24 @@ export class IdentityController {
         isInternal: p.isInternal,
         locale: u.locale,
         timezone: u.timezone,
+        phone: u.phone,
       };
     });
+  }
+
+  /** Your own name, phone and email language. */
+  @Put('me')
+  async updateMe(@CurrentPrincipal() p: Principal, @Body() body: unknown): Promise<Me> {
+    if (p.apiKeyId) throw forbidden();
+    const b = parse(MyAccountUpdate, body);
+    await this.db.withTenant(p, (tx) =>
+      tx
+        .updateTable('app_user')
+        .set({ display_name: b.displayName, phone: b.phone, locale: b.locale })
+        .where('id', '=', p.userId)
+        .execute(),
+    );
+    return this.me(p);
   }
 
   /** Public self-registration. Always answers 202 with the same body (no account enumeration). */

@@ -89,6 +89,8 @@ export class NotificationsService {
         return this.rmaChanged(String(payload.rmaId), payload.to as RmaStatus);
       case 'advisory.published':
         return this.advisory(String(payload.advisoryId), Boolean(payload.update));
+      case 'user.invited':
+        return this.userInvited(String(payload.userId), String(payload.invitedBy));
       case 'coverage.expiring':
         return this.coverageExpiring(
           String(payload.orgId),
@@ -441,6 +443,42 @@ export class NotificationsService {
         vars,
       });
     }
+  }
+
+  /** A customer administrator added someone: create their sign-in and tell them who invited them. */
+  private async userInvited(userId: string, invitedBy: string) {
+    const r = await this.db.withSystem((tx) =>
+      tx
+        .selectFrom('app_user as u')
+        .innerJoin('organization as o', 'o.id', 'u.org_id')
+        .leftJoin('app_user as by', (j) => j.on('by.id', '=', invitedBy))
+        .select([
+          'u.email',
+          'u.display_name',
+          'u.status',
+          'u.org_id',
+          'u.locale',
+          'o.name',
+          'by.display_name as inviter',
+        ])
+        .where('u.id', '=', userId)
+        .executeTakeFirst(),
+    );
+    if (!r || r.status !== 'invited') return;
+    await this.idp.invite({ email: r.email, displayName: r.display_name });
+    await this.send({
+      to: r.email,
+      orgId: r.org_id,
+      userId,
+      key: 'user_invited',
+      locale: r.locale,
+      vars: {
+        name: r.display_name,
+        org: r.name,
+        inviter: r.inviter ?? 'Your administrator',
+        url: this.cfg.PUBLIC_WEB_URL,
+      },
+    });
   }
 
   private async loadCase(tx: Tx, id: string) {

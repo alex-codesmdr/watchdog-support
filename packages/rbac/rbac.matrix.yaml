@@ -427,3 +427,4 @@ endpoints:
       path: /api/v1/saved-replies,
       allow: [l1_engineer, l2_engineer, l3_engineer, support_manager, rma_coordinator],
     }
+  - { id: team.list, method: GET, path: /api/v1/org/users, allow: [customer_admin] }

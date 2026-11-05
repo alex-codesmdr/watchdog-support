@@ -22,7 +22,8 @@
     "integrations": "Integrations",
     "reports": "Reports",
     "admin": "Admin",
-    "administration": "Administration"
+    "administration": "Administration",
+    "myAccount": "My account"
   },
   "home": {
     "title": "What is your network telling you?",

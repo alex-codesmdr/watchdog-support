@@ -12,6 +12,13 @@ export interface Tool {
 
 export const STAFF_TOOLS: Tool[] = [
   {
+    perm: 'case:note:internal',
+    href: '/workspace/saved-replies',
+    label: 'Saved replies',
+    desc: 'Text you send often, ready to insert into a case reply.',
+    group: 'Your tools',
+  },
+  {
     perm: 'report:ops:read:all',
     href: '/workspace/reports',
     label: 'Support report',
@@ -82,6 +89,13 @@ export const CUSTOMER_ADMIN_TOOLS: Tool[] = [
     href: '/portal/reports',
     label: 'Support report',
     desc: 'Your cases: volumes, speed, backlog and satisfaction.',
+    group: 'Your organisation',
+  },
+  {
+    perm: 'org:users:manage',
+    href: '/portal/team',
+    label: 'Your team',
+    desc: 'Add colleagues, make them administrators, or switch off their access.',
     group: 'Your organisation',
   },
   {

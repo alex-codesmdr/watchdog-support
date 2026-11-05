@@ -45,6 +45,7 @@ export interface TestApp {
     get: (u: string) => request.Test;
     post: (u: string, body?: unknown) => request.Test;
     put: (u: string, body?: unknown) => request.Test;
+    patch: (u: string, body?: unknown) => request.Test;
     delete: (u: string) => request.Test;
   }>;
   drainOutbox(): Promise<number>;
@@ -138,6 +139,11 @@ export async function createTestApp(
         put: (u: string, body?: unknown) =>
           http
             .put(u)
+            .set('authorization', `Bearer ${t}`)
+            .send(body as object),
+        patch: (u: string, body?: unknown) =>
+          http
+            .patch(u)
             .set('authorization', `Bearer ${t}`)
             .send(body as object),
         delete: (u: string) => http.delete(u).set('authorization', `Bearer ${t}`),

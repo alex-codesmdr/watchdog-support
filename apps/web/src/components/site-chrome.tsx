@@ -114,6 +114,11 @@ export async function SiteHeader({
                     {t('nav.openCase')}
                   </Link>
                 )}
+                {me && (
+                  <Link className={link} href="/account" title={me.email}>
+                    {t('nav.myAccount')}
+                  </Link>
+                )}
                 <form action="/auth/logout" method="post">
                   <input type="hidden" name="csrf" value={s.csrf} />
                   <button className={link} type="submit" title={s.email}>

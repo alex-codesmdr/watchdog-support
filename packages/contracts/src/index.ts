@@ -78,8 +78,50 @@ export const Me = z.object({
   isInternal: z.boolean(),
   locale: z.string(),
   timezone: z.string(),
+  phone: z.string().nullable().optional(),
 });
 export type Me = z.infer<typeof Me>;
+
+/** Languages for email; the portal itself is English for now. */
+export const EMAIL_LOCALES = { 'en-IN': 'English', 'hi-IN': 'हिन्दी (Hindi)' } as const;
+export const MyAccountUpdate = z.object({
+  displayName: z.string().trim().min(2).max(120),
+  phone: z
+    .string()
+    .trim()
+    .regex(
+      /^\+?[0-9 ()-]{7,20}$/,
+      'Enter a phone number with digits only, for example +91 98450 12345',
+    )
+    .nullable()
+    .or(z.literal('').transform(() => null)),
+  locale: z.enum(['en-IN', 'hi-IN']),
+});
+export type MyAccountUpdate = z.input<typeof MyAccountUpdate>;
+
+// ---- Team management (customer administrators)
+export const TeamRole = z.enum(['customer_admin', 'customer_user']);
+export type TeamRole = z.infer<typeof TeamRole>;
+export const TeamMember = z.object({
+  id: Uuid,
+  displayName: z.string(),
+  email: z.string(),
+  role: TeamRole,
+  status: z.enum(['invited', 'active', 'disabled']),
+  lastLoginAt: z.string().nullable(),
+  isMe: z.boolean(),
+});
+export type TeamMember = z.infer<typeof TeamMember>;
+export const TeamInvite = z.object({
+  displayName: z.string().trim().min(2).max(120),
+  email: z.string().trim().toLowerCase().email().max(254),
+  role: TeamRole.default('customer_user'),
+});
+export type TeamInvite = z.input<typeof TeamInvite>;
+export const TeamMemberUpdate = z
+  .object({ role: TeamRole.optional(), status: z.enum(['active', 'disabled']).optional() })
+  .refine((u) => u.role || u.status, 'Nothing to change');
+export type TeamMemberUpdate = z.infer<typeof TeamMemberUpdate>;
 
 export const RegistrationRequest = z.object({
   organizationName: z.string().trim().min(2).max(200),
