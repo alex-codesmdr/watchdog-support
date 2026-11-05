@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { sql } from 'kysely';
 import {
   RMA_STATUS_LABELS,
   RMA_TYPE_LABELS,
@@ -86,6 +87,8 @@ export class NotificationsService {
         return this.renewal(String(payload.renewalId));
       case 'rma.status_changed':
         return this.rmaChanged(String(payload.rmaId), payload.to as RmaStatus);
+      case 'advisory.published':
+        return this.advisory(String(payload.advisoryId), Boolean(payload.update));
       case 'coverage.expiring':
         return this.coverageExpiring(
           String(payload.orgId),
@@ -95,6 +98,110 @@ export class NotificationsService {
       default:
         return;
     }
+  }
+
+  /**
+   * New or revised advisory: subscribers whose filters match, plus customer administrators whose
+   * organisation has an installed affected device (they are told how many).
+   */
+  private async advisory(id: string, update: boolean) {
+    const RANK = { informational: 0, low: 1, medium: 2, high: 3, critical: 4 } as const;
+    await this.db.withSystem(async (tx) => {
+      const a = await tx
+        .selectFrom('advisory')
+        .select([
+          'wd_id',
+          'title',
+          'summary',
+          'severity',
+          'cvss_score',
+          'status',
+          'revision',
+          'revision_note',
+        ])
+        .where('id', '=', id)
+        .executeTakeFirst();
+      if (!a || a.status !== 'published') return;
+      const prods = await tx
+        .selectFrom('advisory_affected as x')
+        .innerJoin('product as p', 'p.id', 'x.product_id')
+        .select(['p.id', 'p.model_name', 'p.family_id'])
+        .where('x.advisory_id', '=', id)
+        .execute();
+      const families = [...new Set(prods.map((p) => p.family_id))];
+      const base = {
+        wdId: a.wd_id,
+        title: a.title,
+        summary: a.summary,
+        severityLabel: a.severity.charAt(0).toUpperCase() + a.severity.slice(1),
+        cvss: a.cvss_score !== null ? ` (CVSS ${Number(a.cvss_score).toFixed(1)})` : '',
+        products: prods.map((p) => p.model_name).join(', '),
+        prefix: update ? 'Updated ' : '',
+        revision: update && a.revision_note ? ` Revision ${a.revision}: ${a.revision_note}` : '',
+        url: `${this.cfg.PUBLIC_WEB_URL}/advisories/${a.wd_id}`,
+      };
+      const to = new Map<
+        string,
+        { id: string; orgId: string | null; locale: string; yourDevices: string }
+      >();
+      const subs = await tx
+        .selectFrom('advisory_subscription as s')
+        .innerJoin('app_user as u', 'u.id', 's.user_id')
+        .select(['u.id', 'u.email', 'u.org_id', 'u.locale', 's.family_ids', 's.min_severity'])
+        .where('u.status', '=', 'active')
+        .execute();
+      for (const s of subs)
+        if (
+          RANK[a.severity] >= RANK[s.min_severity] &&
+          (!s.family_ids.length || s.family_ids.some((f) => families.includes(f)))
+        )
+          to.set(s.email, { id: s.id, orgId: s.org_id, locale: s.locale, yourDevices: '' });
+      if (!update && a.severity !== 'informational' && prods.length) {
+        const exposed = await tx
+          .selectFrom('asset')
+          .select(['org_id', sql<string>`count(*)`.as('n')])
+          .where(
+            'product_id',
+            'in',
+            prods.map((p) => p.id),
+          )
+          .where('retired_at', 'is', null)
+          .groupBy('org_id')
+          .execute();
+        if (exposed.length) {
+          const admins = await tx
+            .selectFrom('user_role as r')
+            .innerJoin('app_user as u', 'u.id', 'r.user_id')
+            .select(['u.id', 'u.email', 'u.org_id', 'u.locale'])
+            .where('r.role_key', '=', 'customer_admin')
+            .where('u.status', '=', 'active')
+            .where(
+              'u.org_id',
+              'in',
+              exposed.map((e) => e.org_id),
+            )
+            .execute();
+          for (const m of admins) {
+            const n = Number(exposed.find((e) => e.org_id === m.org_id)?.n ?? 0);
+            to.set(m.email, {
+              id: m.id,
+              orgId: m.org_id,
+              locale: m.locale,
+              yourDevices: ` Your organisation has ${n} installed device${n === 1 ? '' : 's'} of the affected models.`,
+            });
+          }
+        }
+      }
+      for (const [email, u] of to)
+        await this.send({
+          to: email,
+          orgId: u.orgId,
+          userId: u.id,
+          key: 'advisory_published',
+          locale: u.locale,
+          vars: { ...base, yourDevices: u.yourDevices },
+        });
+    });
   }
 
   /**

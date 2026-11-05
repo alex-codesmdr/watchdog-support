@@ -723,3 +723,87 @@ export const RmaView = RmaSummary.extend({
   next: z.array(RmaStatusSchema),
 });
 export type RmaView = z.infer<typeof RmaView>;
+
+// ---------- security advisories ----------
+export const AdvisorySeverity = z.enum(['critical', 'high', 'medium', 'low', 'informational']);
+export type AdvisorySeverity = z.infer<typeof AdvisorySeverity>;
+export const ADVISORY_SEVERITY_LABELS: Record<AdvisorySeverity, string> = {
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  informational: 'Informational',
+};
+export const AdvisoryStatus = z.enum(['draft', 'published', 'withdrawn']);
+const CveId = z.string().regex(/^CVE-\d{4}-\d{4,7}$/, 'Use the form CVE-2026-12345');
+export const AdvisorySummary = z.object({
+  wdId: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  severity: AdvisorySeverity,
+  cvssScore: z.number().nullable(),
+  cveIds: z.array(z.string()),
+  status: AdvisoryStatus,
+  revision: z.number().int(),
+  publishedAt: IsoDateTime.nullable(),
+  updatedAt: IsoDateTime,
+  products: z.array(z.object({ sku: z.string(), modelName: z.string(), familyKey: z.string() })),
+});
+export type AdvisorySummary = z.infer<typeof AdvisorySummary>;
+export const AdvisoryView = AdvisorySummary.extend({
+  cvssVector: z.string().nullable(),
+  bodyHtml: z.string(),
+  workaroundHtml: z.string(),
+  revisionNote: z.string().nullable(),
+  affected: z.array(
+    z.object({
+      sku: z.string(),
+      modelName: z.string(),
+      affectedVersions: z.string(),
+      fixedVersion: z.string().nullable(),
+    }),
+  ),
+  /** Signed-in customers: how many of their installed devices are affected models. */
+  yourDevices: z.number().int().nullable(),
+});
+export type AdvisoryView = z.infer<typeof AdvisoryView>;
+export const AdvisoryEditorView = AdvisoryView.extend({
+  id: Uuid,
+  bodyMd: z.string(),
+  workaroundMd: z.string(),
+  internalNotes: z.string(),
+});
+export type AdvisoryEditorView = z.infer<typeof AdvisoryEditorView>;
+export const AdvisoryDraftRequest = z.object({
+  title: z.string().trim().min(5).max(200),
+  summary: z.string().trim().min(10).max(1000),
+  severity: AdvisorySeverity,
+  cvssScore: z.number().min(0).max(10).nullable().optional(),
+  cvssVector: z
+    .string()
+    .regex(/^CVSS:3\.[01]\/[A-Z:/]+$/, 'Use a CVSS 3.x vector, e.g. CVSS:3.1/AV:N/AC:L/…')
+    .nullable()
+    .optional(),
+  cveIds: z.array(CveId).max(50).default([]),
+  bodyMd: z.string().max(100_000).default(''),
+  workaroundMd: z.string().max(20_000).default(''),
+  internalNotes: z.string().max(20_000).default(''),
+  affected: z
+    .array(
+      z.object({
+        sku: z.string().max(40),
+        affectedVersions: z.string().trim().min(1).max(200),
+        fixedVersion: z.string().trim().max(60).nullable().optional(),
+      }),
+    )
+    .min(1, 'List at least one affected model')
+    .max(100),
+  /** Required when changing a published advisory: what changed, shown to readers. */
+  revisionNote: z.string().trim().max(500).optional(),
+});
+export type AdvisoryDraftRequest = z.infer<typeof AdvisoryDraftRequest>;
+export const AdvisorySubscriptionBody = z.object({
+  familyKeys: z.array(z.string().max(40)).max(20).default([]),
+  minSeverity: AdvisorySeverity.default('medium'),
+});
+export type AdvisorySubscriptionBody = z.infer<typeof AdvisorySubscriptionBody>;

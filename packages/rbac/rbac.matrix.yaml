@@ -41,6 +41,7 @@ permissions:
   - release:manage # publish firmware, software and documents in the download centre
   - rma:request # ask for a replacement on a case the user can see
   - rma:manage # approve, ship, receive and close RMAs
+  - advisory:manage # write and publish security advisories (PSIRT)
 
 roles:
   customer_user:
@@ -148,6 +149,7 @@ roles:
         kb:read:internal,
         kb:draft,
         rma:request,
+        advisory:manage,
       ]
   support_manager:
     internal: true
@@ -172,10 +174,12 @@ roles:
         release:manage,
         rma:request,
         rma:manage,
+        advisory:manage,
       ]
   content_editor:
     internal: true
-    permissions: [catalog:read, kb:read:internal, kb:draft, kb:publish, release:manage]
+    permissions:
+      [catalog:read, kb:read:internal, kb:draft, kb:publish, release:manage, advisory:manage]
   rma_coordinator:
     internal: true
     permissions:
@@ -203,6 +207,7 @@ roles:
         kb:read:internal,
         asset:import,
         release:manage,
+        advisory:manage,
       ]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.
@@ -368,4 +373,11 @@ endpoints:
           support_manager,
           rma_coordinator,
         ],
+    }
+  - { id: advisories.list, method: GET, path: /api/v1/advisories, allow: '*' }
+  - {
+      id: advisories.admin,
+      method: GET,
+      path: /api/v1/admin/advisories,
+      allow: [l3_engineer, support_manager, content_editor, system_admin],
     }

@@ -8,6 +8,7 @@
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { loadMatrix } from '@wd/rbac';
+import { seedAdvisories } from './seed-advisories.js';
 import { seedDownloadFiles, seedDownloads } from './seed-downloads.js';
 import { seedKb } from './seed-kb.js';
 
@@ -349,6 +350,7 @@ export async function seed(url: string, opts: { reset?: boolean; log?: (s: strin
     }
     const relCount = await seedDownloads(q, SYSTEM_USER_ID);
     if (relCount) log(`  ${relCount} download-centre releases seeded`);
+    if (await seedAdvisories(q, SYSTEM_USER_ID)) log('  demo advisory seeded');
     await q('COMMIT');
     log('seed complete');
   } catch (e) {

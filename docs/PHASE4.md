@@ -11,6 +11,10 @@ Status: **in progress**. Last updated 2026-11-04.
 
 ## Decisions
 
+- A runtime brand guard rejects third-party vendor names in published advisories, knowledge-base articles and download releases, using the same one-way fingerprints as CI. PSIRT internal notes are exempt because they never leave staff screens.
+- Withdrawn advisories stay public, marked as withdrawn with the reason, so nobody is left wondering where one went.
+- Demo data includes one advisory labelled "(demo)" with no CVE ID; real advisories come only from the PSIRT workflow.
+
 - RMA visibility follows case visibility: whoever can read the case can read its RMAs.
 - RMAs created by a coordinator start approved; everyone else's start as requests.
 - The returns address on the RMA form is configuration (`RMA_RETURN_ADDRESS`). **It must be set to the real WatchDog returns address before go-live.**
@@ -18,4 +22,4 @@ Status: **in progress**. Last updated 2026-11-04.
 
 ## Tests at this point
 
-API integration and unit: 356 (including 9 RMA). Browser: 47 on desktop and mobile with axe checks (including the full RMA flow).
+API integration: 360 (including 9 RMA and 8 advisories) plus 24 unit. Browser: 52 on desktop and mobile with axe checks.

@@ -49,6 +49,8 @@ import {
 } from './modules/downloads/downloads.controller.js';
 import { DownloadsService } from './modules/downloads/downloads.service.js';
 import { RmaController } from './modules/rma/rma.controller.js';
+import { AdvisoriesController } from './modules/advisories/advisories.controller.js';
+import { AdvisoriesService } from './modules/advisories/advisories.service.js';
 import { RmaService } from './modules/rma/rma.service.js';
 
 /** Providers tests may replace (JWKS, transports, storage, AV, IdP, Redis). */
@@ -132,6 +134,7 @@ export class AppModule {
         DownloadsController,
         ReleasesAdminController,
         RmaController,
+        AdvisoriesController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
@@ -145,6 +148,7 @@ export class AppModule {
         RemindersService,
         DownloadsService,
         RmaService,
+        AdvisoriesService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_GUARD, useClass: RateLimitGuard },

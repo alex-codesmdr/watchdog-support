@@ -11,6 +11,7 @@ import type {
 import type { Database, Tx } from '../../db/database.js';
 import { DB } from '../../tokens.js';
 import { audit } from '../../common/audit.js';
+import { assertBrandClean } from '../../common/brand-guard.js';
 import { conflict, forbidden, notFound, unprocessable } from '../../common/errors.js';
 import { has, type Principal, type RequestContext } from '../../common/principal.js';
 import { htmlToText } from '../../common/sanitize.js';
@@ -497,6 +498,7 @@ export class KbService {
         .where('version', '=', a.current_version)
         .executeTakeFirstOrThrow();
       if (!v.summary.trim()) throw unprocessable('summary', 'Add a summary before publishing');
+      assertBrandClean({ title: v.title, summary: v.summary, body: v.body_md });
       await tx
         .updateTable('kb_version')
         .set({ reviewer_id: p.userId })

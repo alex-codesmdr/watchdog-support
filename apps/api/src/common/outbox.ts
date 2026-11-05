@@ -15,7 +15,8 @@ export type OutboxTopic =
   | 'renewal.requested'
   | 'coverage.expiring'
   | 'release.file.scan'
-  | 'rma.status_changed';
+  | 'rma.status_changed'
+  | 'advisory.published';
 
 /** Transactional outbox (ADR-006): the event commits or rolls back with the business change. */
 export async function emit(

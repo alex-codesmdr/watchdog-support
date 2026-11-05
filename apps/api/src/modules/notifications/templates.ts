@@ -21,7 +21,8 @@ export type TemplateKey =
   | 'renewal_requested'
   | 'coverage_expiring'
   | 'rma_update'
-  | 'rma_requested';
+  | 'rma_requested'
+  | 'advisory_published';
 
 interface Rendered {
   subject: string;
@@ -128,6 +129,12 @@ const EN: Strings = {
     heading: 'New RMA request',
     body: '{{org}} asked for a {{typeLabel}} of {{model}}, serial {{serial}} (case {{caseNumber}}). Fault: "{{fault}}"',
     cta: 'Review RMA',
+  },
+  advisory_published: {
+    subject: '[{{wdId}}] {{prefix}}{{severityLabel}}: {{title}}',
+    heading: '{{prefix}}{{wdId}}: {{title}}',
+    body: 'Severity <b>{{severityLabel}}</b>{{cvss}}. {{summary}}<br>Affected: {{products}}.{{yourDevices}}{{revision}}',
+    cta: 'Read the advisory',
   },
 };
 

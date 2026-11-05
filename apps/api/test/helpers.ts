@@ -44,6 +44,7 @@ export interface TestApp {
     get: (u: string) => request.Test;
     post: (u: string, body?: unknown) => request.Test;
     put: (u: string, body?: unknown) => request.Test;
+    delete: (u: string) => request.Test;
   }>;
   drainOutbox(): Promise<number>;
   owner: pg.Pool;
@@ -131,6 +132,7 @@ export async function createTestApp(opts: { rateLimitScale?: number } = {}): Pro
             .put(u)
             .set('authorization', `Bearer ${t}`)
             .send(body as object),
+        delete: (u: string) => http.delete(u).set('authorization', `Bearer ${t}`),
       };
     },
     async drainOutbox() {

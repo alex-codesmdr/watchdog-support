@@ -57,6 +57,11 @@ export async function SiteHeader({
               <Link className={link} href="/workspace">
                 {t('nav.queue')}
               </Link>
+              {me?.permissions.includes('advisory:manage') && (
+                <Link className={link} href="/admin/advisories">
+                  {t('nav.psirt')}
+                </Link>
+              )}
               {me?.permissions.includes('rma:manage') && (
                 <Link className={link} href="/workspace/rmas">
                   {t('nav.rmas')}

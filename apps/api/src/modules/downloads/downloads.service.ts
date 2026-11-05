@@ -7,6 +7,7 @@ import type { AppConfig } from '../../config.js';
 import type { Database, Tx } from '../../db/database.js';
 import { AV_SCANNER, CONFIG, DB, OBJECT_STORE } from '../../tokens.js';
 import { audit } from '../../common/audit.js';
+import { assertBrandClean } from '../../common/brand-guard.js';
 import { conflict, notFound, ProblemError, unprocessable } from '../../common/errors.js';
 import { logger } from '../../common/logger.js';
 import { emit } from '../../common/outbox.js';
@@ -374,6 +375,7 @@ export class DownloadsService {
   }
 
   async create(p: Principal, ctx: RequestContext, b: ReleaseDraftRequest): Promise<ReleaseView> {
+    assertBrandClean({ title: b.title, notes: b.notesMd });
     const id = await this.db.withTenant(p, async (tx) => {
       const ref = await this.resolveRefs(tx, b);
       const dup = await tx
@@ -422,6 +424,7 @@ export class DownloadsService {
     id: string,
     b: ReleaseDraftRequest,
   ): Promise<ReleaseView> {
+    assertBrandClean({ title: b.title, notes: b.notesMd });
     await this.db.withTenant(p, async (tx) => {
       const ref = await this.resolveRefs(tx, b);
       const r = await tx

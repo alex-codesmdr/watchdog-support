@@ -392,6 +392,44 @@ export interface RenewalRequestT {
   status: Generated<string>;
   created_at: Ts;
 }
+export interface AdvisoryT {
+  id: Generated<string>;
+  wd_id: Generated<string>;
+  title: string;
+  summary: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'informational';
+  cvss_score: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  cvss_vector: string | null;
+  cve_ids: ColumnType<string[], string[] | undefined, string[]>;
+  body_md: Generated<string>;
+  body_html: Generated<string>;
+  workaround_md: Generated<string>;
+  workaround_html: Generated<string>;
+  status: Generated<'draft' | 'published' | 'withdrawn'>;
+  revision: Generated<number>;
+  revision_note: string | null;
+  created_by: string;
+  published_at: TsNull;
+  updated_at: Ts;
+  created_at: Ts;
+}
+export interface AdvisoryAffectedT {
+  id: Generated<string>;
+  advisory_id: string;
+  product_id: string;
+  affected_versions: string;
+  fixed_version: string | null;
+}
+export interface AdvisoryInternalT {
+  advisory_id: string;
+  notes: Generated<string>;
+}
+export interface AdvisorySubscriptionT {
+  user_id: string;
+  family_ids: ColumnType<string[], string[] | undefined, string[]>;
+  min_severity: Generated<'critical' | 'high' | 'medium' | 'low' | 'informational'>;
+  updated_at: Ts;
+}
 export interface RmaT {
   id: Generated<string>;
   number: Generated<string>;
@@ -522,6 +560,10 @@ export interface DB {
   eula: EulaT;
   idempotency_key: IdempotencyKeyT;
   rma: RmaT;
+  advisory: AdvisoryT;
+  advisory_affected: AdvisoryAffectedT;
+  advisory_internal: AdvisoryInternalT;
+  advisory_subscription: AdvisorySubscriptionT;
   rma_event: RmaEventT;
   software_release: SoftwareReleaseT;
   release_product: ReleaseProductT;
