@@ -26,6 +26,9 @@ export class Database {
       max,
       statement_timeout: 15_000,
       application_name: 'wd-api',
+      // Business days are Indian days: current_date, ::date casts and coverage checks use IST.
+      // Without this, between 00:00 and 05:30 IST the database still thinks it is yesterday.
+      options: '-c TimeZone=Asia/Kolkata',
     });
     this.#db = new Kysely<Schema>({ dialect: new PostgresDialect({ pool: this.#pool }) });
   }

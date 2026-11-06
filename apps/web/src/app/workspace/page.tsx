@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { STAFF_TOOLS, toolsFor } from '@/lib/tools';
-import type { CaseSummary, Me } from '@wd/contracts';
+import type { CaseSummary, Engineer, Me, SavedView, Severity } from '@wd/contracts';
+import { BulkQueue } from '@/components/workspace/bulk-queue';
+import { SavedViews } from '@/components/workspace/saved-views';
 import { EmptyState } from '@wd/ui';
 import { CaseList } from '@/components/case/case-list';
 import { api } from '@/lib/api';
@@ -52,7 +54,18 @@ export default async function Queue({
     ...(sp.severity ? { severity: sp.severity } : {}),
     ...(sp.q ? { q: sp.q } : {}),
   });
-  const data = await api<{ items: CaseSummary[] }>(`/api/v1/cases?${qs}`);
+  const canAssign = me.permissions.includes('case:assign');
+  const [data, views, engineers] = await Promise.all([
+    api<{ items: CaseSummary[] }>(`/api/v1/cases?${qs}`),
+    api<{ items: SavedView[] }>('/api/v1/workspace/views').catch(() => ({
+      items: [] as SavedView[],
+    })),
+    canAssign
+      ? api<{ items: Engineer[] }>('/api/v1/workspace/engineers').catch(() => ({
+          items: [] as Engineer[],
+        }))
+      : Promise.resolve({ items: [] as Engineer[] }),
+  ]);
   // Most urgent first: least SLA time remaining.
   const items = [...data.items].sort(
     (a, b) => (a.nextSla?.remainingSeconds ?? Infinity) - (b.nextSla?.remainingSeconds ?? Infinity),
@@ -104,10 +117,24 @@ export default async function Queue({
           </Link>
         ))}
       </nav>
+      <SavedViews
+        views={views.items}
+        current={{
+          view: view as 'queue' | 'assigned' | 'all',
+          ...(sp.severity ? { severity: sp.severity as Severity } : {}),
+          ...(sp.q ? { q: sp.q } : {}),
+        }}
+      />
       <p className="mt-3 text-sm text-muted">Sorted by least SLA time remaining.</p>
       <div className="mt-3">
         {items.length ? (
-          <CaseList items={items} base="/workspace/cases" showOrg />
+          canAssign && engineers.items.length ? (
+            <BulkQueue engineers={engineers.items} meId={me.id}>
+              <CaseList items={items} base="/workspace/cases" showOrg selectable />
+            </BulkQueue>
+          ) : (
+            <CaseList items={items} base="/workspace/cases" showOrg />
+          )
         ) : (
           <EmptyState title="Queue is clear">No open cases match this view.</EmptyState>
         )}

@@ -15,6 +15,8 @@ afterAll(async () => {
   await t.close();
 });
 
+/** Every rule here is limited to licensing cases, which no other test file opens (they run in parallel). */
+const ONLY = { categories: ['licensing'] };
 const id = async (email: string) =>
   (await (await t.as(email)).get('/api/v1/me').expect(200)).body.id as string;
 
@@ -38,6 +40,7 @@ describe('routing rules', () => {
 
     const off = await m
       .post('/api/v1/admin/routing/rules', {
+        ...ONLY,
         name: 'Disabled catch-all',
         enabled: false,
         assigneeIds: [l1],
@@ -45,6 +48,7 @@ describe('routing rules', () => {
       .expect(201);
     const sw = await m
       .post('/api/v1/admin/routing/rules', {
+        ...ONLY,
         name: 'Critical switching',
         severities: ['P1', 'P2'],
         familyIds: [switching],
@@ -54,6 +58,7 @@ describe('routing rules', () => {
       .expect(201);
     await m
       .post('/api/v1/admin/routing/rules', {
+        ...ONLY,
         name: 'Security to L3',
         familyIds: [security],
         assigneeIds: [l3],
@@ -81,7 +86,10 @@ describe('routing rules', () => {
         loadBefore.find((e) => e.id === b)!.openCases,
     )[0];
     const c1 = await cust
-      .post('/api/v1/cases', caseBody(SERIAL.kaveriMissionCritical, { severity: 'P1' }))
+      .post(
+        '/api/v1/cases',
+        caseBody(SERIAL.kaveriMissionCritical, { severity: 'P1', category: 'licensing' }),
+      )
       .expect(201);
     const d1 = (await m.get(`/api/v1/cases/${c1.body.number}`).expect(200)).body;
     expect([l2, l3]).toContain(d1.assigneeId);
@@ -99,11 +107,17 @@ describe('routing rules', () => {
 
     // A P4 on the same switch matches nothing; the firewall goes to L3.
     const c2 = await cust
-      .post('/api/v1/cases', caseBody(SERIAL.kaveriMissionCritical, { severity: 'P4' }))
+      .post(
+        '/api/v1/cases',
+        caseBody(SERIAL.kaveriMissionCritical, { severity: 'P4', category: 'licensing' }),
+      )
       .expect(201);
     expect((await m.get(`/api/v1/cases/${c2.body.number}`).expect(200)).body.assigneeId).toBeNull();
     const c3 = await cust
-      .post('/api/v1/cases', caseBody(SERIAL.kaveriPremium, { severity: 'P3' }))
+      .post(
+        '/api/v1/cases',
+        caseBody(SERIAL.kaveriPremium, { severity: 'P3', category: 'licensing' }),
+      )
       .expect(201);
     expect((await m.get(`/api/v1/cases/${c3.body.number}`).expect(200)).body.assigneeId).toBe(l3);
 
@@ -112,10 +126,10 @@ describe('routing rules', () => {
 
   it('rejects rules that do nothing or assign to non-engineers', async () => {
     const m = await t.as(USERS.manager);
-    await m.post('/api/v1/admin/routing/rules', { name: 'No action' }).expect(422);
+    await m.post('/api/v1/admin/routing/rules', { ...ONLY, name: 'No action' }).expect(422);
     const cust = await id(USERS.kaveriAdmin);
     await m
-      .post('/api/v1/admin/routing/rules', { name: 'To a customer', assigneeIds: [cust] })
+      .post('/api/v1/admin/routing/rules', { ...ONLY, name: 'To a customer', assigneeIds: [cust] })
       .expect(422);
     await m
       .post('/api/v1/admin/routing/rules', {

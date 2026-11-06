@@ -1116,3 +1116,103 @@ export const PortalSettings = z.object({
 });
 export type PortalSettings = z.infer<typeof PortalSettings>;
 export const PORTAL_SETTING_DEFAULTS: PortalSettings = PortalSettings.parse({});
+
+// ---- Engineer workspace
+export const BulkAssignRequest = z.object({
+  numbers: z
+    .array(z.string().regex(/^WD-\d{4}-\d{6}$/i))
+    .min(1)
+    .max(50),
+  assigneeId: Uuid.nullable(),
+});
+export type BulkAssignRequest = z.infer<typeof BulkAssignRequest>;
+export const BulkAssignResult = z.object({
+  results: z.array(z.object({ number: z.string(), ok: z.boolean(), error: z.string().nullable() })),
+});
+export type BulkAssignResult = z.infer<typeof BulkAssignResult>;
+export const Engineer = z.object({ id: Uuid, name: z.string(), openCases: z.number().int() });
+export type Engineer = z.infer<typeof Engineer>;
+
+/** Who else has the case open, refreshed by each viewer every few seconds. */
+export const PresenceRequest = z.object({ replying: z.boolean().default(false) });
+export const Presence = z.object({
+  others: z.array(z.object({ name: z.string(), replying: z.boolean() })),
+});
+export type Presence = z.infer<typeof Presence>;
+
+/** The customer at a glance, beside a case (staff only). */
+export const CustomerContext = z.object({
+  orgName: z.string(),
+  openCases: z.number().int(),
+  casesLast90Days: z.number().int(),
+  devices: z.number().int(),
+  coverageEndingSoon: z.number().int(),
+  csatAverage: z.number().nullable(),
+  csatResponses: z.number().int(),
+  recentCases: z.array(
+    z.object({
+      number: z.string(),
+      subject: z.string(),
+      severity: Severity,
+      status: z.string(),
+      openedAt: IsoDateTime,
+    }),
+  ),
+});
+export type CustomerContext = z.infer<typeof CustomerContext>;
+
+export const TimeEntryRequest = z.object({
+  minutes: z.coerce.number().int().min(1).max(1440),
+  note: z.string().trim().max(500).default(''),
+  workedOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+export type TimeEntryRequest = z.input<typeof TimeEntryRequest>;
+export const TimeEntry = z.object({
+  id: Uuid,
+  minutes: z.number().int(),
+  note: z.string(),
+  workedOn: z.string(),
+  by: z.string(),
+  mine: z.boolean(),
+});
+export type TimeEntry = z.infer<typeof TimeEntry>;
+export const TimeLog = z.object({ totalMinutes: z.number().int(), entries: z.array(TimeEntry) });
+export type TimeLog = z.infer<typeof TimeLog>;
+
+export const SavedViewParams = z.object({
+  view: z.enum(['queue', 'assigned', 'all']).default('all'),
+  severity: Severity.optional(),
+  q: z.string().trim().max(200).optional(),
+});
+export const SavedViewRequest = z.object({
+  name: z.string().trim().min(1).max(60),
+  params: SavedViewParams,
+});
+export const SavedView = z.object({ id: Uuid, name: z.string(), params: SavedViewParams });
+export type SavedView = z.infer<typeof SavedView>;
+
+// ---- Engineering tracker (Jira)
+export const JiraLinkRequest = z.object({
+  /** Link an issue that already exists instead of creating one. */
+  existingKey: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z][A-Z0-9]+-\d+$/, 'Use the issue key, for example WDENG-123')
+    .optional(),
+  summary: z.string().trim().min(5).max(250).optional(),
+  notes: z.string().trim().max(5000).default(''),
+});
+export type JiraLinkRequest = z.input<typeof JiraLinkRequest>;
+export const JiraLink = z.object({
+  key: z.string(),
+  url: z.string(),
+  status: z.string(),
+  category: z.enum(['new', 'indeterminate', 'done']),
+  tracker: z.string(),
+  syncedAt: IsoDateTime,
+});
+export type JiraLink = z.infer<typeof JiraLink>;

@@ -19,18 +19,27 @@ export function CaseList({
   items,
   base,
   showOrg,
+  selectable,
 }: {
   items: CaseSummary[];
   base: '/portal/cases' | '/workspace/cases';
   showOrg?: boolean;
+  /** Adds a checkbox per row (named "case"); a client wrapper reads them. */
+  selectable?: boolean;
 }) {
   return (
     <ul className="divide-y divide-line overflow-hidden rounded-m border border-line bg-surface">
       {items.map((c) => (
-        <li key={c.id}>
+        <li key={c.id} className={selectable ? 'flex items-stretch' : undefined}>
+          {selectable && (
+            <label className="flex items-center border-r border-line px-3 hover:bg-paper">
+              <input type="checkbox" name="case" value={c.number} className="size-4" />
+              <span className="sr-only">Select {c.number}</span>
+            </label>
+          )}
           <Link
             href={`${base}/${c.number}`}
-            className="grid gap-3 px-4 py-4 hover:bg-paper md:grid-cols-[7.5rem_1fr_14rem] md:items-center"
+            className="grid min-w-0 flex-1 gap-3 px-4 py-4 hover:bg-paper md:grid-cols-[7.5rem_1fr_14rem] md:items-center"
           >
             <div className="flex items-center gap-2 md:flex-col md:items-start">
               <span className="font-mono text-sm text-muted">{c.number}</span>

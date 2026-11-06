@@ -20,7 +20,7 @@ export default async function DevicesPage() {
       openRenewals={renewals.items.filter((r) => r.status === 'requested').map((r) => r.assetId)}
       canManage={me.permissions.includes('asset:manage:org')}
       canRenew={me.permissions.includes('renewal:request')}
-      today={new Date().toISOString().slice(0, 10)}
+      today={new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())}
     />
   );
 }

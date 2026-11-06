@@ -49,6 +49,7 @@ permissions:
   - announcement:manage # portal banners for maintenance and notices
   - routing:manage # rules that send new cases to queues and engineers
   - settings:manage # portal contact details and feature switches
+  - jira:link # raise or link an engineering issue from a case
   - reply:template:share # create and edit saved replies shared with every engineer
 
 roles:
@@ -160,6 +161,7 @@ roles:
         kb:draft,
         rma:request,
         advisory:manage,
+        jira:link,
       ]
   support_manager:
     internal: true
@@ -190,6 +192,7 @@ roles:
         reply:template:share,
         routing:manage,
         settings:manage,
+        jira:link,
       ]
   content_editor:
     internal: true

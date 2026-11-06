@@ -10,3 +10,4 @@ export const AV_SCANNER = Symbol('AV_SCANNER');
 export const OUTBOX_DISPATCH = Symbol('OUTBOX_DISPATCH');
 export const RATE_LIMITER = Symbol('RATE_LIMITER');
 export const REDIS = Symbol('REDIS');
+export const JIRA = Symbol('JIRA');

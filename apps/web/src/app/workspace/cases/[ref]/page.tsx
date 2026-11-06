@@ -27,6 +27,7 @@ export default async function CasePage({
         staff={me.isInternal}
         meId={me.id}
         meName={me.displayName}
+        canJira={me.permissions.includes('jira:link')}
         justCreated={created === '1'}
         canRma={me.permissions.includes('rma:request') || me.permissions.includes('rma:manage')}
       />

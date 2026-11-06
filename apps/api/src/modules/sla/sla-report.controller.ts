@@ -7,6 +7,10 @@ import { CurrentPrincipal, RequirePermission } from '../../common/auth.js';
 import type { Principal } from '../../common/principal.js';
 import { parse } from '../../common/zod.js';
 
+/** Calendar day in India (YYYY-MM-DD); report ranges are IST days. */
+const istDate = (d: Date) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
+
 /** SLA compliance and breach report for support management (design §6.5). */
 @Controller('api/v1/reports/sla')
 export class SlaReportController {
@@ -16,8 +20,8 @@ export class SlaReportController {
   @RequirePermission('report:sla:read')
   async report(@CurrentPrincipal() p: Principal, @Query() q: unknown): Promise<SlaReport> {
     const { from, to } = parse(SlaReportQuery, q);
-    const toDate = to ?? new Date().toISOString().slice(0, 10);
-    const fromDate = from ?? new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+    const toDate = to ?? istDate(new Date());
+    const fromDate = from ?? istDate(new Date(Date.now() - 30 * 86_400_000));
     return this.db.withTenant(p, async (tx) => {
       // Cases opened in [from, to] (IST calendar days).
       const inRange = sql<boolean>`(c.opened_at AT TIME ZONE 'Asia/Kolkata')::date BETWEEN ${fromDate}::date AND ${toDate}::date`;

@@ -4,6 +4,12 @@ import { RMA_STATUS_LABELS, type RmaStatus } from '@wd/contracts';
 import { RmaPanel } from '@/components/rma/rma-panel';
 import { useRef, useState } from 'react';
 import {
+  CustomerPanel,
+  JiraPanel,
+  PresenceNotice,
+  TimePanel,
+} from '@/components/workspace/case-panels';
+import {
   OPEN_STATUSES,
   STATUS_LABELS,
   type AttachmentView,
@@ -55,6 +61,8 @@ const EVENT: Record<string, (d: Record<string, unknown>) => string> = {
   escalated: (d) => `Escalated to ${Number(d.toLevel) >= 4 ? 'Engineering' : `L${d.toLevel}`}`,
   customer_escalated: () => 'Escalated to WatchDog management',
   assigned: (d) => (d.auto ? 'Assigned automatically' : 'Assigned'),
+  jira_linked: (d) => `Engineering issue ${String(d.key)} ${d.existing ? 'linked' : 'raised'}`,
+  jira_status: (d) => `Engineering issue ${String(d.key)} is now ${String(d.to)}`,
   routed: (d) => `Routed by the rule "${String(d.rule ?? '')}"`,
   csat_submitted: (d) => `Rated ${d.score} of 5`,
   sla_warning: (d) =>
@@ -84,6 +92,7 @@ export function CaseView({
   staff,
   meId,
   meName = '',
+  canJira = false,
   justCreated,
   canRma = false,
 }: {
@@ -91,6 +100,7 @@ export function CaseView({
   staff: boolean;
   meId: string;
   meName?: string;
+  canJira?: boolean;
   justCreated?: boolean;
   /** The viewer may request (or manage) RMAs. */
   canRma?: boolean;
@@ -132,10 +142,12 @@ export function CaseView({
     }
   }
 
+  const [replying, setReplying] = useState(false);
   const open = OPEN_STATUSES.includes(c.status);
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_19rem]">
       <div className="min-w-0">
+        {staff && <PresenceNotice number={c.number} replying={replying} />}
         {justCreated && (
           <Notice tone="success" className="mb-6" title={`Case ${c.number} is open`}>
             We emailed you a confirmation. You can reply to that email to add information.
@@ -206,6 +218,7 @@ export function CaseView({
             staff={staff}
             myName={meName}
             busy={busy}
+            onTyping={setReplying}
             onSend={(body) => act('reply', '/messages', body)}
           />
         ) : c.status === 'closed' ? (
@@ -345,6 +358,9 @@ export function CaseView({
             Rated {c.csat.score} of 5{c.csat.comment ? `: “${c.csat.comment}”` : ''}
           </p>
         )}
+        {staff && <CustomerPanel number={c.number} />}
+        {staff && <JiraPanel number={c.number} canRaise={canJira} />}
+        {staff && <TimePanel number={c.number} canLog={c.can.internalNote} />}
       </aside>
 
       <EscalateDialog
@@ -478,11 +494,13 @@ function Composer({
   staff,
   myName,
   busy,
+  onTyping,
   onSend,
 }: {
   c: CaseDetail;
   staff: boolean;
   myName: string;
+  onTyping?: (writing: boolean) => void;
   busy: string | null;
   onSend: (b: unknown) => Promise<boolean>;
 }) {
@@ -509,6 +527,7 @@ function Composer({
         });
         if (ok) {
           setBody('');
+          onTyping?.(false);
           setFiles([]);
           setStatus('');
         }
@@ -545,7 +564,10 @@ function Composer({
             {...p}
             ref={box}
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => {
+              setBody(e.target.value);
+              onTyping?.(e.target.value.trim().length > 0);
+            }}
             rows={5}
           />
         )}

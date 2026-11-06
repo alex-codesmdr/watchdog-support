@@ -640,7 +640,40 @@ export interface PortalSettingT {
   updated_at: Generated<Date>;
 }
 
+export interface CaseTimeEntryT {
+  id: Generated<string>;
+  org_id: Generated<string>;
+  case_id: string;
+  user_id: string;
+  minutes: number;
+  note: Generated<string>;
+  worked_on: ColumnType<string, string | undefined, string>;
+  created_at: Ts;
+}
+export interface SavedViewT {
+  id: Generated<string>;
+  owner_id: string;
+  name: string;
+  params: unknown;
+  created_at: Ts;
+}
+
+export interface CaseJiraLinkT {
+  case_id: string;
+  org_id: Generated<string>;
+  issue_key: string;
+  issue_url: string;
+  status: string;
+  category: string;
+  linked_by: string;
+  synced_at: Generated<Date>;
+  created_at: Ts;
+}
+
 export interface DB {
+  case_jira_link: CaseJiraLinkT;
+  case_time_entry: CaseTimeEntryT;
+  saved_view: SavedViewT;
   portal_setting: PortalSettingT;
   routing_rule: RoutingRuleT;
   announcement: AnnouncementT;

@@ -76,6 +76,16 @@ export const apiEnvSchema = z.object({
   IMAP_PASSWORD: z.string().optional(),
   SMS_ADAPTER: z.enum(['mock']).default('mock'),
 
+  /** Engineering issue tracker. 'mock' keeps issues in memory (development and tests). */
+  JIRA_MODE: z.enum(['mock', 'cloud']).default('mock'),
+  JIRA_BASE_URL: z.string().url().optional(),
+  JIRA_EMAIL: z.string().optional(),
+  JIRA_API_TOKEN: z.string().optional(),
+  JIRA_PROJECT_KEY: z
+    .string()
+    .regex(/^[A-Z][A-Z0-9]{1,9}$/)
+    .default('WDENG'),
+
   /** Allow webhooks to private/loopback addresses. Local development and tests only. */
   WEBHOOK_ALLOW_PRIVATE_TARGETS: bool.default(false),
   WEBHOOK_TIMEOUT_MS: z.coerce.number().int().default(10_000),

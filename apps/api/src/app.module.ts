@@ -12,6 +12,7 @@ import {
   CONFIG,
   DB,
   IDENTITY_PROVISIONER,
+  JIRA,
   JWKS,
   MAIL_TRANSPORT,
   OBJECT_STORE,
@@ -56,6 +57,10 @@ import { SavedRepliesController } from './modules/saved-replies/saved-replies.co
 import { TeamController } from './modules/identity/team.controller.js';
 import { RoutingController } from './modules/routing/routing.controller.js';
 import { SettingsController } from './modules/settings/settings.controller.js';
+import { WorkspaceController } from './modules/workspace/workspace.controller.js';
+import { JiraController } from './modules/jira/jira.controller.js';
+import { JiraService } from './modules/jira/jira.service.js';
+import { JiraCloud, MockJira } from './modules/jira/jira.adapter.js';
 import { SettingsService } from './modules/settings/settings.service.js';
 import { OpsReportController } from './modules/reports/ops-report.controller.js';
 import { IntegrationsController } from './modules/integrations/integrations.controller.js';
@@ -108,6 +113,11 @@ export class AppModule {
       { provide: MAIL_TRANSPORT, useFactory: () => new SmtpTransport(cfg) },
       { provide: SMS_ADAPTER, useFactory: () => new MockSmsAdapter() },
       {
+        provide: JIRA,
+        useFactory: () =>
+          cfg.JIRA_MODE === 'cloud' ? new JiraCloud(cfg) : new MockJira(cfg.JIRA_PROJECT_KEY),
+      },
+      {
         provide: IDENTITY_PROVISIONER,
         useFactory: () =>
           cfg.IDENTITY_PROVISIONER === 'keycloak'
@@ -153,6 +163,8 @@ export class AppModule {
         TeamController,
         RoutingController,
         SettingsController,
+        WorkspaceController,
+        JiraController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
@@ -169,6 +181,7 @@ export class AppModule {
         AdvisoriesService,
         WebhooksService,
         SettingsService,
+        JiraService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_GUARD, useClass: RateLimitGuard },
