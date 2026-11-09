@@ -40,7 +40,8 @@ export const plain = (md: string) =>
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/^#{1,6}\s*/gm, '')
-    .replace(/[*_`>]/g, '')
+    .replace(/^>\s?/gm, '')
+    .replace(/(\*\*|__|`)/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 

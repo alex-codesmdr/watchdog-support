@@ -21,6 +21,9 @@ describe('assistant helpers', () => {
     expect(plain('## Step 1\n**Run** `show version` and see [docs](/kb/x).')).toBe(
       'Step 1\nRun show version and see docs.',
     );
+    expect(plain('> Note\npre-shared-key <your-secret>')).toBe(
+      'Note\npre-shared-key <your-secret>',
+    );
     const c = chunks(`# A\n\n${'word '.repeat(200)}\n\n## B\n\n${'more '.repeat(200)}`);
     expect(c.length).toBeGreaterThan(1);
   });
