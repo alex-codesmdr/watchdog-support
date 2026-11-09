@@ -8,6 +8,9 @@ module.exports = {
         paper: c('paper'), surface: c('surface'), line: c('line'), ink: c('ink'), muted: c('muted'),
         amber: c('amber'), 'amber-ink': c('amber-ink'), danger: c('red'), ok: c('green'), focus: c('focus'), 'chart-1': c('chart-1'), 'chart-2': c('chart-2'),
       },
+      // Text in red or green uses its own shade so it stays readable on dark backgrounds,
+      // while badges and bars keep the stronger fill colour.
+      textColor: { danger: c('red-ink'), ok: c('green-ink') },
       fontFamily: {
         sans: ['IBM Plex Sans', 'Segoe UI', 'system-ui', 'sans-serif'],
         mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],

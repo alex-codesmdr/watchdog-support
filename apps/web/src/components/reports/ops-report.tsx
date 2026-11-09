@@ -121,7 +121,7 @@ export function OpsReportView({
         )}
         <button
           type="submit"
-          className="h-10 rounded-s bg-navy px-4 text-sm font-semibold text-white hover:bg-navy-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          className="h-10 rounded-s bg-navy dark:bg-teal dark:text-navy px-4 text-sm font-semibold text-white hover:bg-navy-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           Update report
         </button>

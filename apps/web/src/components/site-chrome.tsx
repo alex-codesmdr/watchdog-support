@@ -5,6 +5,8 @@ import { Wordmark } from '@wd/ui';
 import { t } from '@/lib/i18n';
 import { getSession } from '@/lib/session';
 import { portalSettings } from '@/lib/settings';
+import { cookies } from 'next/headers';
+import { ThemeSwitch, type Theme } from '@/components/theme-switch';
 import { api } from '@/lib/api';
 import { AnnouncementBanners } from '@/components/announcements/banner';
 import type { Announcement } from '@wd/contracts';
@@ -26,6 +28,8 @@ export async function SiteHeader({
       .catch(() => []),
     portalSettings(),
   ]);
+  const saved = (await cookies()).get('wd-theme')?.value;
+  const theme: Theme = saved === 'light' || saved === 'dark' ? saved : 'system';
   return (
     <>
       <header className="bg-navy text-white">
@@ -112,6 +116,7 @@ export async function SiteHeader({
             )}
           </nav>
           <div className="ml-auto flex items-center gap-2 sm:ml-0">
+            <ThemeSwitch initial={theme} />
             {s ? (
               <>
                 {me && !staff && area !== undefined && (

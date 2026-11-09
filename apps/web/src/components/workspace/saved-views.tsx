@@ -79,7 +79,7 @@ export function SavedViews({
           <button
             type="submit"
             disabled={!name.trim()}
-            className="h-8 rounded-s bg-navy px-3 font-semibold text-white disabled:opacity-50"
+            className="h-8 rounded-s bg-navy dark:bg-teal dark:text-navy px-3 font-semibold text-white disabled:opacity-50"
           >
             Save
           </button>

@@ -49,7 +49,7 @@ export default async function KbEditorList({
         <h1 className="text-2xl font-semibold">Knowledge base</h1>
         <Link
           href="/workspace/kb/new"
-          className="inline-flex h-10 items-center rounded-s bg-navy px-4 text-sm font-semibold text-white hover:bg-navy-2"
+          className="inline-flex h-10 items-center rounded-s bg-navy dark:bg-teal dark:text-navy px-4 text-sm font-semibold text-white hover:bg-navy-2"
         >
           New article
         </Link>

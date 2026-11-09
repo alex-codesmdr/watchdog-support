@@ -23,7 +23,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   busy?: boolean;
 }
 const variants: Record<Variant, string> = {
-  primary: 'bg-navy text-white hover:bg-navy-2 disabled:bg-navy/50',
+  primary:
+    'bg-navy text-white hover:bg-navy-2 disabled:bg-navy/50 dark:bg-teal dark:text-navy dark:hover:bg-teal/90 dark:disabled:bg-teal/40',
   secondary: 'bg-surface text-ink border border-line hover:border-navy/40 disabled:text-muted',
   ghost: 'text-teal-ink hover:bg-teal/10 disabled:text-muted',
   danger: 'bg-danger text-white hover:bg-danger/90 disabled:bg-danger/50',

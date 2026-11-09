@@ -31,7 +31,7 @@ export function RmaList({
             aria-current={status === s ? 'page' : undefined}
             className={
               status === s
-                ? 'rounded-s bg-navy px-3 py-1.5 text-white'
+                ? 'rounded-s bg-navy dark:bg-teal dark:text-navy px-3 py-1.5 text-white'
                 : 'rounded-s px-3 py-1.5 text-ink hover:bg-navy/5'
             }
           >

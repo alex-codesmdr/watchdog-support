@@ -65,7 +65,9 @@ export default async function Search({
           />
           {sp.type && <input type="hidden" name="type" value={sp.type} />}
           {sp.family && <input type="hidden" name="family" value={sp.family} />}
-          <button className="h-11 rounded-s bg-navy px-5 font-semibold text-white">Search</button>
+          <button className="h-11 rounded-s bg-navy dark:bg-teal dark:text-navy px-5 font-semibold text-white">
+            Search
+          </button>
         </form>
 
         <div className="mt-8 grid gap-10 md:grid-cols-[13rem_1fr]">

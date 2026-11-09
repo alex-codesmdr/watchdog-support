@@ -35,7 +35,7 @@ export default async function ReleasesPage() {
         </div>
         <Link
           href="/admin/releases/new"
-          className="inline-flex h-10 items-center rounded-s bg-navy px-4 text-sm font-semibold text-white hover:bg-navy-2"
+          className="inline-flex h-10 items-center rounded-s bg-navy dark:bg-teal dark:text-navy px-4 text-sm font-semibold text-white hover:bg-navy-2"
         >
           New release
         </Link>
