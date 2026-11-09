@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { signIn, signOut } from './helpers';
+import { apiAs, signIn, signOut } from './helpers';
 
 /** Phase 4d: announcement banners and engineers' saved replies. */
 const axe = async (page: Page) => {
@@ -50,10 +50,19 @@ test('support manager posts a banner that visitors see, can dismiss, and is take
 });
 
 test('engineer inserts a shared saved reply with the case details filled in', async ({ page }) => {
+  // A fresh case of our own, so the test does not depend on other tests' data.
+  await signIn(page, 'it.admin@kaveribank.example');
+  const c = await apiAs<{ number: string }>(page, 'POST', '/v1/cases', {
+    serialNumber: 'WDFW3100B0002',
+    severity: 'P3',
+    category: 'config',
+    subject: 'VPN tunnel flaps after the ISP change',
+    description:
+      'The site-to-site tunnel to the branch goes down every night and needs a manual reset.',
+  });
+  await signOut(page);
   await signIn(page, 'vikram.l2@watchdog.example', '/workspace');
-  // The queue lists open cases; any of them has a reply box.
-  await page.locator('a[href^="/workspace/cases/WD-"]').first().click();
-  await expect(page).toHaveURL(/\/workspace\/cases\/WD-/);
+  await page.goto(`/workspace/cases/${c.number}`);
   await page
     .getByRole('combobox', { name: /Insert a saved reply/ })
     .selectOption({ label: 'Ask for diagnostic logs' });

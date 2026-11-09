@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { signIn, signOut } from './helpers';
+import { apiAs, signIn, signOut } from './helpers';
 
 /** Engineer workspace: bulk assignment, saved views, customer panel, time logging. */
 const axe = async (page: Page) => {
@@ -13,8 +13,18 @@ const axe = async (page: Page) => {
 test('engineer saves a view, bulk-assigns a case to themselves, and logs time on it', async ({
   page,
 }) => {
+  const tag = Date.now().toString(36);
+  await signIn(page, 'it.admin@kaveribank.example');
+  await apiAs(page, 'POST', '/v1/cases', {
+    serialNumber: 'WDFW3100B0002',
+    severity: 'P3',
+    category: 'performance',
+    subject: `Slow web filtering ${tag}`,
+    description: 'Pages through the web filter take several seconds to open since Monday.',
+  });
+  await signOut(page);
   await signIn(page, 'vikram.l2@watchdog.example', '/workspace');
-  await page.goto('/workspace?view=all&severity=P3');
+  await page.goto(`/workspace?view=all&severity=P3&q=${tag}`);
   await page.waitForLoadState('networkidle');
   const name = `P3s ${Date.now().toString(36)}`;
   await page.getByRole('button', { name: 'Save these filters as a view' }).click();

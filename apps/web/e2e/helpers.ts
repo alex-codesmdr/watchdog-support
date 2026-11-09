@@ -39,3 +39,25 @@ export async function signOut(page: Page) {
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/$/);
 }
+
+/** Calls the portal API as the signed-in user (same CSRF handling as the app). */
+export async function apiAs<T>(
+  page: Page,
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  return page.evaluate(
+    async ([method, path, body]) => {
+      const { csrf } = await (await fetch('/auth/session')).json();
+      const r = await fetch(`/api${path}`, {
+        method: method as string,
+        headers: { 'content-type': 'application/json', 'x-wd-csrf': csrf },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!r.ok) throw new Error(`${path} ${r.status} ${await r.text()}`);
+      return r.json();
+    },
+    [method, path, body] as const,
+  ) as Promise<T>;
+}
