@@ -9,6 +9,7 @@ const PUBLIC = [
   /^v1\/catalog\/(families|products)$/,
   /^v1\/files\//,
   /^v1\/kb\/(search|suggest|articles\/[a-z0-9-]+(\/feedback)?)$/,
+  /^v1\/assistant\/(ask|[0-9a-f-]{36}\/feedback)$/,
   /^openapi\.json$/,
   /^v1\/advisories(\/rss\.xml|\/WDSA-\d{4}-\d{4,})?$/,
   /^v1\/downloads(\/(releases|eulas)\/[0-9a-f-]{36}|\/files\/[0-9a-f-]{36}\/link)?$/,

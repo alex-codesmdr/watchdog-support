@@ -82,6 +82,13 @@ export const STAFF_TOOLS: Tool[] = [
     group: 'Portal',
   },
   {
+    perm: 'status:manage',
+    href: '/admin/status',
+    label: 'Service status',
+    desc: 'Open incidents and keep the public status page up to date.',
+    group: 'Portal',
+  },
+  {
     perm: 'announcement:manage',
     href: '/admin/announcements',
     label: 'Announcements',

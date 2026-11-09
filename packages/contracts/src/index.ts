@@ -1216,3 +1216,102 @@ export const JiraLink = z.object({
   syncedAt: IsoDateTime,
 });
 export type JiraLink = z.infer<typeof JiraLink>;
+
+// ---- Help assistant (answers only from published knowledge base articles)
+export const AssistantAsk = z.object({
+  question: z
+    .string()
+    .trim()
+    .min(5, 'Ask a little more, for example: How do I update firmware?')
+    .max(500),
+});
+export type AssistantAsk = z.infer<typeof AssistantAsk>;
+export const AssistantAnswer = z.object({
+  id: Uuid,
+  /** Plain text. Citations appear as [1], [2] and match `sources` by position. */
+  answer: z.string(),
+  found: z.boolean(),
+  sources: z.array(z.object({ slug: z.string(), title: z.string() })),
+  mode: z.enum(['extractive', 'generative']),
+});
+export type AssistantAnswer = z.infer<typeof AssistantAnswer>;
+export const AssistantFeedback = z.object({ helpful: z.boolean() });
+
+// ---- Public status page
+export const ComponentStatus = z.enum([
+  'operational',
+  'degraded',
+  'partial_outage',
+  'major_outage',
+  'maintenance',
+]);
+export type ComponentStatus = z.infer<typeof ComponentStatus>;
+export const COMPONENT_STATUS_LABELS: Record<ComponentStatus, string> = {
+  operational: 'Working normally',
+  degraded: 'Slower than usual',
+  partial_outage: 'Partly unavailable',
+  major_outage: 'Unavailable',
+  maintenance: 'Under maintenance',
+};
+export const IncidentStatus = z.enum([
+  'investigating',
+  'identified',
+  'monitoring',
+  'resolved',
+  'scheduled',
+  'in_progress',
+  'completed',
+]);
+export type IncidentStatus = z.infer<typeof IncidentStatus>;
+export const INCIDENT_STATUS_LABELS: Record<IncidentStatus, string> = {
+  investigating: 'Investigating',
+  identified: 'Cause found',
+  monitoring: 'Fix applied, monitoring',
+  resolved: 'Resolved',
+  scheduled: 'Scheduled',
+  in_progress: 'Maintenance in progress',
+  completed: 'Maintenance completed',
+};
+export const IncidentImpact = z.enum(['minor', 'major', 'critical', 'maintenance']);
+export const StatusComponentView = z.object({
+  id: Uuid,
+  name: z.string(),
+  description: z.string(),
+  status: ComponentStatus,
+});
+export const StatusIncidentView = z.object({
+  id: Uuid,
+  title: z.string(),
+  impact: IncidentImpact,
+  status: IncidentStatus,
+  componentIds: z.array(Uuid),
+  startedAt: IsoDateTime,
+  resolvedAt: IsoDateTime.nullable(),
+  updates: z.array(z.object({ status: IncidentStatus, body: z.string(), at: IsoDateTime })),
+});
+export type StatusIncidentView = z.infer<typeof StatusIncidentView>;
+export const StatusPage = z.object({
+  overall: ComponentStatus,
+  components: z.array(StatusComponentView),
+  active: z.array(StatusIncidentView),
+  recent: z.array(StatusIncidentView),
+  updatedAt: IsoDateTime,
+});
+export type StatusPage = z.infer<typeof StatusPage>;
+export const IncidentCreate = z.object({
+  title: z.string().trim().min(5).max(140),
+  impact: IncidentImpact,
+  status: IncidentStatus.default('investigating'),
+  componentIds: z.array(Uuid).min(1).max(20),
+  /** The status each affected component shows while this incident is open. */
+  componentStatus: ComponentStatus,
+  body: z.string().trim().min(5).max(2000),
+});
+export type IncidentCreate = z.input<typeof IncidentCreate>;
+export const IncidentUpdate = z.object({
+  status: IncidentStatus,
+  body: z.string().trim().min(5).max(2000),
+  /** Optional new status for the affected components; resolving sets them back to normal. */
+  componentStatus: ComponentStatus.optional(),
+});
+export type IncidentUpdate = z.input<typeof IncidentUpdate>;

@@ -76,6 +76,12 @@ export const apiEnvSchema = z.object({
   IMAP_PASSWORD: z.string().optional(),
   SMS_ADAPTER: z.enum(['mock']).default('mock'),
 
+  /** Help assistant: 'extractive' quotes the best article passages (no external AI service);
+   * 'anthropic' writes an answer from the same passages with Claude. */
+  ASSISTANT_MODE: z.enum(['extractive', 'anthropic']).default('extractive'),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ASSISTANT_MODEL: z.string().default('claude-sonnet-5-5'),
+
   /** Engineering issue tracker. 'mock' keeps issues in memory (development and tests). */
   JIRA_MODE: z.enum(['mock', 'cloud']).default('mock'),
   JIRA_BASE_URL: z.string().url().optional(),

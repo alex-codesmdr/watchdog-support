@@ -46,6 +46,15 @@ export default async function Home() {
               <p className="mt-4 max-w-xl text-lg text-white/80">{t('home.lead')}</p>
               <div className="mt-8">
                 <ConsoleSearch label={t('home.searchLabel')} button={t('home.searchButton')} />
+                <p className="mt-3 text-sm text-white/80">
+                  Prefer to describe it in your own words?{' '}
+                  <Link
+                    href="/help"
+                    className="font-medium text-white underline underline-offset-2"
+                  >
+                    Ask the help assistant
+                  </Link>
+                </p>
               </div>
             </div>
             <nav aria-label="Quick actions">

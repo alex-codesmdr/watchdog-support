@@ -670,7 +670,51 @@ export interface CaseJiraLinkT {
   created_at: Ts;
 }
 
+export interface AssistantQueryT {
+  id: Generated<string>;
+  org_id: string | null;
+  user_id: string | null;
+  question: string;
+  sources: Generated<string[]>;
+  found: boolean;
+  mode: string;
+  helpful: boolean | null;
+  created_at: Ts;
+}
+
+export interface StatusComponentT {
+  id: Generated<string>;
+  name: string;
+  description: Generated<string>;
+  position: Generated<number>;
+  status: Generated<string>;
+  updated_at: Generated<Date>;
+}
+export interface StatusIncidentT {
+  id: Generated<string>;
+  title: string;
+  impact: string;
+  status: string;
+  component_ids: Generated<string[]>;
+  started_at: Generated<Date>;
+  resolved_at: Date | null;
+  created_by: string;
+  created_at: Ts;
+}
+export interface StatusUpdateT {
+  id: Generated<string>;
+  incident_id: string;
+  status: string;
+  body: string;
+  by_user: string;
+  at: Generated<Date>;
+}
+
 export interface DB {
+  status_component: StatusComponentT;
+  status_incident: StatusIncidentT;
+  status_update: StatusUpdateT;
+  assistant_query: AssistantQueryT;
   case_jira_link: CaseJiraLinkT;
   case_time_entry: CaseTimeEntryT;
   saved_view: SavedViewT;

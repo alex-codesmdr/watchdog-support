@@ -50,6 +50,7 @@ permissions:
   - routing:manage # rules that send new cases to queues and engineers
   - settings:manage # portal contact details and feature switches
   - jira:link # raise or link an engineering issue from a case
+  - status:manage # public service status page and incidents
   - reply:template:share # create and edit saved replies shared with every engineer
 
 roles:
@@ -193,6 +194,7 @@ roles:
         routing:manage,
         settings:manage,
         jira:link,
+        status:manage,
       ]
   content_editor:
     internal: true
@@ -238,6 +240,7 @@ roles:
         announcement:manage,
         routing:manage,
         settings:manage,
+        status:manage,
       ]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.

@@ -62,6 +62,9 @@ export async function SiteHeader({
                 <Link className={link} href="/search">
                   {t('nav.knowledge')}
                 </Link>
+                <Link className={link} href="/help">
+                  {t('nav.ask')}
+                </Link>
                 {toolsFor(CUSTOMER_ADMIN_TOOLS, me.permissions).length > 0 && (
                   <Link className={link} href="/portal/admin">
                     {t('nav.administration')}
@@ -95,6 +98,9 @@ export async function SiteHeader({
               <>
                 <Link className={link} href="/search">
                   {t('nav.knowledge')}
+                </Link>
+                <Link className={link} href="/help">
+                  {t('nav.ask')}
                 </Link>
                 <Link className={link} href="/downloads">
                   {t('nav.downloads')}
@@ -161,6 +167,9 @@ export function SiteFooter() {
         <nav aria-label="Footer" className="flex flex-wrap gap-4">
           <Link className="hover:text-ink" href="/privacy">
             {t('footer.privacy')}
+          </Link>
+          <Link className="hover:text-ink" href="/status">
+            {t('footer.status')}
           </Link>
           <Link className="hover:text-ink" href="/advisories#report">
             {t('footer.psirt')}

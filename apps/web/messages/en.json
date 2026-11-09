@@ -23,7 +23,8 @@
     "reports": "Reports",
     "admin": "Admin",
     "administration": "Administration",
-    "myAccount": "My account"
+    "myAccount": "My account",
+    "ask": "Ask"
   },
   "home": {
     "title": "What is your network telling you?",
