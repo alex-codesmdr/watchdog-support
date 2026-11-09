@@ -6,27 +6,29 @@
 #   mailpit   http://localhost:8025   every email the portal sends
 #   s3        http://localhost:8333   S3-compatible storage (SeaweedFS; key wd-s3)
 #
+# The WD_* variables let GitHub Codespaces (.devcontainer/start.sh) substitute its own web addresses
+# and fresh secrets; without them everything is localhost with the demo values below.
 # Local-development credentials only. Production uses the Helm chart with secrets from the vault.
 name: watchdog-support
 
 x-api-env: &api-env
   NODE_ENV: development
-  PUBLIC_WEB_URL: http://localhost:3000
+  PUBLIC_WEB_URL: ${WD_WEB_URL:-http://localhost:3000}
   PUBLIC_API_URL: http://localhost:4000
   DATABASE_URL: postgres://wd_app:wd_app_dev@postgres:5432/watchdog
   DATABASE_OWNER_URL: postgres://wd_owner:wd_owner_dev@postgres:5432/watchdog
   REDIS_URL: redis://redis:6379
-  AUTH_ISSUER: http://localhost:8080/realms/watchdog
+  AUTH_ISSUER: ${WD_ID_URL:-http://localhost:8080}/realms/watchdog
   AUTH_JWKS_URL: http://keycloak:8080/realms/watchdog/protocol/openid-connect/certs
   AUTH_AUDIENCE: wd-api
   IDENTITY_PROVISIONER: keycloak
   KEYCLOAK_ADMIN_URL: http://keycloak:8080
   KEYCLOAK_REALM: watchdog
   KEYCLOAK_ADMIN_CLIENT_ID: wd-provisioner
-  KEYCLOAK_ADMIN_CLIENT_SECRET: change-me-provisioner
+  KEYCLOAK_ADMIN_CLIENT_SECRET: ${WD_PROVISIONER_SECRET:-change-me-provisioner}
   STORAGE_DRIVER: s3
   S3_ENDPOINT: http://seaweedfs:8333
-  S3_PUBLIC_ENDPOINT: http://localhost:8333
+  S3_PUBLIC_ENDPOINT: ${WD_S3_URL:-http://localhost:8333}
   S3_ACCESS_KEY: wd-s3
   S3_SECRET_KEY: wd-s3-secret-dev
   S3_ENSURE_BUCKETS: "true"
@@ -34,7 +36,7 @@ x-api-env: &api-env
   CLAMAV_HOST: clamav
   SMTP_HOST: mailpit
   SMTP_PORT: "1025"
-  APP_SIGNING_KEY: dev-only-signing-key-replace-me-0123456789abcdef
+  APP_SIGNING_KEY: ${WD_SIGNING_KEY:-dev-only-signing-key-replace-me-0123456789abcdef}
 
 services:
   postgres:
@@ -63,10 +65,12 @@ services:
     command: ["start-dev", "--import-realm"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${WD_KC_ADMIN_PASSWORD:-admin}
       # Browser-facing issuer is localhost:8080; containers reach it as keycloak:8080.
-      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME: ${WD_ID_URL:-http://localhost:8080}
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      # Behind an https proxy (Codespaces) trust its X-Forwarded-* headers; no effect locally.
+      KC_PROXY_HEADERS: xforwarded
       KC_HEALTH_ENABLED: "true"
     volumes:
       - ./deploy/keycloak/realm-watchdog.json:/opt/keycloak/data/import/realm-watchdog.json:ro
@@ -135,14 +139,14 @@ services:
     build: { context: ., dockerfile: deploy/docker/web.Dockerfile }
     environment:
       NODE_ENV: production
-      PUBLIC_WEB_URL: http://localhost:3000
+      PUBLIC_WEB_URL: ${WD_WEB_URL:-http://localhost:3000}
       API_INTERNAL_URL: http://api:4000
       OIDC_ISSUER: http://keycloak:8080/realms/watchdog
-      OIDC_PUBLIC_ISSUER: http://localhost:8080/realms/watchdog
+      OIDC_PUBLIC_ISSUER: ${WD_ID_URL:-http://localhost:8080}/realms/watchdog
       OIDC_CLIENT_ID: wd-web
-      OIDC_CLIENT_SECRET: change-me-web-client
+      OIDC_CLIENT_SECRET: ${WD_WEB_CLIENT_SECRET:-change-me-web-client}
       SESSION_REDIS_URL: redis://redis:6379
-      SESSION_COOKIE_SECURE: "false"
+      SESSION_COOKIE_SECURE: "${WD_COOKIE_SECURE:-false}"
     ports: ["3000:3000"]
     depends_on: [api]
 

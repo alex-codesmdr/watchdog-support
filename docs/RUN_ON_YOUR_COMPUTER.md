@@ -1,7 +1,28 @@
-# Run the portal on your own computer
+# Run the portal on your own computer, or in GitHub Codespaces
 
 This puts a full working copy of the WatchDog Support portal on your computer, with demo customers,
 devices and articles, so you can click through it. Nothing is put on the internet.
+
+## Quickest: in your browser with GitHub Codespaces
+
+Nothing to install. Free personal GitHub accounts include 120 core-hours a month; the portal uses a
+4-core machine, so about 30 hours of use a month.
+
+1. Sign in to github.com and open
+   **https://codespaces.new/alex-codesmdr/watchdog-support?quickstart=1**
+2. Press **Create codespace**. A code editor opens in the browser.
+3. Wait 10 to 20 minutes the first time. The panel at the bottom shows progress and ends with
+   **"WatchDog Support portal is running"** and the address to open.
+4. Open the **Ports** tab at the bottom and click the globe icon next to **WatchDog portal (3000)**.
+   Sign in with a demo account (section 3 below).
+
+Only you can open the address (GitHub asks you to sign in). To show someone else, right-click the port
+and set it to Public, and switch it back afterwards.
+
+When you finish, stop the codespace (github.com/codespaces, then the three dots, then **Stop**) so it does
+not use your free hours. Delete it when you no longer need it, since stored codespaces use your free storage.
+
+## On your own computer
 
 You need a computer with at least 8 GB of memory (16 GB is better) and about 15 GB of free disk space.
 

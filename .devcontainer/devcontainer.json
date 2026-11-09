@@ -1,0 +1,20 @@
+{
+  "name": "WatchDog Support Portal (demo)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "hostRequirements": { "cpus": 4, "memory": "16gb", "storage": "32gb" },
+  "forwardPorts": [3000, 8080, 8333, 8025],
+  "portsAttributes": {
+    "3000": { "label": "WatchDog portal", "onAutoForward": "notify" },
+    "8080": { "label": "Sign-in", "onAutoForward": "silent" },
+    "8333": { "label": "File downloads", "onAutoForward": "silent" },
+    "8025": { "label": "Emails the portal sends", "onAutoForward": "silent" },
+    "4000": { "onAutoForward": "ignore" },
+    "5432": { "onAutoForward": "ignore" },
+    "6379": { "onAutoForward": "ignore" },
+    "1025": { "onAutoForward": "ignore" }
+  },
+  "postStartCommand": "bash .devcontainer/start.sh 2>&1 | tee /tmp/watchdog-start.log"
+}

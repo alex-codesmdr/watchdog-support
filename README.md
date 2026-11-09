@@ -5,7 +5,7 @@ case management with SLAs, assets and entitlements, knowledge base and help assi
 replacements (RMA), security advisories, reporting, service status, and admin tools.
 
 **Status: all five phases built; awaiting review before hosting.** Start with
-[`docs/HANDOVER.md`](docs/HANDOVER.md). To try it on your own computer:
+[`docs/HANDOVER.md`](docs/HANDOVER.md). Try it in your browser: [Open in GitHub Codespaces](https://codespaces.new/alex-codesmdr/watchdog-support?quickstart=1). Or on your own computer:
 [`docs/RUN_ON_YOUR_COMPUTER.md`](docs/RUN_ON_YOUR_COMPUTER.md). Phase reports: [2](docs/PHASE2.md),
 [3](docs/PHASE3.md), [4](docs/PHASE4.md), [5](docs/PHASE5.md). Architecture:
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), decisions: [`docs/ADR.md`](docs/ADR.md).
