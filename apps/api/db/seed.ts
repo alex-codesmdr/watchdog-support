@@ -227,7 +227,10 @@ WatchDog Support`,
   ],
 ];
 
-export async function seed(url: string, opts: { reset?: boolean; log?: (s: string) => void } = {}) {
+export async function seed(
+  url: string,
+  opts: { reset?: boolean; demo?: boolean; log?: (s: string) => void } = {},
+) {
   const log = opts.log ?? console.log;
   const c = new pg.Client({ connectionString: url });
   await c.connect();
@@ -378,13 +381,18 @@ export async function seed(url: string, opts: { reset?: boolean; log?: (s: strin
 
     const hasDemo = (await q(`SELECT 1 FROM organization WHERE org_type <> 'internal' LIMIT 1`))
       .rowCount;
-    if (!hasDemo) {
+    // Demo customers, releases and the demo advisory: development and review only (SEED_DEMO=false
+    // in production keeps reference data, starter articles and starter saved replies).
+    const demo = opts.demo !== false;
+    if (demo && !hasDemo) {
       await seedDemo(q);
       log('  demo tenants seeded');
     }
-    const relCount = await seedDownloads(q, SYSTEM_USER_ID);
-    if (relCount) log(`  ${relCount} download-centre releases seeded`);
-    if (await seedAdvisories(q, SYSTEM_USER_ID)) log('  demo advisory seeded');
+    if (demo) {
+      const relCount = await seedDownloads(q, SYSTEM_USER_ID);
+      if (relCount) log(`  ${relCount} download-centre releases seeded`);
+      if (await seedAdvisories(q, SYSTEM_USER_ID)) log('  demo advisory seeded');
+    }
     if (!(await q('SELECT 1 FROM saved_reply WHERE owner_id IS NULL LIMIT 1')).rowCount) {
       for (const [title, body] of SHARED_REPLIES)
         await q(

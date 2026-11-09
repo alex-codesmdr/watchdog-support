@@ -5,16 +5,27 @@ import {
   type StatusIncidentView,
   type StatusPage,
 } from '@wd/contracts';
-import { cn, fmtIst } from '@wd/ui';
 import { SiteFooter, SiteHeader } from '@/components/site-chrome';
 import { api, currentUser } from '@/lib/api';
+
+/** Server-safe helpers (the design system's helpers run in the browser only). */
+const cn = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ');
+const fmtIst = (iso: string) =>
+  new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(iso));
 
 export const metadata = {
   title: 'Service status',
   description:
     'Whether WatchDog Support services are working normally, and updates on any incident.',
 };
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
 
 const TONE: Record<ComponentStatus, { dot: string; band: string; headline: string }> = {
   operational: {

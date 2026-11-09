@@ -10,8 +10,10 @@ test('support manager opens and resolves an incident shown on the public status 
   const title = `Case emails delayed ${Date.now().toString(36)}`;
   await signIn(page, 'rohan.manager@watchdog.example', '/workspace');
   await page.goto('/admin/status');
-  await page.waitForLoadState('networkidle');
-  await page.getByLabel('Title').fill(title);
+  await expect(async () => {
+    await page.getByLabel('Title').fill(title);
+    await expect(page.getByLabel('Title')).toHaveValue(title, { timeout: 1000 });
+  }).toPass();
   await page.getByRole('group', { name: 'Services affected' }).getByLabel('Case email').check();
   await page
     .getByLabel('First update for customers')
