@@ -1,7 +1,7 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { CUSTOMER_ADMIN_TOOLS, STAFF_TOOLS, toolsFor } from '@/lib/tools';
 import type { Me } from '@wd/contracts';
-import { Wordmark } from '@wd/ui';
 import { t } from '@/lib/i18n';
 import { getSession } from '@/lib/session';
 import { portalSettings } from '@/lib/settings';
@@ -40,8 +40,23 @@ export async function SiteHeader({
           {t('nav.skip')}
         </a>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <Link href="/" className="rounded-s" aria-label="WatchDog Support home">
-            <Wordmark inverted />
+          <Link
+            href="/"
+            className="flex items-center gap-3 rounded-s"
+            aria-label="WatchDog Support home"
+          >
+            <Image
+              src="/watchdog-logo.png"
+              alt=""
+              width={336}
+              height={96}
+              priority
+              unoptimized
+              className="h-10 w-auto sm:h-14"
+            />
+            <span className="border-l border-white/30 pl-3 text-lg font-normal text-white/90">
+              Support
+            </span>
           </Link>
           <nav
             aria-label="Main"
