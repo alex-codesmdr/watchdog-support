@@ -51,7 +51,11 @@ test('engineer saves a view, bulk-assigns a case to themselves, and logs time on
   await page.getByRole('button', { name: /^Delete 25 min/ }).click();
 
   await page.goto('/workspace');
-  await page.getByRole('button', { name: `Delete saved view ${name}` }).click();
-  await expect(page.getByRole('link', { name })).toHaveCount(0);
+  // Retry until the page has hydrated and the delete has taken effect.
+  await expect(async () => {
+    const del = page.getByRole('button', { name: `Delete saved view ${name}` });
+    if (await del.count()) await del.click();
+    await expect(page.getByRole('link', { name })).toHaveCount(0, { timeout: 1500 });
+  }).toPass({ timeout: 20_000 });
   await signOut(page);
 });
