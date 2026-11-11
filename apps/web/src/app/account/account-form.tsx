@@ -20,6 +20,8 @@ export function AccountForm({ me }: { me: Me }) {
     try {
       await apiFetch('/v1/me', { method: 'PUT', body: { displayName: name, phone, locale } });
       setMsg({ tone: 'success', text: 'Saved.' });
+      // The portal pages follow the same language as the emails.
+      document.cookie = `wd-lang=${locale.slice(0, 2)}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
       router.refresh();
     } catch (err) {
       setMsg({
@@ -47,7 +49,10 @@ export function AccountForm({ me }: { me: Me }) {
           <Input {...p} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
         )}
       </Field>
-      <Field label="Email language" hint="The language of the emails WatchDog Support sends you.">
+      <Field
+        label="Language"
+        hint="The language of the portal pages and of the emails WatchDog Support sends you."
+      >
         {(p) => (
           <Select
             {...p}

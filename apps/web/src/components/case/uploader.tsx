@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import { Upload } from 'tus-js-client';
 import { Button, cn } from '@wd/ui';
+import { useT } from '@/components/locale';
 import { getCsrf } from '@/lib/client';
 
 export interface UploadItem {
@@ -34,6 +35,7 @@ export function Uploader({
   onChange: (f: (prev: UploadItem[]) => UploadItem[]) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const tr = useT();
   const [drag, setDrag] = useState(false);
 
   async function start(files: FileList | null) {
@@ -71,10 +73,10 @@ export function Uploader({
           ).originalResponse?.getStatus();
           const msg =
             status === 415
-              ? 'This file type is not accepted.'
+              ? tr('This file type is not accepted.')
               : status === 413
-                ? 'File is larger than the 2 GB limit.'
-                : 'Upload failed. Remove it and try again.';
+                ? tr('File is larger than the 2 GB limit.')
+                : tr('Upload failed. Remove it and try again.');
           onChange((prev) => prev.map((p) => (p.key === key ? { ...p, error: msg } : p)));
         },
       });
@@ -103,21 +105,22 @@ export function Uploader({
         )}
       >
         <p className="text-sm text-ink">
-          Drop logs, diagnostic bundles, packet captures or screenshots here.
+          {tr('Drop logs, diagnostic bundles, packet captures or screenshots here.')}
         </p>
         <p className="text-xs text-muted">
-          Up to 2 GB each. Every file is virus-scanned, and passwords, SNMP communities and keys in
-          text files are masked automatically.
+          {tr(
+            'Up to 2 GB each. Every file is virus-scanned, and passwords, SNMP communities and keys in text files are masked automatically.',
+          )}
         </p>
         <Button type="button" variant="secondary" size="sm" onClick={() => input.current?.click()}>
-          Choose files
+          {tr('Choose files')}
         </Button>
         <input
           ref={input}
           type="file"
           multiple
           accept={ALLOWED}
-          aria-label="Attach files"
+          aria-label={tr('Attach files')}
           className="sr-only"
           onChange={(e) => void start(e.target.files)}
           tabIndex={-1}
@@ -133,16 +136,16 @@ export function Uploader({
                 <span className="text-danger">{it.error}</span>
               ) : (
                 <span className="w-24 tabular-nums text-muted" aria-live="polite">
-                  {it.id ? 'Uploaded' : `${it.progress}%`}
+                  {it.id ? tr('Uploaded') : `${it.progress}%`}
                 </span>
               )}
               <button
                 type="button"
                 className="text-muted hover:text-danger"
-                aria-label={`Remove ${it.name}`}
+                aria-label={tr('Remove {name}', { name: it.name })}
                 onClick={() => onChange((prev) => prev.filter((p) => p.key !== it.key))}
               >
-                Remove
+                {tr('Remove')}
               </button>
             </li>
           ))}

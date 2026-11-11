@@ -14,6 +14,7 @@ import {
 import { Button, cn, Field, Input, Notice, Select, Textarea } from '@wd/ui';
 import { Uploader, type UploadItem } from '@/components/case/uploader';
 import { apiFetch, ClientApiError } from '@/lib/client';
+import { useT } from '@/components/locale';
 
 const STEPS = ['Device', 'Problem', 'Files', 'Review'] as const;
 const CATEGORY_LABEL: Record<CaseCategory, string> = {
@@ -56,6 +57,7 @@ export function NewCaseWizard({
   initialSerial: string;
 }) {
   const router = useRouter();
+  const tr = useT();
   const [step, setStep] = useState(0);
   // One key per form: a retry after a network error never opens a duplicate case.
   const [idemKey] = useState(() => crypto.randomUUID());
@@ -128,21 +130,21 @@ export function NewCaseWizard({
   function validate(s: number): boolean {
     const e: Record<string, string> = {};
     if (s === 0) {
-      if (isPartner && !orgId) e.org = 'Choose the customer this case is for.';
+      if (isPartner && !orgId) e.org = tr('Choose the customer this case is for.');
       else if (!validation.data?.valid)
         e.serial =
           validation.data?.reason === 'not_entitled'
-            ? 'This device has no active support contract.'
-            : 'Enter the serial number of a registered device.';
+            ? tr('This device has no active support contract.')
+            : tr('Enter the serial number of a registered device.');
     }
     if (s === 1) {
-      if (!form.severity) e.severity = 'Choose how severe this is.';
-      if (!form.category) e.category = 'Choose a category.';
+      if (!form.severity) e.severity = tr('Choose how severe this is.');
+      if (!form.category) e.category = tr('Choose a category.');
       if (form.subject.trim().length < 8)
-        e.subject = 'Describe the problem in at least 8 characters.';
-      if (!form.description.trim()) e.description = 'Tell us what is happening.';
+        e.subject = tr('Describe the problem in at least 8 characters.');
+      if (!form.description.trim()) e.description = tr('Tell us what is happening.');
     }
-    if (s === 2 && uploading) e.files = 'Wait for uploads to finish, or remove them.';
+    if (s === 2 && uploading) e.files = tr('Wait for uploads to finish, or remove them.');
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -171,7 +173,7 @@ export function NewCaseWizard({
       setSubmitError(
         e instanceof ClientApiError
           ? [e.title, e.detail].filter(Boolean).join('. ')
-          : 'The case was not created. Try again.',
+          : tr('The case was not created. Try again.'),
       );
     }
   }
@@ -179,8 +181,8 @@ export function NewCaseWizard({
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_18rem]">
       <div>
-        <h1 className="text-2xl font-semibold">Open a case</h1>
-        <ol className="mt-6 flex flex-wrap gap-2" aria-label="Steps">
+        <h1 className="text-2xl font-semibold">{tr('Open a case')}</h1>
+        <ol className="mt-6 flex flex-wrap gap-2" aria-label={tr('Steps')}>
           {STEPS.map((s, i) => (
             <li
               key={s}
@@ -190,7 +192,7 @@ export function NewCaseWizard({
                 i === step ? 'bg-navy text-white' : i < step ? 'text-ink' : 'text-muted',
               )}
             >
-              <span className="tabular-nums">{i + 1}</span> {s}
+              <span className="tabular-nums">{i + 1}</span> {tr(s)}
             </li>
           ))}
         </ol>
@@ -200,14 +202,14 @@ export function NewCaseWizard({
             <>
               {isPartner && (
                 <Field
-                  label="Customer"
+                  label={tr('Customer')}
                   required
-                  hint="The organisation that owns the device."
+                  hint={tr('The organisation that owns the device.')}
                   error={errors.org}
                 >
                   {(p) => (
                     <Select {...p} value={orgId} onChange={(e) => setOrgId(e.target.value)}>
-                      <option value="">Choose a customer</option>
+                      <option value="">{tr('Choose a customer')}</option>
                       {customers.map((o) => (
                         <option key={o.id} value={o.id}>
                           {o.name}
@@ -218,9 +220,9 @@ export function NewCaseWizard({
                 </Field>
               )}
               <Field
-                label="Serial number"
+                label={tr('Serial number')}
                 required
-                hint="Printed on the device label, or run “display device manuinfo”."
+                hint={tr('Printed on the device label, or run “display device manuinfo”.')}
                 error={errors.serial}
               >
                 {(p) => (
@@ -234,7 +236,7 @@ export function NewCaseWizard({
                   />
                 )}
               </Field>
-              {validation.isFetching && <p className="text-sm text-muted">Checking…</p>}
+              {validation.isFetching && <p className="text-sm text-muted">{tr('Checking…')}</p>}
               {asset && (
                 <Notice
                   tone={validation.data?.valid ? 'success' : 'warning'}
@@ -243,22 +245,31 @@ export function NewCaseWizard({
                   {asset.siteName && <>{asset.siteName}. </>}
                   {asset.entitlement ? (
                     <>
-                      Covered by {TIER[asset.entitlement.tier]} until {asset.entitlement.endsOn}.
+                      {tr('Covered by {tier} until {date}.', {
+                        tier: tr(TIER[asset.entitlement.tier] ?? ''),
+                        date: asset.entitlement.endsOn,
+                      })}
                     </>
                   ) : (
-                    <>No active support contract. Ask your account manager for a renewal quote.</>
+                    <>
+                      {tr(
+                        'No active support contract. Ask your account manager for a renewal quote.',
+                      )}
+                    </>
                   )}
                 </Notice>
               )}
               {validation.data && !asset && dSerial.length >= 6 && (
                 <Notice tone="warning">
-                  We could not find {dSerial} in your organisation’s registered devices.
+                  {tr('We could not find {serial} in your organisation’s registered devices.', {
+                    serial: dSerial,
+                  })}
                 </Notice>
               )}
               {!!assets.data?.items.length && (
                 <details className="text-sm">
                   <summary className="cursor-pointer text-teal-ink">
-                    Choose from your {assets.data.items.length} registered devices
+                    {tr('Choose from your {n} registered devices', { n: assets.data.items.length })}
                   </summary>
                   <ul className="mt-2 max-h-64 divide-y divide-line overflow-auto rounded-s border border-line">
                     {assets.data.items.map((a) => (
@@ -276,7 +287,7 @@ export function NewCaseWizard({
                             <span className="text-muted">{a.modelName}</span>
                           </span>
                           <span className={a.entitlement ? 'text-muted' : 'text-amber-ink'}>
-                            {a.entitlement ? TIER[a.entitlement.tier] : 'Not covered'}
+                            {a.entitlement ? tr(TIER[a.entitlement.tier] ?? '') : tr('Not covered')}
                           </span>
                         </button>
                       </li>
@@ -291,7 +302,7 @@ export function NewCaseWizard({
             <>
               <fieldset>
                 <legend className="text-sm font-medium">
-                  Severity <span className="text-muted">(required)</span>
+                  {tr('Severity')} <span className="text-muted">{tr('(required)')}</span>
                 </legend>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   {(['P1', 'P2', 'P3', 'P4'] as Severity[]).map((s) => (
@@ -311,9 +322,9 @@ export function NewCaseWizard({
                           onChange={set('severity')}
                           className="accent-[rgb(var(--wd-navy))]"
                         />
-                        {SEVERITY_LABELS[s]}
+                        {tr(SEVERITY_LABELS[s])}
                       </span>
-                      <span className="pl-6 text-sm text-muted">{SEV_HELP[s]}</span>
+                      <span className="pl-6 text-sm text-muted">{tr(SEV_HELP[s])}</span>
                     </label>
                   ))}
                 </div>
@@ -322,24 +333,29 @@ export function NewCaseWizard({
                 )}
                 {form.severity === 'P1' && (
                   <Notice tone="warning" className="mt-3">
-                    After submitting, also call {p1Phone} so an engineer engages immediately.
+                    {tr('After submitting, also call {phone} so an engineer engages immediately.', {
+                      phone: p1Phone,
+                    })}
                   </Notice>
                 )}
               </fieldset>
               <div className="grid gap-5 sm:grid-cols-2">
-                <Field label="Category" required error={errors.category}>
+                <Field label={tr('Category')} required error={errors.category}>
                   {(p) => (
                     <Select {...p} value={form.category} onChange={set('category')}>
-                      <option value="">Choose…</option>
+                      <option value="">{tr('Choose…')}</option>
                       {CaseCategory.options.map((c) => (
                         <option key={c} value={c}>
-                          {CATEGORY_LABEL[c]}
+                          {tr(CATEGORY_LABEL[c])}
                         </option>
                       ))}
                     </Select>
                   )}
                 </Field>
-                <Field label="Software version" hint="Pre-filled from the device record.">
+                <Field
+                  label={tr('Software version')}
+                  hint={tr('Pre-filled from the device record.')}
+                >
                   {(p) => (
                     <Input
                       {...p}
@@ -350,7 +366,7 @@ export function NewCaseWizard({
                   )}
                 </Field>
               </div>
-              <Field label="Subject" required error={errors.subject}>
+              <Field label={tr('Subject')} required error={errors.subject}>
                 {(p) => (
                   <Input {...p} value={form.subject} onChange={set('subject')} maxLength={200} />
                 )}
@@ -360,7 +376,7 @@ export function NewCaseWizard({
                   className="rounded-s border border-teal/40 bg-teal/5 p-3 text-sm"
                   aria-live="polite"
                 >
-                  <p className="font-medium">These articles may solve it right away</p>
+                  <p className="font-medium">{tr('These articles may solve it right away')}</p>
                   <ul className="mt-1 list-disc pl-5">
                     {articles.data.items.map((a) => (
                       <li key={a.slug}>
@@ -382,7 +398,7 @@ export function NewCaseWizard({
                   className="rounded-s border border-line bg-paper p-3 text-sm"
                   aria-live="polite"
                 >
-                  <p className="font-medium">Similar resolved cases in your organisation</p>
+                  <p className="font-medium">{tr('Similar resolved cases in your organisation')}</p>
                   <ul className="mt-1 list-disc pl-5">
                     {similar.data.items.map((c) => (
                       <li key={c.id}>
@@ -400,9 +416,11 @@ export function NewCaseWizard({
                 </div>
               )}
               <Field
-                label="What is happening?"
+                label={tr('What is happening?')}
                 required
-                hint="Include error messages and when it started. Wrap CLI output in ``` lines to keep formatting."
+                hint={tr(
+                  'Include error messages and when it started. Wrap CLI output in ``` lines to keep formatting.',
+                )}
                 error={errors.description}
               >
                 {(p) => (
@@ -414,12 +432,12 @@ export function NewCaseWizard({
                   />
                 )}
               </Field>
-              <Field label="What have you tried?">
+              <Field label={tr('What have you tried?')}>
                 {(p) => (
                   <Textarea {...p} value={form.stepsTried} onChange={set('stepsTried')} rows={3} />
                 )}
               </Field>
-              <Field label="Business impact" hint="Users, sites or services affected.">
+              <Field label={tr('Business impact')} hint={tr('Users, sites or services affected.')}>
                 {(p) => (
                   <Textarea
                     {...p}
@@ -441,20 +459,20 @@ export function NewCaseWizard({
 
           {step === 3 && (
             <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[10rem_1fr]">
-              <dt className="text-muted">Device</dt>
+              <dt className="text-muted">{tr('Device')}</dt>
               <dd>
                 <span className="font-mono">{serial.toUpperCase()}</span> {asset?.modelName}
               </dd>
-              <dt className="text-muted">Severity</dt>
-              <dd>{form.severity && SEVERITY_LABELS[form.severity]}</dd>
-              <dt className="text-muted">Category</dt>
-              <dd>{form.category && CATEGORY_LABEL[form.category]}</dd>
-              <dt className="text-muted">Subject</dt>
+              <dt className="text-muted">{tr('Severity')}</dt>
+              <dd>{form.severity && tr(SEVERITY_LABELS[form.severity])}</dd>
+              <dt className="text-muted">{tr('Category')}</dt>
+              <dd>{form.category && tr(CATEGORY_LABEL[form.category])}</dd>
+              <dt className="text-muted">{tr('Subject')}</dt>
               <dd>{form.subject}</dd>
-              <dt className="text-muted">Description</dt>
+              <dt className="text-muted">{tr('Description')}</dt>
               <dd className="whitespace-pre-wrap">{form.description}</dd>
-              <dt className="text-muted">Files</dt>
-              <dd>{uploadIds.length ? `${uploadIds.length} attached` : 'None'}</dd>
+              <dt className="text-muted">{tr('Files')}</dt>
+              <dd>{uploadIds.length ? tr('{n} attached', { n: uploadIds.length }) : tr('None')}</dd>
             </dl>
           )}
 
@@ -462,26 +480,27 @@ export function NewCaseWizard({
           <div className="flex gap-3 pt-2">
             {step > 0 && (
               <Button variant="secondary" type="button" onClick={() => setStep((s) => s - 1)}>
-                Back
+                {tr('Back')}
               </Button>
             )}
             {step < 3 ? (
               <Button type="button" onClick={next}>
-                Continue
+                {tr('Continue')}
               </Button>
             ) : (
               <Button type="button" busy={busy} onClick={submit}>
-                Open case
+                {tr('Open case')}
               </Button>
             )}
           </div>
         </div>
       </div>
       <aside className="text-sm text-muted">
-        <h2 className="text-base font-semibold text-ink">What happens next</h2>
+        <h2 className="text-base font-semibold text-ink">{tr('What happens next')}</h2>
         <p className="mt-2">
-          Your SLA clock starts when you open the case. You get a confirmation email with the case
-          number, and you can reply to any of our emails to add information.
+          {tr(
+            'Your SLA clock starts when you open the case. You get a confirmation email with the case number, and you can reply to any of our emails to add information.',
+          )}
         </p>
       </aside>
     </div>

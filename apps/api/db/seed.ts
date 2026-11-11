@@ -394,6 +394,7 @@ export async function seed(
       if (await seedAdvisories(q, SYSTEM_USER_ID)) log('  demo advisory seeded');
       if (await seedBusinessDemo(q))
         log('  demo contracts, roster, lifecycle notice and suggestions seeded');
+      if (await seedFieldDemo(q)) log('  demo depots, spare stock and community questions seeded');
     }
     if (!(await q('SELECT 1 FROM saved_reply WHERE owner_id IS NULL LIMIT 1')).rowCount) {
       for (const [title, body] of SHARED_REPLIES)
@@ -590,6 +591,95 @@ async function seedBusinessDemo(q: (t: string, v?: unknown[]) => Promise<pg.Quer
     'new',
     null,
     [],
+  );
+  return true;
+}
+
+/** Demo depots with spare units and minimum levels, and two community questions. Runs once. */
+async function seedFieldDemo(q: (t: string, v?: unknown[]) => Promise<pg.QueryResult>) {
+  if ((await q('SELECT 1 FROM depot LIMIT 1')).rowCount) return false;
+  if (!(await q('SELECT 1 FROM organization WHERE id = $1', [ORGS.kaveri])).rowCount) return false;
+  const depot = async (name: string, city: string, state: string) =>
+    (
+      await q('INSERT INTO depot (name, city, state) VALUES ($1,$2,$3) RETURNING id', [
+        name,
+        city,
+        state,
+      ])
+    ).rows[0].id as string;
+  const noida = await depot('Noida (main depot)', 'Noida', 'Uttar Pradesh');
+  const mumbai = await depot('Mumbai', 'Mumbai', 'Maharashtra');
+  const blr = await depot('Bengaluru', 'Bengaluru', 'Karnataka');
+  const spares: Array<[string, string, string[]]> = [
+    [noida, 'WD-SW5600-48P', ['WDSPSW5600N01', 'WDSPSW5600N02', 'WDSPSW5600N03']],
+    [noida, 'WD-FW3100', ['WDSPFW3100N01', 'WDSPFW3100N02']],
+    [noida, 'WD-RT8800', ['WDSPRT8800N01']],
+    [mumbai, 'WD-SW5600-48P', ['WDSPSW5600M01']],
+    [blr, 'WD-SDW-1200', ['WDSPSDW1200B01', 'WDSPSDW1200B02']],
+    [blr, 'WD-FW3100', ['WDSPFW3100B01']],
+  ];
+  for (const [d, sku, serials] of spares)
+    for (const serial of serials)
+      await q(
+        `INSERT INTO asset (org_id, product_id, serial_number, depot_id)
+         SELECT $1, id, $3, $4 FROM product WHERE sku = $2 ON CONFLICT (serial_number) DO NOTHING`,
+        [ORGS.internal, sku, serial, d],
+      );
+  const levels: Array<[string, string, number]> = [
+    [noida, 'WD-SW5600-48P', 2],
+    [noida, 'WD-FW3100', 2],
+    [noida, 'WD-RT8800', 2],
+    [mumbai, 'WD-SW5600-48P', 1],
+    [blr, 'WD-FW3100', 1],
+  ];
+  for (const [d, sku, min] of levels)
+    await q(
+      `INSERT INTO spare_level (depot_id, product_id, min_on_hand) SELECT $1, id, $3 FROM product WHERE sku = $2`,
+      [d, sku, min],
+    );
+
+  const user = (email: string) => DEMO_USERS.find((u) => u[2] === email)![0];
+  const ask = async (org: string, author: string, title: string, body: string) =>
+    (
+      await q(
+        `INSERT INTO forum_question (org_id, author_id, family_id, title, body)
+         VALUES ($1,$2,(SELECT id FROM product_family WHERE key = 'switching'),$3,$4) RETURNING id`,
+        [org, author, title, body],
+      )
+    ).rows[0].id as string;
+  const answer = async (qid: string, org: string, author: string, body: string, staff: boolean) =>
+    (
+      await q(
+        `INSERT INTO forum_answer (question_id, org_id, author_id, body, by_staff) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+        [qid, org, author, body, staff],
+      )
+    ).rows[0].id as string;
+  const q1 = await ask(
+    ORGS.narmada,
+    user('netops@narmadacity.example'),
+    'How do I save the running configuration on a schedule?',
+    'We change switch configuration often during the day and sometimes forget to save before a power cut. Is there a way to save automatically every night?',
+  );
+  const a1 = await answer(
+    q1,
+    ORGS.internal,
+    user('vikram.l2@watchdog.example'),
+    'Yes. Create a scheduled job that runs "save force" at 02:00 every day, then check it with "display scheduler job". The knowledge base article on configuration backups has the full steps, including copying the file to a TFTP server.',
+    true,
+  );
+  await answer(
+    q1,
+    ORGS.kaveri,
+    user('noc@kaveribank.example'),
+    'We do the same and also keep a copy on our backup server each week. It saved us after a flash failure last year.',
+    false,
+  );
+  await q('UPDATE forum_question SET accepted_answer_id = $1 WHERE id = $2', [a1, q1]);
+  await ask(
+    ORGS.kaveri,
+    user('it.admin@kaveribank.example'),
+    'Best way to name VLANs across branches?',
+    'We are standardising VLAN names across 40 branches. Does anyone have a naming scheme that worked well with the management software?',
   );
   return true;
 }

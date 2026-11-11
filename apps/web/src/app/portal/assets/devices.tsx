@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { AssetSummary, SiteView } from '@wd/contracts';
 import { Button, Dialog, EmptyState, Field, Input, Notice, Select, Textarea, cn } from '@wd/ui';
+import { useT } from '@/components/locale';
 import { apiFetch, ClientApiError } from '@/lib/client';
 
 const TIER: Record<string, string> = {
@@ -25,7 +26,12 @@ const LIFECYCLE = {
   eos: 'No longer sold',
   eol: 'Support has ended',
 } as const;
-type Coverage = { label: string; tone: 'ok' | 'soon' | 'urgent' | 'none'; days: number | null };
+type Coverage = {
+  label: string;
+  vars?: Record<string, string | number>;
+  tone: 'ok' | 'soon' | 'urgent' | 'none';
+  days: number | null;
+};
 function coverage(a: AssetSummary, today: string): Coverage {
   if (!a.entitlement) return { label: 'No active coverage', tone: 'none', days: null };
   const days = Math.round(
@@ -33,10 +39,16 @@ function coverage(a: AssetSummary, today: string): Coverage {
       Date.parse(`${today}T00:00:00Z`)) /
       86_400_000,
   );
-  if (days < 0) return { label: `Ended ${fmtDate(a.entitlement.endsOn)}`, tone: 'none', days };
-  if (days <= 30) return { label: `${days} days left`, tone: 'urgent', days };
-  if (days <= 90) return { label: `${days} days left`, tone: 'soon', days };
-  return { label: `Until ${fmtDate(a.entitlement.endsOn)}`, tone: 'ok', days };
+  if (days < 0)
+    return {
+      label: 'Ended {date}',
+      vars: { date: fmtDate(a.entitlement.endsOn) },
+      tone: 'none',
+      days,
+    };
+  if (days <= 30) return { label: '{n} days left', vars: { n: days }, tone: 'urgent', days };
+  if (days <= 90) return { label: '{n} days left', vars: { n: days }, tone: 'soon', days };
+  return { label: 'Until {date}', vars: { date: fmtDate(a.entitlement.endsOn) }, tone: 'ok', days };
 }
 const toneCls: Record<Coverage['tone'], string> = {
   ok: 'text-ok',
@@ -63,6 +75,7 @@ export function Devices({
   const router = useRouter();
   const [site, setSite] = useState('all');
   const [filter, setFilter] = useState<'all' | 'attention'>('all');
+  const tr = useT();
   const [q, setQ] = useState('');
   const [renewFor, setRenewFor] = useState<AssetSummary | null>(null);
   const [moveFor, setMoveFor] = useState<AssetSummary | null>(null);
@@ -95,32 +108,34 @@ export function Devices({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">Devices</h1>
+        <h1 className="text-2xl font-semibold">{tr('Devices')}</h1>
         <p className="mt-1 max-w-prose text-muted">
-          {assets.length} registered WatchDog devices.{' '}
+          {tr('{n} registered WatchDog devices.', { n: assets.length })}{' '}
           {attention > 0
-            ? `${attention} need attention: coverage ends within 90 days or has already ended.`
-            : 'Every device is covered for at least the next 90 days.'}
+            ? tr('{n} need attention: coverage ends within 90 days or has already ended.', {
+                n: attention,
+              })
+            : tr('Every device is covered for at least the next 90 days.')}
         </p>
       </div>
       {notice && (
         <Notice tone="success" title={notice}>
-          Our renewals team usually replies within one business day.
+          {tr('Our renewals team usually replies within one business day.')}
         </Notice>
       )}
 
       <div className="grid gap-10 lg:grid-cols-[1fr_18rem]">
         <section aria-labelledby="devices-h" className="min-w-0">
           <h2 id="devices-h" className="sr-only">
-            Device list
+            {tr('Device list')}
           </h2>
           <div className="flex flex-wrap items-end gap-3">
-            <Field label="Find a device" className="w-full sm:w-64">
+            <Field label={tr('Find a device')} className="w-full sm:w-64">
               {(p) => (
                 <Input
                   {...p}
                   type="search"
-                  placeholder="Serial or model"
+                  placeholder={tr('Serial or model')}
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                 />
@@ -183,7 +198,7 @@ export function Devices({
                     {a.lifecycle && (
                       <details className="mt-1 text-sm">
                         <summary className="cursor-pointer text-amber-ink">
-                          {LIFECYCLE[a.lifecycle.stage]}
+                          {tr(LIFECYCLE[a.lifecycle.stage])}
                           {a.lifecycle.endOfSupport
                             ? `: support ends ${fmtDate(a.lifecycle.endOfSupport)}`
                             : ''}
@@ -213,7 +228,7 @@ export function Devices({
                         {TIER[a.entitlement.tier]} {KIND[a.entitlement.kind] ?? a.entitlement.kind}
                       </span>
                     )}
-                    <span className={toneCls[c.tone]}>{c.label}</span>
+                    <span className={toneCls[c.tone]}>{tr(c.label, c.vars)}</span>
                   </p>
                   <div className="flex flex-wrap gap-2 sm:justify-end">
                     {canRenew &&

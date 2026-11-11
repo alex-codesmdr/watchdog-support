@@ -16,6 +16,7 @@ import { audit } from '../../common/audit.js';
 import { conflict, forbidden, notFound, unprocessable } from '../../common/errors.js';
 import { emit } from '../../common/outbox.js';
 import { has, type Principal, type RequestContext } from '../../common/principal.js';
+import { checkLowStock } from '../field/stock.controller.js';
 
 const INTERNAL_ORG_ID = '00000000-0000-4000-8000-000000000100';
 const ymd = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
@@ -332,11 +333,18 @@ export class RmaService {
         );
       if (existing.product_id !== old.product_id)
         throw unprocessable('replacementSerial', 'The replacement must be the same model');
+      const spare = await tx
+        .selectFrom('asset')
+        .select('depot_id')
+        .where('id', '=', existing.id)
+        .executeTakeFirstOrThrow();
       await tx
         .updateTable('asset')
-        .set({ org_id: r.org_id, site_id: old.site_id })
+        .set({ org_id: r.org_id, site_id: old.site_id, depot_id: null })
         .where('id', '=', existing.id)
         .execute();
+      // The spare has left its depot.
+      if (spare.depot_id) await checkLowStock(tx, spare.depot_id, existing.product_id);
       newId = existing.id;
     } else {
       const a = await tx

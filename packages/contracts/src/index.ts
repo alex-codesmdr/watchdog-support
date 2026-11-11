@@ -1643,3 +1643,133 @@ export const IdeaStaffUpdate = z.object({
   response: z.string().trim().max(2000).nullable().optional(),
   hidden: z.boolean().optional(),
 });
+
+// ---- Engineer visits
+export const VisitKind = z.enum(['onsite', 'remote']);
+export type VisitKind = z.infer<typeof VisitKind>;
+export const VisitSlots = z.object({
+  kind: VisitKind,
+  days: z.array(
+    z.object({
+      day: z.string(),
+      slots: z.array(z.object({ startsAt: IsoDateTime, endsAt: IsoDateTime })),
+    }),
+  ),
+});
+export type VisitSlots = z.infer<typeof VisitSlots>;
+export const VisitBook = z.object({
+  kind: VisitKind,
+  startsAt: IsoDateTime,
+  contactName: z.string().trim().min(2).max(120),
+  contactPhone: z
+    .string()
+    .trim()
+    .regex(/^\+?[0-9 -]{8,20}$/, 'Enter a phone number'),
+  siteId: Uuid.optional(),
+  notes: z.string().trim().max(1000).optional(),
+});
+export const VisitView = z.object({
+  id: Uuid,
+  caseNumber: z.string(),
+  orgName: z.string(),
+  kind: VisitKind,
+  startsAt: IsoDateTime,
+  endsAt: IsoDateTime,
+  engineerName: z.string().nullable(),
+  siteName: z.string().nullable(),
+  contactName: z.string(),
+  contactPhone: z.string(),
+  notes: z.string().nullable(),
+  status: z.enum(['booked', 'done', 'cancelled']),
+  cancelReason: z.string().nullable(),
+});
+export type VisitView = z.infer<typeof VisitView>;
+export const VisitCancel = z.object({ reason: z.string().trim().min(3).max(500) });
+
+// ---- Spare-parts stock
+export const StockView = z.object({
+  depots: z.array(z.object({ id: Uuid, name: z.string(), city: z.string(), state: z.string() })),
+  products: z.array(
+    z.object({
+      id: Uuid,
+      sku: z.string(),
+      modelName: z.string(),
+      total: z.number().int(),
+      byDepot: z.array(
+        z.object({
+          depotId: Uuid,
+          onHand: z.number().int(),
+          min: z.number().int(),
+          serials: z.array(z.string()),
+        }),
+      ),
+    }),
+  ),
+  belowMinimum: z.number().int(),
+});
+export type StockView = z.infer<typeof StockView>;
+export const SparesAdd = z.object({
+  depotId: Uuid,
+  sku: z.string().trim().min(2).max(60),
+  serials: z
+    .array(
+      z
+        .string()
+        .trim()
+        .toUpperCase()
+        .regex(/^[A-Z0-9-]{6,32}$/, 'Serial numbers use letters, digits and hyphens'),
+    )
+    .min(1)
+    .max(200),
+});
+export const SpareLevelSet = z.object({
+  depotId: Uuid,
+  sku: z.string().trim().min(2).max(60),
+  min: z.coerce.number().int().min(0).max(1000),
+});
+export const DepotCreate = z.object({
+  name: z.string().trim().min(2).max(80),
+  city: z.string().trim().min(2).max(80),
+  state: z.string().trim().min(2).max(80),
+});
+
+// ---- Community answers
+export const ForumQuestionSummary = z.object({
+  id: Uuid,
+  title: z.string(),
+  excerpt: z.string(),
+  familyName: z.string().nullable(),
+  author: z.string(),
+  answers: z.number().int(),
+  solved: z.boolean(),
+  hidden: z.boolean(),
+  createdAt: IsoDateTime,
+});
+export type ForumQuestionSummary = z.infer<typeof ForumQuestionSummary>;
+export const ForumAnswerView = z.object({
+  id: Uuid,
+  body: z.string(),
+  author: z.string(),
+  byStaff: z.boolean(),
+  accepted: z.boolean(),
+  hidden: z.boolean(),
+  mine: z.boolean(),
+  createdAt: IsoDateTime,
+});
+export type ForumAnswerView = z.infer<typeof ForumAnswerView>;
+export const ForumQuestionView = ForumQuestionSummary.extend({
+  body: z.string(),
+  mine: z.boolean(),
+  canAccept: z.boolean(),
+  canModerate: z.boolean(),
+  answerList: z.array(ForumAnswerView),
+});
+export type ForumQuestionView = z.infer<typeof ForumQuestionView>;
+export const ForumQuestionCreate = z.object({
+  title: z.string().trim().min(10).max(160),
+  body: z.string().trim().min(10).max(8000),
+  familyKey: z.string().trim().max(40).optional(),
+});
+export const ForumAnswerCreate = z.object({ body: z.string().trim().min(2).max(8000) });
+export const ForumAccept = z.object({ answerId: Uuid.nullable() });
+export const ForumHide = z.object({ hidden: z.boolean() });

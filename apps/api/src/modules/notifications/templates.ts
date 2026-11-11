@@ -30,7 +30,11 @@ export type TemplateKey =
   | 'renewal_digest'
   | 'lifecycle_notice'
   | 'p1_oncall'
-  | 'partner_access';
+  | 'partner_access'
+  | 'visit_booked'
+  | 'visit_cancelled'
+  | 'stock_low'
+  | 'community_answer';
 
 interface Rendered {
   subject: string;
@@ -192,6 +196,30 @@ const EN: Strings = {
     body: 'WatchDog Support has given <b>{{partner}}</b> access to open and follow support cases and see devices for <b>{{org}}</b>{{untilText}}. They cannot see your contracts or invoices.<br>If you did not expect this, end their access from Your team in the portal and tell us.',
     cta: 'Review partner access',
   },
+  visit_booked: {
+    subject: '[{{number}}] {{what}} booked for {{when}}',
+    heading: '{{what}} booked',
+    body: 'For case {{number}}, "{{subject}}".<br>When: <b>{{when}}</b> (India time)<br>Engineer: {{engineer}}<br>{{whereHtml}}Contact on the day: {{contact}}<br><br>Add it to your calendar from the case page. If the time no longer suits, cancel it there and choose another.',
+    cta: 'Open case',
+  },
+  visit_cancelled: {
+    subject: '[{{number}}] {{what}} on {{when}} cancelled',
+    heading: '{{what}} cancelled',
+    body: 'The {{whatLower}} for case {{number}} on {{when}} was cancelled by {{by}}.<br>Reason: {{reason}}<br>You can book another time from the case page.',
+    cta: 'Open case',
+  },
+  stock_low: {
+    subject: 'Low spare stock: {{model}} at {{depot}}',
+    heading: 'Spare stock below the minimum',
+    body: '{{depot}} now has {{onHand}} spare {{model}} unit(s); the minimum is {{min}}. Replacements for this model may not ship the same day until stock is topped up.',
+    cta: 'Open spare stock',
+  },
+  community_answer: {
+    subject: 'New answer to your question: {{title}}',
+    heading: '{{author}} answered your question',
+    body: '"{{title}}"<br><br>{{excerpt}}<br><br>If it solves your problem, mark it as the answer so others can find it.',
+    cta: 'Read the answer',
+  },
 };
 
 /** Hindi (हिन्दी). Technical terms customers use day to day (case, SLA, RMA, serial) stay in English. */
@@ -342,6 +370,30 @@ const HI: Strings = {
     heading: 'एक पार्टनर अब आपकी ओर से काम कर सकता है',
     body: 'WatchDog Support ने <b>{{partner}}</b> को <b>{{org}}</b> के लिए सपोर्ट case खोलने, देखने और डिवाइस देखने की अनुमति दी है{{untilText}}। वे आपके अनुबंध या इनवॉइस नहीं देख सकते।<br>अगर आपको इसकी उम्मीद नहीं थी, तो पोर्टल में अपनी टीम से उनकी पहुँच समाप्त करें और हमें बताएँ।',
     cta: 'पार्टनर पहुँच देखें',
+  },
+  visit_booked: {
+    subject: '[{{number}}] {{what}} {{when}} के लिए बुक',
+    heading: '{{what}} बुक हो गया',
+    body: 'Case {{number}}, "{{subject}}" के लिए।<br>कब: <b>{{when}}</b> (भारतीय समय)<br>इंजीनियर: {{engineer}}<br>{{whereHtml}}उस दिन संपर्क: {{contact}}<br><br>Case पेज से इसे अपने कैलेंडर में जोड़ें। समय सुविधाजनक न हो तो वहीं रद्द करके दूसरा समय चुनें।',
+    cta: 'Case खोलें',
+  },
+  visit_cancelled: {
+    subject: '[{{number}}] {{when}} का {{what}} रद्द',
+    heading: '{{what}} रद्द',
+    body: 'Case {{number}} के लिए {{when}} का {{whatLower}} {{by}} ने रद्द किया।<br>कारण: {{reason}}<br>आप case पेज से दूसरा समय बुक कर सकते हैं।',
+    cta: 'Case खोलें',
+  },
+  stock_low: {
+    subject: 'स्पेयर स्टॉक कम: {{depot}} में {{model}}',
+    heading: 'स्पेयर स्टॉक न्यूनतम से कम',
+    body: '{{depot}} में अब {{model}} की {{onHand}} स्पेयर यूनिट हैं; न्यूनतम {{min}} है। स्टॉक भरने तक इस मॉडल के रिप्लेसमेंट उसी दिन शायद न भेजे जा सकें।',
+    cta: 'स्पेयर स्टॉक खोलें',
+  },
+  community_answer: {
+    subject: 'आपके प्रश्न का नया उत्तर: {{title}}',
+    heading: '{{author}} ने आपके प्रश्न का उत्तर दिया',
+    body: '"{{title}}"<br><br>{{excerpt}}<br><br>अगर इससे आपकी समस्या हल हो जाए, तो इसे उत्तर के रूप में चिह्नित करें ताकि दूसरे भी इसे पा सकें।',
+    cta: 'उत्तर पढ़ें',
   },
 };
 

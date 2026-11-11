@@ -60,6 +60,11 @@ permissions:
   - catalog:manage # product end-of-sale and end-of-support dates and upgrade advice
   - idea:submit # suggest product improvements and vote
   - idea:manage # set the status of suggestions, respond, hide
+  - visit:book # book an engineer visit or remote session on a case
+  - visit:manage # see every visit, mark visits done
+  - stock:manage # spare units at depots and minimum levels
+  - community:post # ask and answer community questions
+  - community:moderate # mark answers and hide community posts
 
 roles:
   customer_user:
@@ -78,6 +83,8 @@ roles:
         renewal:request,
         rma:request,
         idea:submit,
+        visit:book,
+        community:post,
       ]
   customer_admin:
     internal: false
@@ -102,6 +109,8 @@ roles:
         report:ops:read:org,
         idea:submit,
         contract:read:org,
+        visit:book,
+        community:post,
       ]
   partner:
     internal: false
@@ -119,6 +128,8 @@ roles:
         renewal:request,
         rma:request,
         idea:submit,
+        visit:book,
+        community:post,
       ]
   l1_engineer:
     internal: true
@@ -136,6 +147,10 @@ roles:
         asset:read:all,
         kb:read:internal,
         kb:draft,
+        visit:book,
+        visit:manage,
+        community:post,
+        community:moderate,
       ]
   l2_engineer:
     internal: true
@@ -154,6 +169,10 @@ roles:
         kb:read:internal,
         kb:draft,
         rma:request,
+        visit:book,
+        visit:manage,
+        community:post,
+        community:moderate,
       ]
   l3_engineer:
     internal: true
@@ -175,6 +194,10 @@ roles:
         rma:request,
         advisory:manage,
         jira:link,
+        visit:book,
+        visit:manage,
+        community:post,
+        community:moderate,
       ]
   support_manager:
     internal: true
@@ -213,6 +236,11 @@ roles:
         roster:manage,
         catalog:manage,
         idea:manage,
+        visit:book,
+        visit:manage,
+        stock:manage,
+        community:post,
+        community:moderate,
       ]
   content_editor:
     internal: true
@@ -227,6 +255,8 @@ roles:
         announcement:manage,
         catalog:manage,
         idea:manage,
+        community:post,
+        community:moderate,
       ]
   rma_coordinator:
     internal: true
@@ -240,6 +270,7 @@ roles:
         kb:read:internal,
         rma:request,
         rma:manage,
+        stock:manage,
       ]
   system_admin:
     internal: true
@@ -541,4 +572,32 @@ endpoints:
       method: GET,
       path: /api/v1/ideas,
       allow: [customer_user, customer_admin, partner, support_manager, content_editor, system_admin],
+    }
+  - {
+      id: visits.upcoming,
+      method: GET,
+      path: /api/v1/workspace/visits,
+      allow: [l1_engineer, l2_engineer, l3_engineer, support_manager],
+    }
+  - {
+      id: stock.view,
+      method: GET,
+      path: /api/v1/workspace/stock,
+      allow: [support_manager, rma_coordinator],
+    }
+  - {
+      id: community.list,
+      method: GET,
+      path: /api/v1/community,
+      allow:
+        [
+          customer_user,
+          customer_admin,
+          partner,
+          l1_engineer,
+          l2_engineer,
+          l3_engineer,
+          support_manager,
+          content_editor,
+        ],
     }

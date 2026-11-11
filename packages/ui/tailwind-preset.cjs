@@ -12,7 +12,7 @@ module.exports = {
       // while badges and bars keep the stronger fill colour.
       textColor: { danger: c('red-ink'), ok: c('green-ink') },
       fontFamily: {
-        sans: ['IBM Plex Sans', 'Segoe UI', 'system-ui', 'sans-serif'],
+        sans: ['IBM Plex Sans', 'Noto Sans Devanagari', 'Segoe UI', 'system-ui', 'sans-serif'],
         mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],
       },
       borderRadius: { s: 'var(--wd-radius-s)', m: 'var(--wd-radius-m)' },

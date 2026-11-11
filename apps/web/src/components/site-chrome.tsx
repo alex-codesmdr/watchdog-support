@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { CUSTOMER_ADMIN_TOOLS, STAFF_TOOLS, toolsFor } from '@/lib/tools';
 import type { Me } from '@wd/contracts';
 import { t } from '@/lib/i18n';
+import { getLocale } from '@/lib/locale';
+import { LanguageSwitch } from '@/components/locale';
 import { getSession } from '@/lib/session';
 import { portalSettings } from '@/lib/settings';
 import { cookies } from 'next/headers';
@@ -29,6 +31,7 @@ export async function SiteHeader({
     portalSettings(),
   ]);
   const saved = (await cookies()).get('wd-theme')?.value;
+  const locale = await getLocale();
   const theme: Theme = saved === 'light' || saved === 'dark' ? saved : 'system';
   return (
     <>
@@ -37,7 +40,7 @@ export async function SiteHeader({
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50 focus:rounded-s focus:bg-white focus:px-3 focus:py-2 focus:text-navy"
         >
-          {t('nav.skip')}
+          {t('nav.skip', locale)}
         </a>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
           <Link
@@ -65,38 +68,43 @@ export async function SiteHeader({
             {me && !staff && (
               <>
                 <Link className={link} href="/portal">
-                  {t('nav.dashboard')}
+                  {t('nav.dashboard', locale)}
                 </Link>
                 <Link className={link} href="/portal/cases">
-                  {t('nav.myCases')}
+                  {t('nav.myCases', locale)}
                 </Link>
                 <Link className={link} href="/portal/assets">
-                  {t('nav.devices')}
+                  {t('nav.devices', locale)}
                 </Link>
                 {me.permissions.includes('rma:request') && (
                   <Link className={link} href="/portal/rmas">
-                    {t('nav.rmas')}
+                    {t('nav.rmas', locale)}
                   </Link>
                 )}
                 <Link className={link} href="/search">
-                  {t('nav.knowledge')}
+                  {t('nav.knowledge', locale)}
                 </Link>
                 <Link className={link} href="/help">
-                  {t('nav.ask')}
+                  {t('nav.ask', locale)}
                 </Link>
                 {me.permissions.includes('case:read:delegated') && (
                   <Link className={link} href="/portal/customers">
-                    {t('nav.customers')}
+                    {t('nav.customers', locale)}
+                  </Link>
+                )}
+                {me.permissions.includes('community:post') && (
+                  <Link className={link} href="/community">
+                    {t('nav.community', locale)}
                   </Link>
                 )}
                 {me.permissions.includes('idea:submit') && (
                   <Link className={link} href="/portal/ideas">
-                    {t('nav.ideas')}
+                    {t('nav.ideas', locale)}
                   </Link>
                 )}
                 {toolsFor(CUSTOMER_ADMIN_TOOLS, me.permissions).length > 0 && (
                   <Link className={link} href="/portal/admin">
-                    {t('nav.administration')}
+                    {t('nav.administration', locale)}
                   </Link>
                 )}
               </>
@@ -105,20 +113,20 @@ export async function SiteHeader({
               <>
                 {me?.permissions.includes('case:read:all') && (
                   <Link className={link} href="/workspace">
-                    {t('nav.queue')}
+                    {t('nav.queue', locale)}
                   </Link>
                 )}
                 {me?.permissions.includes('rma:manage') && (
                   <Link className={link} href="/workspace/rmas">
-                    {t('nav.rmas')}
+                    {t('nav.rmas', locale)}
                   </Link>
                 )}
                 <Link className={link} href="/search">
-                  {t('nav.knowledge')}
+                  {t('nav.knowledge', locale)}
                 </Link>
                 {me && toolsFor(STAFF_TOOLS, me.permissions).length > 0 && (
                   <Link className={link} href="/admin">
-                    {t('nav.admin')}
+                    {t('nav.admin', locale)}
                   </Link>
                 )}
               </>
@@ -126,21 +134,22 @@ export async function SiteHeader({
             {!me && (
               <>
                 <Link className={link} href="/search">
-                  {t('nav.knowledge')}
+                  {t('nav.knowledge', locale)}
                 </Link>
                 <Link className={link} href="/help">
-                  {t('nav.ask')}
+                  {t('nav.ask', locale)}
                 </Link>
                 <Link className={link} href="/downloads">
-                  {t('nav.downloads')}
+                  {t('nav.downloads', locale)}
                 </Link>
                 <Link className={link} href="/advisories">
-                  {t('nav.advisories')}
+                  {t('nav.advisories', locale)}
                 </Link>
               </>
             )}
           </nav>
           <div className="ml-auto flex items-center gap-2 sm:ml-0">
+            <LanguageSwitch initial={locale} />
             <ThemeSwitch initial={theme} />
             {s ? (
               <>
@@ -149,18 +158,18 @@ export async function SiteHeader({
                     href="/portal/cases/new"
                     className="hidden h-9 items-center rounded-s bg-teal px-3 text-sm font-semibold text-navy hover:bg-teal/90 sm:inline-flex"
                   >
-                    {t('nav.openCase')}
+                    {t('nav.openCase', locale)}
                   </Link>
                 )}
                 {me && (
                   <Link className={link} href="/account" title={me.email}>
-                    {t('nav.myAccount')}
+                    {t('nav.myAccount', locale)}
                   </Link>
                 )}
                 <form action="/auth/logout" method="post">
                   <input type="hidden" name="csrf" value={s.csrf} />
                   <button className={link} type="submit" title={s.email}>
-                    {t('nav.signOut')}
+                    {t('nav.signOut', locale)}
                   </button>
                 </form>
               </>
@@ -168,14 +177,14 @@ export async function SiteHeader({
               <>
                 {cfg.selfRegistration && (
                   <Link className={link} href="/register">
-                    {t('nav.register')}
+                    {t('nav.register', locale)}
                   </Link>
                 )}
                 <a
                   className="inline-flex h-9 items-center rounded-s bg-white px-3 text-sm font-semibold text-navy hover:bg-white/90"
                   href="/auth/login"
                 >
-                  {t('nav.signIn')}
+                  {t('nav.signIn', locale)}
                 </a>
               </>
             )}
@@ -187,22 +196,23 @@ export async function SiteHeader({
   );
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const locale = await getLocale();
   return (
     <footer className="mt-16 border-t border-line">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-muted">
         <span>
-          © {new Date().getFullYear()} {t('footer.rights')}
+          © {new Date().getFullYear()} {t('footer.rights', locale)}
         </span>
         <nav aria-label="Footer" className="flex flex-wrap gap-4">
           <Link className="hover:text-ink" href="/privacy">
-            {t('footer.privacy')}
+            {t('footer.privacy', locale)}
           </Link>
           <Link className="hover:text-ink" href="/status">
-            {t('footer.status')}
+            {t('footer.status', locale)}
           </Link>
           <Link className="hover:text-ink" href="/advisories#report">
-            {t('footer.psirt')}
+            {t('footer.psirt', locale)}
           </Link>
         </nav>
       </div>

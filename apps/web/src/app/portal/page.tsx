@@ -3,10 +3,12 @@ import type { AssetSummary, CaseSummary } from '@wd/contracts';
 import { EmptyState } from '@wd/ui';
 import { CaseList } from '@/components/case/case-list';
 import { api } from '@/lib/api';
+import { serverT } from '@/lib/locale';
 
 export const metadata = { title: 'Dashboard' };
 
 export default async function Dashboard() {
+  const tr = await serverT();
   const [cases, assets] = await Promise.all([
     api<{ items: CaseSummary[] }>('/api/v1/cases?status=open&limit=10'),
     api<{ items: AssetSummary[] }>('/api/v1/assets').catch(() => ({ items: [] as AssetSummary[] })),
@@ -27,13 +29,13 @@ export default async function Dashboard() {
       <section aria-labelledby="open">
         <div className="flex items-baseline justify-between gap-4">
           <h1 id="open" className="text-2xl font-semibold">
-            Open cases
+            {tr('Open cases')}
           </h1>
           <Link
             href="/portal/cases"
             className="text-sm font-medium text-teal-ink underline underline-offset-2"
           >
-            All cases
+            {tr('All cases')}
           </Link>
         </div>
         <div className="mt-4">
@@ -41,18 +43,19 @@ export default async function Dashboard() {
             <CaseList items={cases.items} base="/portal/cases" />
           ) : (
             <EmptyState
-              title="No open cases"
+              title={tr('No open cases')}
               action={
                 <Link
                   href="/portal/cases/new"
                   className="inline-flex h-10 items-center rounded-s bg-navy px-4 text-sm font-semibold text-white hover:bg-navy-2"
                 >
-                  Open a case
+                  {tr('Open a case')}
                 </Link>
               }
             >
-              When something on your network needs attention, open a case and the SLA clock starts
-              immediately.
+              {tr(
+                'When something on your network needs attention, open a case and the SLA clock starts immediately.',
+              )}
             </EmptyState>
           )}
         </div>
@@ -60,9 +63,11 @@ export default async function Dashboard() {
       <aside className="space-y-8">
         <section aria-labelledby="cov">
           <h2 id="cov" className="text-lg font-semibold">
-            Coverage
+            {tr('Coverage')}
           </h2>
-          <p className="mt-1 text-sm text-muted">{assets.items.length} registered devices</p>
+          <p className="mt-1 text-sm text-muted">
+            {tr('{n} registered devices', { n: assets.items.length })}
+          </p>
           {soon.length > 0 && (
             <ul className="mt-3 space-y-2 text-sm">
               {soon.map(({ a, days }) => (
@@ -73,7 +78,7 @@ export default async function Dashboard() {
                     <span className="text-muted">{a.modelName}</span>
                   </span>
                   <span className={days <= 30 ? 'font-semibold text-danger' : 'text-amber-ink'}>
-                    {days} days left
+                    {tr('{n} days left', { n: days })}
                   </span>
                 </li>
               ))}
@@ -81,12 +86,18 @@ export default async function Dashboard() {
           )}
           {uncovered.length > 0 && (
             <p className="mt-3 text-sm text-amber-ink">
-              {uncovered.length} device{uncovered.length > 1 ? 's have' : ' has'} no active
-              contract. Ask your account manager for a renewal quote.
+              {tr(
+                uncovered.length > 1
+                  ? '{n} devices have no active contract. Ask your account manager for a renewal quote.'
+                  : '1 device has no active contract. Ask your account manager for a renewal quote.',
+                { n: uncovered.length },
+              )}
             </p>
           )}
           {!soon.length && !uncovered.length && assets.items.length > 0 && (
-            <p className="mt-3 text-sm text-ok">All devices are covered for at least 90 days.</p>
+            <p className="mt-3 text-sm text-ok">
+              {tr('All devices are covered for at least 90 days.')}
+            </p>
           )}
         </section>
       </aside>

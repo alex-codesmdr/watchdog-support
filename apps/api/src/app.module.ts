@@ -69,6 +69,9 @@ import { RosterController } from './modules/business/roster.controller.js';
 import { IdeasController } from './modules/business/ideas.controller.js';
 import { LifecycleController } from './modules/business/lifecycle.controller.js';
 import { RenewalDigestService } from './modules/business/renewal-digest.service.js';
+import { VisitsController } from './modules/field/visits.controller.js';
+import { StockController } from './modules/field/stock.controller.js';
+import { CommunityController } from './modules/field/community.controller.js';
 import { AssistantService } from './modules/assistant/assistant.service.js';
 import { JiraService } from './modules/jira/jira.service.js';
 import { JiraCloud, MockJira } from './modules/jira/jira.adapter.js';
@@ -184,6 +187,9 @@ export class AppModule {
         RosterController,
         IdeasController,
         LifecycleController,
+        VisitsController,
+        StockController,
+        CommunityController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),

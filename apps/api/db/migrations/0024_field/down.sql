@@ -1,0 +1,10 @@
+DROP FUNCTION IF EXISTS wd.public_name(uuid);
+ALTER TABLE forum_question DROP CONSTRAINT IF EXISTS forum_question_accepted_fk;
+DROP TABLE IF EXISTS forum_answer;
+DROP TABLE IF EXISTS forum_question;
+DROP TABLE IF EXISTS spare_level;
+DROP INDEX IF EXISTS asset_depot_idx;
+ALTER TABLE asset DROP COLUMN IF EXISTS depot_id;
+DROP TABLE IF EXISTS depot;
+DROP FUNCTION IF EXISTS wd.free_engineers(timestamptz, timestamptz);
+DROP TABLE IF EXISTS visit;

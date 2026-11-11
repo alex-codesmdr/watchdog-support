@@ -2,6 +2,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RMA_STATUS_LABELS, type RmaStatus } from '@wd/contracts';
 import { RmaPanel } from '@/components/rma/rma-panel';
+import { VisitsPanel } from '@/components/visits/visits-panel';
 import { useRef, useState } from 'react';
 import {
   CustomerPanel,
@@ -31,6 +32,7 @@ import {
 } from '@wd/ui';
 import { CsatScale } from '@/app/csat/csat-form';
 import { apiFetch, ClientApiError } from '@/lib/client';
+import { useT } from '@/components/locale';
 import { METRIC } from './case-list';
 import { Uploader, type UploadItem } from './uploader';
 
@@ -66,6 +68,11 @@ const EVENT: Record<string, (d: Record<string, unknown>) => string> = {
   jira_status: (d) => `Engineering issue ${String(d.key)} is now ${String(d.to)}`,
   routed: (d) => `Routed by the rule "${String(d.rule ?? '')}"`,
   csat_submitted: (d) => `Rated ${d.score} of 5`,
+  visit_booked: (d) =>
+    `${d.kind === 'remote' ? 'Remote session' : 'Engineer visit'} booked for ${when(String(d.startsAt))} IST`,
+  visit_cancelled: () => 'Visit cancelled',
+  visit_done: () => 'Visit done',
+  csat_followed_up: () => 'Customer called back about their rating',
   sla_warning: (d) =>
     `SLA warning: ${METRIC[String(d.metric)] ?? d.metric} at ${d.threshold}% of target`,
   sla_breached: (d) =>
@@ -107,6 +114,7 @@ export function CaseView({
   canRma?: boolean;
 }) {
   const qc = useQueryClient();
+  const tr = useT();
   const key = ['case', initial.number];
   const { data: c } = useQuery({
     queryKey: key,
@@ -133,7 +141,7 @@ export function CaseView({
       setError(
         e instanceof ClientApiError
           ? [e.title, e.detail].filter(Boolean).join('. ')
-          : 'That did not work. Try again.',
+          : tr('That did not work. Try again.'),
       );
       if (e instanceof ClientApiError && e.status === 412)
         void qc.invalidateQueries({ queryKey: key });
@@ -150,15 +158,15 @@ export function CaseView({
       <div className="min-w-0">
         {staff && <PresenceNotice number={c.number} replying={replying} />}
         {justCreated && (
-          <Notice tone="success" className="mb-6" title={`Case ${c.number} is open`}>
-            We emailed you a confirmation. You can reply to that email to add information.
+          <Notice tone="success" className="mb-6" title={tr('Case {n} is open', { n: c.number })}>
+            {tr('We emailed you a confirmation. You can reply to that email to add information.')}
           </Notice>
         )}
         <header>
           <p className="flex flex-wrap items-center gap-3 text-sm text-muted">
             <span className="font-mono">{c.number}</span>
             <SeverityBadge severity={c.severity} />
-            <StatusPill label={STATUS_LABELS[c.status]} open={open} />
+            <StatusPill label={tr(STATUS_LABELS[c.status])} open={open} />
             {staff && (
               <span>
                 L{Math.min(c.supportLevel, 3)}
@@ -169,9 +177,18 @@ export function CaseView({
           <h1 className="mt-2 text-2xl font-semibold">{c.subject}</h1>
           <p className="mt-1 text-sm text-muted">
             {staff && <>{c.orgName}. </>}
-            {c.channel === 'phone' ? 'Reported by phone by' : 'Raised by'} {c.requesterName} on{' '}
-            {when(c.openedAt)} IST.{' '}
-            {c.assigneeName ? `Engineer: ${c.assigneeName}.` : 'Waiting for an engineer.'}
+            {tr(
+              c.channel === 'phone'
+                ? 'Reported by phone by {name} on {when} IST.'
+                : 'Raised by {name} on {when} IST.',
+              {
+                name: c.requesterName,
+                when: when(c.openedAt),
+              },
+            )}{' '}
+            {c.assigneeName
+              ? tr('Engineer: {name}.', { name: c.assigneeName })
+              : tr('Waiting for an engineer.')}
           </p>
         </header>
 
@@ -181,7 +198,7 @@ export function CaseView({
           </Notice>
         )}
 
-        <section aria-label="Conversation" className="mt-6">
+        <section aria-label={tr('Conversation')} className="mt-6">
           <ol className="flex flex-col gap-4">
             {c.messages.map((m) => (
               <li
@@ -200,12 +217,16 @@ export function CaseView({
                   {m.author.isStaff && <span className="text-teal-ink">WatchDog Support</span>}
                   {m.visibility === 'internal' && (
                     <span className="font-semibold text-amber-ink">
-                      Internal note (not visible to customer)
+                      {tr('Internal note (not visible to customer)')}
                     </span>
                   )}
                   <span className="text-muted">
                     {when(m.createdAt)}
-                    {m.source === 'email' ? ', by email' : ''}
+                    {m.source === 'email'
+                      ? tr(', by email')
+                      : m.source === 'phone'
+                        ? tr(', by phone')
+                        : ''}
                   </span>
                 </p>
                 <div className="wd-prose mt-2" dangerouslySetInnerHTML={{ __html: m.bodyHtml }} />
@@ -226,18 +247,20 @@ export function CaseView({
           />
         ) : c.status === 'closed' ? (
           <Notice className="mt-6">
-            This case is closed. Reopen it to continue the conversation.
+            {tr('This case is closed. Reopen it to continue the conversation.')}
           </Notice>
         ) : null}
 
         {c.events.length > 0 && (
           <details className="mt-8 text-sm">
-            <summary className="cursor-pointer font-medium">History ({c.events.length})</summary>
+            <summary className="cursor-pointer font-medium">
+              {tr('History ({n})', { n: c.events.length })}
+            </summary>
             <ol className="mt-2 space-y-1 border-l border-line pl-4 text-muted">
               {c.events.map((e) => (
                 <li key={e.id}>
                   {when(e.at)}: {(EVENT[e.type] ?? (() => e.type))(e.data)}
-                  {e.actorName ? `, by ${e.actorName}` : ''}
+                  {e.actorName ? tr(', by {name}', { name: e.actorName }) : ''}
                 </li>
               ))}
             </ol>
@@ -248,14 +271,16 @@ export function CaseView({
       <aside className="flex flex-col gap-6">
         <section aria-labelledby="sla" className="rounded-m border border-line bg-surface p-4">
           <h2 id="sla" className="font-semibold">
-            Service levels
+            {tr('Service levels')}
           </h2>
-          <p className="text-sm text-muted">{c.tier ? TIER[c.tier] : 'No contract'}</p>
+          <p className="text-sm text-muted">
+            {c.tier ? tr(TIER[c.tier] ?? '') : tr('No contract')}
+          </p>
           <div className="mt-4 flex flex-col gap-4">
             {c.sla.map((s) => (
               <SlaBar
                 key={s.metric}
-                label={METRIC[s.metric] ?? s.metric}
+                label={tr(METRIC[s.metric] ?? s.metric)}
                 percent={s.percentElapsed}
                 remainingSeconds={s.remainingSeconds}
                 met={!!s.metAt}
@@ -263,20 +288,22 @@ export function CaseView({
                 dueAt={s.dueAt}
               />
             ))}
-            {!c.sla.length && <p className="text-sm text-muted">No SLA applies to this case.</p>}
+            {!c.sla.length && (
+              <p className="text-sm text-muted">{tr('No SLA applies to this case.')}</p>
+            )}
           </div>
         </section>
 
         <section aria-labelledby="dev" className="text-sm">
           <h2 id="dev" className="font-semibold">
-            Device
+            {tr('Device')}
           </h2>
           <dl className="mt-2 grid grid-cols-[6rem_1fr] gap-y-1">
-            <dt className="text-muted">Model</dt>
+            <dt className="text-muted">{tr('Model')}</dt>
             <dd>{c.modelName ?? '—'}</dd>
-            <dt className="text-muted">Serial</dt>
+            <dt className="text-muted">{tr('Serial')}</dt>
             <dd className="font-mono">{c.serialNumber ?? '—'}</dd>
-            <dt className="text-muted">Version</dt>
+            <dt className="text-muted">{tr('Version')}</dt>
             <dd className="font-mono">{c.softwareVersion ?? '—'}</dd>
           </dl>
         </section>
@@ -296,7 +323,7 @@ export function CaseView({
           c.can.assign) && (
           <section aria-labelledby="act" className="flex flex-col gap-2">
             <h2 id="act" className="font-semibold">
-              Actions
+              {tr('Actions')}
             </h2>
             {staff && c.can.assign && c.assigneeId !== meId && (
               <Button
@@ -314,7 +341,7 @@ export function CaseView({
                 busy={busy === to}
                 onClick={() => act(to, '/transition', { to }, { 'if-match': `"${c.version}"` })}
               >
-                {TRANSITION_LABEL[to] ?? STATUS_LABELS[to]}
+                {tr(TRANSITION_LABEL[to] ?? STATUS_LABELS[to])}
               </Button>
             ))}
             {staff && (c.status === 'resolved' || c.status === 'closed') && (
@@ -342,7 +369,7 @@ export function CaseView({
               <Button variant="ghost" onClick={() => setEscalateOpen(true)}>
                 {staff
                   ? `Escalate to ${c.supportLevel >= 3 ? 'Engineering' : `L${c.supportLevel + 1}`}`
-                  : 'Escalate to management'}
+                  : tr('Escalate to management')}
               </Button>
             )}
           </section>
@@ -361,6 +388,12 @@ export function CaseView({
             Rated {c.csat.score} of 5{c.csat.comment ? `: “${c.csat.comment}”` : ''}
           </p>
         )}
+        <VisitsPanel
+          number={c.number}
+          staff={staff}
+          open={!['resolved', 'closed'].includes(c.status)}
+          defaultContact={staff ? '' : meName}
+        />
         {staff && <CustomerPanel number={c.number} />}
         {staff && c.status !== 'resolved' && c.status !== 'closed' && (
           <SuggestionsPanel number={c.number} />
@@ -384,6 +417,7 @@ export function CaseView({
 
 function Attachments({ items }: { items: AttachmentView[] }) {
   const [err, setErr] = useState<string | null>(null);
+  const tr = useT();
   const STATE: Record<string, string> = {
     pending: 'Scanning…',
     infected: 'Blocked: malware detected',
@@ -402,7 +436,7 @@ function Attachments({ items }: { items: AttachmentView[] }) {
                   const r = await apiFetch<{ url: string }>(`/v1/attachments/${a.id}/url`);
                   window.location.href = r.url.replace(/^https?:\/\/[^/]+\/api\//, '/api/');
                 } catch {
-                  setErr('Download link could not be created.');
+                  setErr(tr('Download link could not be created.'));
                 }
               }}
             >
@@ -412,11 +446,13 @@ function Attachments({ items }: { items: AttachmentView[] }) {
             <span className="font-mono text-muted">{a.fileName}</span>
           )}
           <span className="text-muted">
-            {a.scanStatus === 'clean' ? fmtSize(a.sizeBytes) : STATE[a.scanStatus]}
+            {a.scanStatus === 'clean' ? fmtSize(a.sizeBytes) : tr(STATE[a.scanStatus] ?? '')}
           </span>
           {a.secretsMasked && (
             <span className="text-amber-ink">
-              {a.maskedCount} secret{a.maskedCount > 1 ? 's' : ''} masked
+              {tr(a.maskedCount > 1 ? '{n} secrets masked' : '{n} secret masked', {
+                n: a.maskedCount,
+              })}
             </span>
           )}
         </li>
@@ -513,6 +549,7 @@ function Composer({
   const [body, setBody] = useState('');
   const box = useRef<HTMLTextAreaElement>(null);
   const [internal, setInternal] = useState(false);
+  const tr = useT();
   const [status, setStatus] = useState<CaseStatus | ''>('');
   const [files, setFiles] = useState<UploadItem[]>([]);
   const uploading = files.some((f) => !f.id && !f.error);
@@ -562,8 +599,8 @@ function Composer({
         </div>
       )}
       <Field
-        label={internal ? 'Internal note' : staff ? 'Reply to customer' : 'Add a reply'}
-        hint={internal ? 'Only WatchDog staff can see this.' : 'Wrap CLI output in ``` lines.'}
+        label={tr(internal ? 'Internal note' : staff ? 'Reply to customer' : 'Add a reply')}
+        hint={tr(internal ? 'Only WatchDog staff can see this.' : 'Wrap CLI output in ``` lines.')}
       >
         {(p) => (
           <Textarea
@@ -615,7 +652,7 @@ function Composer({
           </label>
         )}
         <Button type="submit" busy={busy === 'reply'} disabled={uploading || !body.trim()}>
-          {internal ? 'Add note' : 'Send reply'}
+          {tr(internal ? 'Add note' : 'Send reply')}
         </Button>
       </div>
     </form>
@@ -636,27 +673,30 @@ function EscalateDialog({
   busy: boolean;
 }) {
   const [j, setJ] = useState('');
+  const tr = useT();
   const short = j.trim().length < 20;
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title={staff ? 'Escalate to the next level' : 'Escalate to WatchDog management'}
+      title={tr(staff ? 'Escalate to the next level' : 'Escalate to WatchDog management')}
     >
       <p className="text-sm text-muted">
-        {staff
-          ? 'The case leaves your queue and goes to the next support level. Explain what has been done and why.'
-          : 'A support manager reviews every escalation. Tell us why this needs more attention, for example business impact or missed updates.'}
+        {tr(
+          staff
+            ? 'The case leaves your queue and goes to the next support level. Explain what has been done and why.'
+            : 'A support manager reviews every escalation. Tell us why this needs more attention, for example business impact or missed updates.',
+        )}
       </p>
-      <Field label="Justification" required hint="At least 20 characters.">
+      <Field label={tr('Justification')} required hint={tr('At least 20 characters.')}>
         {(p) => <Textarea {...p} value={j} onChange={(e) => setJ(e.target.value)} rows={4} />}
       </Field>
       <div className="flex gap-3">
         <Button onClick={() => onSubmit(j)} disabled={short} busy={busy}>
-          Escalate
+          {tr('Escalate')}
         </Button>
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {tr('Cancel')}
         </Button>
       </div>
     </Dialog>
@@ -672,16 +712,17 @@ function CsatPanel({
 }) {
   const [score, setScore] = useState(0);
   const [comment, setComment] = useState('');
+  const tr = useT();
   return (
     <section aria-labelledby="csat" className="rounded-m border border-line bg-surface p-4">
       <h2 id="csat" className="font-semibold">
-        How did we do?
+        {tr('How did we do?')}
       </h2>
       <CsatScale value={score} onChange={setScore} name="case-csat" />
       <Textarea
         className="mt-3"
-        aria-label="Comment (optional)"
-        placeholder="Comment (optional)"
+        aria-label={tr('Comment (optional)')}
+        placeholder={tr('Comment (optional)')}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         rows={2}
@@ -692,7 +733,7 @@ function CsatPanel({
         busy={busy}
         onClick={() => onSubmit(score, comment)}
       >
-        Send rating
+        {tr('Send rating')}
       </Button>
     </section>
   );

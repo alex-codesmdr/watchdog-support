@@ -117,6 +117,15 @@ export class NotificationsService {
         return this.lifecycle(String(payload.productId));
       case 'partner.access':
         return this.partnerAccess(String(payload.delegationId));
+      case 'visit.booked':
+      case 'visit.cancelled':
+        return this.visit(topic, String(payload.visitId), Boolean(payload.byStaff));
+      case 'stock.low':
+        return this.stockLow(
+          payload as { depotId: string; productId: string; onHand: number; min: number },
+        );
+      case 'community.answered':
+        return this.communityAnswer(String(payload.questionId), String(payload.answerId));
       default:
         return;
     }
@@ -344,6 +353,162 @@ export class NotificationsService {
           },
         });
       }
+    });
+  }
+
+  /** Visit booked or cancelled: the case requester and the engineer. */
+  private async visit(topic: string, id: string, byStaff: boolean) {
+    await this.db.withSystem(async (tx) => {
+      const v = await tx
+        .selectFrom('visit as v')
+        .innerJoin('support_case as c', 'c.id', 'v.case_id')
+        .innerJoin('app_user as r', 'r.id', 'c.requester_id')
+        .leftJoin('app_user as e', 'e.id', 'v.engineer_id')
+        .leftJoin('site as s', 's.id', 'v.site_id')
+        .select([
+          'v.kind',
+          'v.starts_at',
+          'v.contact_name',
+          'v.contact_phone',
+          'v.cancel_reason',
+          'v.org_id',
+          'c.number',
+          'c.subject',
+          'r.id as rid',
+          'r.email as remail',
+          'r.locale as rlocale',
+          'e.id as eid',
+          'e.email as eemail',
+          'e.locale as elocale',
+          'e.display_name as ename',
+          's.name as site',
+          's.city',
+        ])
+        .where('v.id', '=', id)
+        .executeTakeFirst();
+      if (!v) return;
+      const h = (x: string) => x.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+      const who = [
+        { id: v.rid, email: v.remail, locale: v.rlocale, staff: false },
+        ...(v.eid && v.eemail
+          ? [{ id: v.eid, email: v.eemail, locale: v.elocale ?? 'en', staff: true }]
+          : []),
+      ];
+      for (const u of who) {
+        const hi = (u.locale ?? 'en').startsWith('hi');
+        const what =
+          v.kind === 'onsite'
+            ? hi
+              ? 'इंजीनियर विज़िट'
+              : 'Engineer visit'
+            : hi
+              ? 'रिमोट सेशन'
+              : 'Remote session';
+        const when = new Intl.DateTimeFormat(hi ? 'hi-IN' : 'en-IN', {
+          dateStyle: 'full',
+          timeStyle: 'short',
+          timeZone: 'Asia/Kolkata',
+        }).format(v.starts_at);
+        await this.send({
+          to: u.email,
+          orgId: v.org_id,
+          userId: u.id,
+          locale: u.locale,
+          key: topic === 'visit.booked' ? 'visit_booked' : 'visit_cancelled',
+          thread: u.staff ? undefined : v.number,
+          vars: {
+            number: v.number,
+            subject: v.subject,
+            what,
+            whatLower: what.toLowerCase(),
+            when,
+            engineer: v.ename ?? '—',
+            whereHtml: v.site
+              ? `${hi ? 'स्थान' : 'Where'}: ${h(v.site)}${v.city ? `, ${h(v.city)}` : ''}<br>`
+              : '',
+            contact: `${v.contact_name}, ${v.contact_phone}`,
+            by: byStaff ? 'WatchDog Support' : hi ? 'ग्राहक' : 'the customer',
+            reason: v.cancel_reason ?? '—',
+            url: this.caseUrl(v.number, u.staff),
+          },
+        });
+      }
+    });
+  }
+
+  /** A depot fell below its minimum for a model: RMA coordinators are told. */
+  private async stockLow(x: { depotId: string; productId: string; onHand: number; min: number }) {
+    await this.db.withSystem(async (tx) => {
+      const d = await tx
+        .selectFrom('depot')
+        .select('name')
+        .where('id', '=', x.depotId)
+        .executeTakeFirst();
+      const pr = await tx
+        .selectFrom('product')
+        .select('model_name')
+        .where('id', '=', x.productId)
+        .executeTakeFirst();
+      if (!d || !pr) return;
+      const people = await tx
+        .selectFrom('user_role as ur')
+        .innerJoin('app_user as u', 'u.id', 'ur.user_id')
+        .select(['u.id', 'u.email', 'u.locale'])
+        .where('ur.role_key', '=', 'rma_coordinator')
+        .where('u.status', '=', 'active')
+        .execute();
+      for (const u of people)
+        await this.send({
+          to: u.email,
+          orgId: null,
+          userId: u.id,
+          locale: u.locale,
+          key: 'stock_low',
+          vars: {
+            depot: d.name,
+            model: pr.model_name,
+            onHand: x.onHand,
+            min: x.min,
+            url: `${this.cfg.PUBLIC_WEB_URL}/workspace/stock`,
+          },
+        });
+    });
+  }
+
+  /** Someone answered a community question: the asker hears about it. */
+  private async communityAnswer(questionId: string, answerId: string) {
+    await this.db.withSystem(async (tx) => {
+      const r = await sql<{
+        title: string;
+        email: string;
+        locale: string;
+        status: string;
+        asker: string;
+        org_id: string;
+        body: string;
+        author: string;
+      }>`
+        SELECT q.title, u.email, u.locale, u.status, u.id AS asker, q.org_id, a.body,
+               wd.public_name(a.author_id) || CASE WHEN a.by_staff THEN ' (WatchDog)' ELSE '' END AS author
+          FROM forum_question q
+          JOIN app_user u ON u.id = q.author_id
+          JOIN forum_answer a ON a.id = ${answerId}
+         WHERE q.id = ${questionId}`.execute(tx);
+      const x = r.rows[0];
+      if (!x || x.status !== 'active') return;
+      await this.send({
+        to: x.email,
+        orgId: x.org_id,
+        userId: x.asker,
+        locale: x.locale,
+        key: 'community_answer',
+        vars: {
+          title: x.title,
+          author: x.author,
+          excerpt: x.body.length > 400 ? `${x.body.slice(0, 400)}…` : x.body,
+          url: `${this.cfg.PUBLIC_WEB_URL}/community/${questionId}`,
+        },
+      });
     });
   }
 

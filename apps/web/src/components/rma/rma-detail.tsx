@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
   RMA_OPEN,
@@ -153,6 +154,12 @@ export function RmaDetail({
                   void submit(action);
                 }}
               >
+                {need.includes('serial') && staff && (
+                  <SparePicker
+                    number={r.number}
+                    onPick={(serial) => setF({ ...f, replacementSerial: serial })}
+                  />
+                )}
                 {need.includes('serial') && (
                   <Field label="Replacement serial number" required>
                     {(p) => (
@@ -281,6 +288,42 @@ export function RmaDetail({
           </dl>
         </section>
       </aside>
+    </div>
+  );
+}
+
+/** Spare units of the same model in stock, by depot: pick one to fill in the serial number. */
+function SparePicker({ number, onPick }: { number: string; onPick: (serial: string) => void }) {
+  const q = useQuery({
+    queryKey: ['rma-spares', number],
+    queryFn: () =>
+      apiFetch<{ depots: { depotId: string; name: string; city: string; serials: string[] }[] }>(
+        `/v1/workspace/stock/for-rma/${number}`,
+      ),
+  });
+  if (!q.data) return null;
+  if (!q.data.depots.length)
+    return <p className="text-sm text-muted">No spare of this model in stock at any depot.</p>;
+  return (
+    <div className="text-sm">
+      <p className="font-medium">Spares in stock</p>
+      <ul className="mt-1 space-y-1">
+        {q.data.depots.map((d) => (
+          <li key={d.depotId}>
+            <span className="text-muted">{d.name}:</span>{' '}
+            {d.serials.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className="mr-2 font-mono text-teal-ink underline underline-offset-2"
+                onClick={() => onPick(s)}
+              >
+                {s}
+              </button>
+            ))}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

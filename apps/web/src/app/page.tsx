@@ -3,6 +3,7 @@ import { ConsoleSearch } from '@/components/console-search';
 import { SiteFooter, SiteHeader } from '@/components/site-chrome';
 import { api } from '@/lib/api';
 import { t, tl } from '@/lib/i18n';
+import { getLocale } from '@/lib/locale';
 import { portalSettings } from '@/lib/settings';
 
 export const revalidate = 300;
@@ -31,7 +32,7 @@ const ACTIONS: Array<[string, string]> = [
 ];
 
 export default async function Home() {
-  const [fams, cfg] = await Promise.all([families(), portalSettings()]);
+  const [fams, cfg, locale] = await Promise.all([families(), portalSettings(), getLocale()]);
   const actions = ACTIONS.filter(([k]) => k !== 'warranty' || cfg.publicWarrantyCheck);
   return (
     <>
@@ -41,11 +42,14 @@ export default async function Home() {
           <div className="mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[1.3fr_1fr] lg:items-end">
             <div>
               <h1 className="text-3xl font-semibold tracking-tight sm:text-[2.9rem] sm:leading-[1.1]">
-                {t('home.title')}
+                {t('home.title', locale)}
               </h1>
-              <p className="mt-4 max-w-xl text-lg text-white/80">{t('home.lead')}</p>
+              <p className="mt-4 max-w-xl text-lg text-white/80">{t('home.lead', locale)}</p>
               <div className="mt-8">
-                <ConsoleSearch label={t('home.searchLabel')} button={t('home.searchButton')} />
+                <ConsoleSearch
+                  label={t('home.searchLabel', locale)}
+                  button={t('home.searchButton', locale)}
+                />
                 <p className="mt-3 text-sm text-white/80">
                   Prefer to describe it in your own words?{' '}
                   <Link
@@ -60,7 +64,7 @@ export default async function Home() {
             <nav aria-label="Quick actions">
               <ul className="divide-y divide-white/10 border-y border-white/10">
                 {actions.map(([k, href]) => {
-                  const [title, desc] = tl(`home.actions.${k}`);
+                  const [title, desc] = tl(`home.actions.${k}`, locale);
                   return (
                     <li key={k}>
                       <Link
@@ -82,7 +86,7 @@ export default async function Home() {
 
         <section className="mx-auto max-w-6xl px-4 pt-12" aria-labelledby="fam">
           <h2 id="fam" className="text-xl font-semibold">
-            {t('home.families')}
+            {t('home.families', locale)}
           </h2>
           {fams.length ? (
             <ul className="mt-5 grid overflow-hidden rounded-m border-l border-t border-line bg-surface sm:grid-cols-2 lg:grid-cols-4">
@@ -114,9 +118,9 @@ export default async function Home() {
         >
           <div>
             <h2 id="contact" className="text-xl font-semibold">
-              {t('home.contact')}
+              {t('home.contact', locale)}
             </h2>
-            <p className="mt-2 max-w-md text-muted">{t('home.contactLead')}</p>
+            <p className="mt-2 max-w-md text-muted">{t('home.contactLead', locale)}</p>
           </div>
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Support phone lines by severity</caption>

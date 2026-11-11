@@ -128,6 +128,7 @@ export interface AssetT {
   purchase_date: TsNull;
   current_version: string | null;
   retired_at: TsNull;
+  depot_id: string | null;
   created_at: Ts;
 }
 export interface EntitlementT {
@@ -469,6 +470,56 @@ export interface IdeaVoteT {
   idea_id: string;
   user_id: string;
   at: Ts;
+}
+export interface VisitT {
+  id: Generated<string>;
+  case_id: string;
+  org_id: string;
+  kind: 'onsite' | 'remote';
+  starts_at: Ts;
+  ends_at: Ts;
+  engineer_id: string | null;
+  site_id: string | null;
+  contact_name: string;
+  contact_phone: string;
+  notes: string | null;
+  status: Generated<'booked' | 'done' | 'cancelled'>;
+  cancel_reason: string | null;
+  booked_by: string;
+  created_at: Ts;
+}
+export interface DepotT {
+  id: Generated<string>;
+  name: string;
+  city: string;
+  state: string;
+  active: Generated<boolean>;
+}
+export interface SpareLevelT {
+  depot_id: string;
+  product_id: string;
+  min_on_hand: number;
+}
+export interface ForumQuestionT {
+  id: Generated<string>;
+  org_id: string;
+  author_id: string;
+  family_id: string | null;
+  title: string;
+  body: string;
+  accepted_answer_id: string | null;
+  hidden: Generated<boolean>;
+  created_at: Ts;
+}
+export interface ForumAnswerT {
+  id: Generated<string>;
+  question_id: string;
+  org_id: string;
+  author_id: string;
+  body: string;
+  by_staff: Generated<boolean>;
+  hidden: Generated<boolean>;
+  created_at: Ts;
 }
 export interface ApiKeyT {
   id: Generated<string>;
@@ -857,6 +908,11 @@ export interface DB {
   oncall_shift: OncallShiftT;
   idea: IdeaT;
   idea_vote: IdeaVoteT;
+  visit: VisitT;
+  depot: DepotT;
+  spare_level: SpareLevelT;
+  forum_question: ForumQuestionT;
+  forum_answer: ForumAnswerT;
   notification: NotificationT;
   inbound_email_hold: InboundEmailHoldT;
   partner_delegation: PartnerDelegationT;

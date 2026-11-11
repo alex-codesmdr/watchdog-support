@@ -66,7 +66,12 @@ test('customers post and vote on suggestions; staff reply', async ({ page, brows
   await ctx.close();
 
   await page.reload();
-  await expect(page.getByText('Planned for the next portal update.')).toBeVisible();
+  await expect(
+    page
+      .getByRole('listitem')
+      .filter({ has: page.getByRole('heading', { name: title }) })
+      .getByText('Planned for the next portal update.'),
+  ).toBeVisible();
 });
 
 test('a support manager works renewals, the roster, partners and product lifecycle', async ({

@@ -37,12 +37,12 @@ test('anyone can set their email language in My account', async ({ page }) => {
   await page.getByRole('link', { name: 'My account' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'My account' })).toBeVisible();
   await axe(page);
-  await page.getByLabel('Email language').selectOption('hi-IN');
+  await page.getByLabel('Language', { exact: true }).selectOption('hi-IN');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Saved.')).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel('Email language')).toHaveValue('hi-IN');
-  await page.getByLabel('Email language').selectOption('en-IN');
+  await expect(page.getByLabel('Language', { exact: true })).toHaveValue('hi-IN');
+  await page.getByLabel('Language', { exact: true }).selectOption('en-IN');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Saved.')).toBeVisible();
   await signOut(page);

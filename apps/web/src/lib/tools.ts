@@ -33,6 +33,20 @@ export const STAFF_TOOLS: Tool[] = [
     group: 'Your tools',
   },
   {
+    perm: 'visit:manage',
+    href: '/workspace/visits',
+    label: 'Visits',
+    desc: 'Engineer visits and remote sessions customers have booked.',
+    group: 'Your tools',
+  },
+  {
+    perm: 'community:moderate',
+    href: '/community',
+    label: 'Community',
+    desc: "Answer customers' questions, mark the right answer, hide anything unsuitable.",
+    group: 'Your tools',
+  },
+  {
     perm: 'case:note:internal',
     href: '/workspace/saved-replies',
     label: 'Saved replies',
@@ -79,6 +93,13 @@ export const STAFF_TOOLS: Tool[] = [
     href: '/admin/partners',
     label: 'Partner access',
     desc: 'Which resellers may open and follow cases for which customers.',
+    group: 'Customers',
+  },
+  {
+    perm: 'stock:manage',
+    href: '/workspace/stock',
+    label: 'Spare stock',
+    desc: 'Replacement units at each depot, minimum levels and write-offs.',
     group: 'Customers',
   },
   {
