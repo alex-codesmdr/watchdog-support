@@ -18,6 +18,7 @@ import { Signer } from '../../common/signing.js';
 import type { IdentityProvisioner } from '../identity/provisioner.js';
 import type { MailTransport, SmsAdapter } from './mailer.js';
 import { monthStats } from '../insights/stats.js';
+import { renewalPipeline } from '../business/contracts.controller.js';
 import { render, type TemplateKey } from './templates.js';
 
 const fmtIst = (d: Date) =>
@@ -30,6 +31,12 @@ const ymd = (d: Date | string) =>
   d instanceof Date
     ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     : String(d).slice(0, 10);
+const inr = (n: number) =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(n);
 const excerpt = (html: string) => {
   const t = htmlToText(html);
   return t.length > 600 ? `${t.slice(0, 600)}…` : t;
@@ -102,9 +109,242 @@ export class NotificationsService {
         return this.csatLow(String(payload.caseId));
       case 'review.monthly':
         return this.monthlyReview(String(payload.orgId), String(payload.month));
+      case 'contract.renewal_requested':
+        return this.contractRenewal(String(payload.renewalId));
+      case 'renewal.digest':
+        return this.renewalDigest(String(payload.userId), Boolean(payload.unowned));
+      case 'product.lifecycle':
+        return this.lifecycle(String(payload.productId));
+      case 'partner.access':
+        return this.partnerAccess(String(payload.delegationId));
       default:
         return;
     }
+  }
+
+  /** A customer asked to renew a whole contract: the renewals mailbox and the account owner. */
+  private async contractRenewal(id: string) {
+    await this.db.withSystem(async (tx) => {
+      const r = await sql<{
+        org_id: string;
+        org_name: string;
+        ref: string;
+        title: string;
+        value_inr: string;
+        ends_on: string;
+        note: string | null;
+        requester: string;
+        owner_email: string | null;
+        owner_locale: string | null;
+        owner_id: string | null;
+        devices: string;
+      }>`
+        SELECT c.org_id, o.name AS org_name, c.ref, c.title, c.value_inr,
+               to_char(c.ends_on, 'DD Mon YYYY') AS ends_on, r.note,
+               u.display_name || ' <' || u.email || '>' AS requester,
+               w.email AS owner_email, w.locale AS owner_locale, w.id AS owner_id,
+               (SELECT count(DISTINCT e.asset_id) FROM entitlement e
+                 WHERE e.org_id = c.org_id AND e.contract_ref = c.ref) AS devices
+          FROM renewal_request r
+          JOIN contract c ON c.id = r.contract_id
+          JOIN organization o ON o.id = c.org_id
+          JOIN app_user u ON u.id = r.requested_by
+          LEFT JOIN app_user w ON w.id = c.owner_id AND w.status = 'active'
+         WHERE r.id = ${id}`.execute(tx);
+      const x = r.rows[0];
+      if (!x) return;
+      const vars = {
+        org: x.org_name,
+        ref: x.ref,
+        title: x.title,
+        value: inr(Number(x.value_inr)),
+        endsOn: x.ends_on,
+        devices: x.devices,
+        requester: x.requester,
+        note: x.note ?? '—',
+        url: `${this.cfg.PUBLIC_WEB_URL}/workspace/renewals`,
+      };
+      await this.send({
+        to: this.cfg.RENEWALS_EMAIL,
+        orgId: null,
+        userId: null,
+        key: 'contract_renewal_requested',
+        vars,
+      });
+      if (x.owner_email && x.owner_email !== this.cfg.RENEWALS_EMAIL)
+        await this.send({
+          to: x.owner_email,
+          orgId: null,
+          userId: x.owner_id,
+          locale: x.owner_locale ?? undefined,
+          key: 'contract_renewal_requested',
+          vars,
+        });
+    });
+  }
+
+  /** Weekly list of open renewals for an account owner (and unowned ones for managers). */
+  private async renewalDigest(userId: string, unowned: boolean) {
+    await this.db.withSystem(async (tx) => {
+      const u = await tx
+        .selectFrom('app_user')
+        .select(['email', 'locale', 'status', 'display_name'])
+        .where('id', '=', userId)
+        .executeTakeFirst();
+      if (!u || u.status !== 'active') return;
+      const p = await renewalPipeline(tx, 90);
+      const mine = p.items.filter(
+        (i) =>
+          i.stage !== 'won' &&
+          i.stage !== 'lost' &&
+          (i.ownerId === userId || (unowned && !i.ownerId)),
+      );
+      if (!mine.length) return;
+      const h = (v: string) => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+      const listHtml = mine
+        .slice(0, 40)
+        .map(
+          (i) =>
+            `• ${h(i.orgName)}${i.ref ? ` — ${h(i.ref)}` : ''} — ${i.daysLeft < 0 ? `ended ${-i.daysLeft} days ago` : `ends in ${i.daysLeft} days`}` +
+            `${i.valueInr !== null ? ` — ${inr(i.valueInr)}` : ''}${i.customerAsked ? ' — customer asked to renew' : ''}${i.ownerId ? '' : ' — no owner yet'}`,
+        )
+        .join('<br>');
+      const value = inr(mine.reduce((n, i) => n + (i.valueInr ?? 0), 0));
+      await this.send({
+        to: u.email,
+        orgId: null,
+        userId,
+        locale: u.locale,
+        key: 'renewal_digest',
+        vars: {
+          count: mine.length,
+          value,
+          intro: `${u.display_name}, these contracts and coverage end soon and are not yet renewed.`,
+          listHtml,
+          url: `${this.cfg.PUBLIC_WEB_URL}/workspace/renewals`,
+        },
+      });
+    });
+  }
+
+  /** A model reached end of sale or end of support: tell each organisation that owns one. */
+  private async lifecycle(productId: string) {
+    const STAGE: Record<string, string> = {
+      eos_announced: 'end of sale announced',
+      eos: 'end of sale',
+      eol: 'end of support',
+    };
+    await this.db.withSystem(async (tx) => {
+      const p = await sql<{
+        model_name: string;
+        lifecycle: string;
+        eos: string | null;
+        eol: string | null;
+        note: string | null;
+        replacement: string | null;
+      }>`
+        SELECT p.model_name, p.lifecycle, to_char(p.eos_date, 'DD Mon YYYY') AS eos,
+               to_char(p.eol_date, 'DD Mon YYYY') AS eol, p.lifecycle_note AS note, r.model_name AS replacement
+          FROM product p LEFT JOIN product r ON r.id = p.replacement_product_id
+         WHERE p.id = ${productId}`.execute(tx);
+      const x = p.rows[0];
+      if (!x || x.lifecycle === 'ga') return;
+      const owners = await sql<{ org_id: string; org_name: string; serials: string[] }>`
+        SELECT a.org_id, o.name AS org_name, array_agg(a.serial_number ORDER BY a.serial_number) AS serials
+          FROM asset a JOIN organization o ON o.id = a.org_id AND o.status = 'active'
+         WHERE a.product_id = ${productId}
+         GROUP BY a.org_id, o.name`.execute(tx);
+      const h = (v: string) => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+      for (const o of owners.rows) {
+        const admins = await tx
+          .selectFrom('user_role as ur')
+          .innerJoin('app_user as u', 'u.id', 'ur.user_id')
+          .select(['u.id', 'u.email', 'u.locale'])
+          .where('ur.role_key', '=', 'customer_admin')
+          .where('u.org_id', '=', o.org_id)
+          .where('u.status', '=', 'active')
+          .execute();
+        const shown = o.serials.slice(0, 15);
+        const serialsHtml =
+          shown.map(h).join(', ') +
+          (o.serials.length > shown.length ? ` and ${o.serials.length - shown.length} more` : '');
+        const adviceHtml = [
+          x.replacement ? `Suggested replacement: <b>${h(x.replacement)}</b>.` : '',
+          x.note ? h(x.note) : '',
+        ]
+          .filter(Boolean)
+          .join('<br>');
+        for (const a of admins)
+          await this.send({
+            to: a.email,
+            orgId: o.org_id,
+            userId: a.id,
+            locale: a.locale,
+            key: 'lifecycle_notice',
+            vars: {
+              model: x.model_name,
+              stage: STAGE[x.lifecycle] ?? x.lifecycle,
+              org: o.org_name,
+              count: o.serials.length,
+              serialsHtml,
+              eos: x.eos ?? 'not set',
+              eol: x.eol ?? 'not set',
+              adviceHtml,
+              url: `${this.cfg.PUBLIC_WEB_URL}/portal/assets`,
+            },
+          });
+      }
+    });
+  }
+
+  /** Staff gave a partner access to a customer: the customer's administrators are told. */
+  private async partnerAccess(id: string) {
+    await this.db.withSystem(async (tx) => {
+      const d = await tx
+        .selectFrom('partner_delegation as d')
+        .innerJoin('organization as p', 'p.id', 'd.partner_org_id')
+        .innerJoin('organization as c', 'c.id', 'd.customer_org_id')
+        .select([
+          'd.customer_org_id',
+          'd.expires_at',
+          'd.revoked_at',
+          'p.name as partner',
+          'c.name as org',
+        ])
+        .where('d.id', '=', id)
+        .executeTakeFirst();
+      if (!d || d.revoked_at) return;
+      const admins = await tx
+        .selectFrom('user_role as ur')
+        .innerJoin('app_user as u', 'u.id', 'ur.user_id')
+        .select(['u.id', 'u.email', 'u.locale'])
+        .where('ur.role_key', '=', 'customer_admin')
+        .where('u.org_id', '=', d.customer_org_id)
+        .where('u.status', '=', 'active')
+        .execute();
+      for (const a of admins) {
+        const hi = (a.locale ?? 'en').startsWith('hi');
+        const until = d.expires_at
+          ? new Intl.DateTimeFormat(hi ? 'hi-IN' : 'en-IN', {
+              dateStyle: 'medium',
+              timeZone: 'Asia/Kolkata',
+            }).format(d.expires_at)
+          : null;
+        await this.send({
+          to: a.email,
+          orgId: d.customer_org_id,
+          userId: a.id,
+          locale: a.locale,
+          key: 'partner_access',
+          vars: {
+            partner: d.partner,
+            org: d.org,
+            untilText: until ? (hi ? ` (${until} तक)` : ` until ${until}`) : '',
+            url: `${this.cfg.PUBLIC_WEB_URL}/portal/team`,
+          },
+        });
+      }
+    });
   }
 
   /** A rating of 1 or 2: every active support manager is asked to call the customer back. */
@@ -636,6 +876,57 @@ export class NotificationsService {
     };
   }
 
+  /** Whoever carries the P1 phone right now hears about every new P1 (email and SMS). */
+  private async p1OnCall(
+    tx: Tx,
+    c: { id: string; org_id: string; number: string; subject: string; org_name: string },
+    due: Date | null,
+  ) {
+    const people = await sql<{ id: string; email: string; phone: string | null; locale: string }>`
+      SELECT u.id, u.email, u.phone, u.locale FROM app_user u
+       WHERE u.status = 'active' AND wd.on_shift(u.id, true)`.execute(tx);
+    if (!people.rows.length) return;
+    const a = await tx
+      .selectFrom('support_case as sc')
+      .leftJoin('app_user as u', 'u.id', 'sc.assignee_id')
+      .select('u.display_name')
+      .where('sc.id', '=', c.id)
+      .executeTakeFirst();
+    for (const u of people.rows) {
+      await this.send({
+        to: u.email,
+        orgId: c.org_id,
+        userId: u.id,
+        locale: u.locale,
+        key: 'p1_oncall',
+        vars: {
+          number: c.number,
+          org: c.org_name,
+          subject: c.subject,
+          assignee: a?.display_name ?? 'nobody yet',
+          due: due ? fmtIst(due) : 'see the case',
+          url: this.caseUrl(c.number, true),
+        },
+      });
+      if (u.phone) {
+        await this.sms.send(u.phone, 'WD_P1_ONCALL', { number: c.number });
+        await tx
+          .insertInto('notification')
+          .values({
+            org_id: c.org_id,
+            user_id: u.id,
+            channel: 'sms',
+            recipient: u.phone,
+            template_key: 'WD_P1_ONCALL',
+            status: 'sent',
+            sent_at: new Date(),
+            payload: JSON.stringify({ number: c.number }),
+          })
+          .execute();
+      }
+    }
+  }
+
   private async caseCreated(caseId: string) {
     await this.db.withSystem(async (tx) => {
       const c = await this.loadCase(tx, caseId);
@@ -661,6 +952,7 @@ export class NotificationsService {
           url: this.caseUrl(c.number),
         },
       });
+      if (c.severity === 'P1') await this.p1OnCall(tx, c, fr?.due_at ?? null);
       if (c.severity === 'P1' && c.phone) {
         await this.sms.send(c.phone, 'WD_CASE_P1_OPENED', { number: c.number });
         await tx

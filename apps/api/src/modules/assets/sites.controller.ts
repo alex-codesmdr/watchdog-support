@@ -326,7 +326,7 @@ export class SitesController {
       return {
         items: rows.map((r) => ({
           id: r.id,
-          assetId: r.asset_id,
+          assetId: r.asset_id as string,
           serialNumber: r.serial_number,
           status: r.status as RenewalView['status'],
           desiredTier: r.desired_tier as RenewalView['desiredTier'],

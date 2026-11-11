@@ -53,6 +53,13 @@ permissions:
   - status:manage # public service status page and incidents
   - reply:template:share # create and edit saved replies shared with every engineer
   - csat:followup # call back customers who gave a low satisfaction rating
+  - contract:read:org # see the organisation's contracts, value and invoices
+  - contract:manage # record contracts and invoices; work the renewal pipeline
+  - partner:manage # decide which partner may act for which customer
+  - roster:manage # engineer shifts and the P1 on-call duty
+  - catalog:manage # product end-of-sale and end-of-support dates and upgrade advice
+  - idea:submit # suggest product improvements and vote
+  - idea:manage # set the status of suggestions, respond, hide
 
 roles:
   customer_user:
@@ -70,6 +77,7 @@ roles:
         asset:read:org,
         renewal:request,
         rma:request,
+        idea:submit,
       ]
   customer_admin:
     internal: false
@@ -92,6 +100,8 @@ roles:
         rma:request,
         integration:manage,
         report:ops:read:org,
+        idea:submit,
+        contract:read:org,
       ]
   partner:
     internal: false
@@ -108,6 +118,7 @@ roles:
         asset:read:delegated,
         renewal:request,
         rma:request,
+        idea:submit,
       ]
   l1_engineer:
     internal: true
@@ -197,6 +208,11 @@ roles:
         jira:link,
         status:manage,
         csat:followup,
+        contract:manage,
+        partner:manage,
+        roster:manage,
+        catalog:manage,
+        idea:manage,
       ]
   content_editor:
     internal: true
@@ -209,6 +225,8 @@ roles:
         release:manage,
         advisory:manage,
         announcement:manage,
+        catalog:manage,
+        idea:manage,
       ]
   rma_coordinator:
     internal: true
@@ -243,6 +261,10 @@ roles:
         routing:manage,
         settings:manage,
         status:manage,
+        contract:manage,
+        partner:manage,
+        catalog:manage,
+        idea:manage,
       ]
 
 # Endpoint expectations used to GENERATE the authorization test-suite.
@@ -471,4 +493,52 @@ endpoints:
       method: GET,
       path: '/api/v1/workspace/callers?q=kaveri',
       allow: [l1_engineer, l2_engineer, l3_engineer, support_manager],
+    }
+  - {
+      id: contracts.mine,
+      method: GET,
+      path: /api/v1/contracts,
+      allow: [customer_admin],
+    }
+  - {
+      id: contracts.admin,
+      method: GET,
+      path: /api/v1/admin/contracts,
+      allow: [support_manager, system_admin],
+    }
+  - {
+      id: renewals.pipeline,
+      method: GET,
+      path: /api/v1/workspace/renewals,
+      allow: [support_manager, system_admin],
+    }
+  - {
+      id: partners.admin,
+      method: GET,
+      path: /api/v1/admin/partners,
+      allow: [support_manager, system_admin],
+    }
+  - {
+      id: partners.org,
+      method: GET,
+      path: /api/v1/org/partners,
+      allow: [customer_admin],
+    }
+  - {
+      id: roster.view,
+      method: GET,
+      path: /api/v1/workspace/roster,
+      allow: [l1_engineer, l2_engineer, l3_engineer, support_manager, rma_coordinator],
+    }
+  - {
+      id: products.lifecycle,
+      method: GET,
+      path: /api/v1/admin/products,
+      allow: [support_manager, content_editor, system_admin],
+    }
+  - {
+      id: ideas.list,
+      method: GET,
+      path: /api/v1/ideas,
+      allow: [customer_user, customer_admin, partner, support_manager, content_editor, system_admin],
     }

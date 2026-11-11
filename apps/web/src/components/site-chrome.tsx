@@ -84,6 +84,16 @@ export async function SiteHeader({
                 <Link className={link} href="/help">
                   {t('nav.ask')}
                 </Link>
+                {me.permissions.includes('case:read:delegated') && (
+                  <Link className={link} href="/portal/customers">
+                    {t('nav.customers')}
+                  </Link>
+                )}
+                {me.permissions.includes('idea:submit') && (
+                  <Link className={link} href="/portal/ideas">
+                    {t('nav.ideas')}
+                  </Link>
+                )}
                 {toolsFor(CUSTOMER_ADMIN_TOOLS, me.permissions).length > 0 && (
                   <Link className={link} href="/portal/admin">
                     {t('nav.administration')}

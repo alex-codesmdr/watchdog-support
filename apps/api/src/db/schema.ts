@@ -103,6 +103,8 @@ export interface ProductT {
   lifecycle: 'ga' | 'eos_announced' | 'eos' | 'eol';
   eos_date: TsNull;
   eol_date: TsNull;
+  replacement_product_id: string | null;
+  lifecycle_note: string | null;
   specs: Json;
   created_at: Ts;
 }
@@ -319,9 +321,11 @@ export interface PartnerDelegationT {
   id: Generated<string>;
   partner_org_id: string;
   customer_org_id: string;
-  scope: string[];
+  scope: Generated<string[]>;
+  granted_by: string | null;
   revoked_at: TsNull;
   expires_at: TsNull;
+  created_at: Ts;
 }
 
 export interface EscalationRuleT {
@@ -394,13 +398,77 @@ export interface KbFeedbackT {
 export interface RenewalRequestT {
   id: Generated<string>;
   org_id: string;
-  asset_id: string;
+  asset_id: string | null;
+  contract_id: string | null;
   entitlement_id: string | null;
   requested_by: string;
   desired_tier: string | null;
   note: string | null;
   status: Generated<string>;
   created_at: Ts;
+}
+type Day = ColumnType<Date, Date | string, Date | string>;
+type DayNull = ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
+export interface ContractT {
+  id: Generated<string>;
+  org_id: string;
+  ref: string;
+  title: string;
+  value_inr: ColumnType<string, string | number, string | number>;
+  starts_on: Day;
+  ends_on: Day;
+  owner_id: string | null;
+  renewal_stage: Generated<'not_started' | 'contacted' | 'quoted' | 'won' | 'lost'>;
+  renewal_note: string | null;
+  renewal_updated_at: TsNull;
+  created_by: string;
+  created_at: Ts;
+  updated_at: Ts;
+}
+export interface InvoiceT {
+  id: Generated<string>;
+  contract_id: string;
+  org_id: string;
+  number: string;
+  issued_on: Day;
+  due_on: Day;
+  amount_inr: ColumnType<string, string | number, string | number>;
+  status: Generated<'issued' | 'paid' | 'cancelled'>;
+  paid_on: DayNull;
+  created_at: Ts;
+}
+export interface RenewalDigestT {
+  user_id: string;
+  week: string;
+  sent_at: Ts;
+}
+export interface OncallShiftT {
+  id: Generated<string>;
+  user_id: string;
+  starts_at: Ts;
+  ends_at: Ts;
+  p1: Generated<boolean>;
+  note: string | null;
+  created_by: string;
+  created_at: Ts;
+}
+export interface IdeaT {
+  id: Generated<string>;
+  org_id: string;
+  author_id: string;
+  family_id: string | null;
+  title: string;
+  body: string;
+  status: Generated<'new' | 'under_review' | 'planned' | 'in_progress' | 'done' | 'declined'>;
+  response: string | null;
+  hidden: Generated<boolean>;
+  created_at: Ts;
+  updated_at: Ts;
+}
+export interface IdeaVoteT {
+  idea_id: string;
+  user_id: string;
+  at: Ts;
 }
 export interface ApiKeyT {
   id: Generated<string>;
@@ -783,6 +851,12 @@ export interface DB {
   sla_clock: SlaClockT;
   csat_response: CsatResponseT;
   monthly_review: MonthlyReviewT;
+  contract: ContractT;
+  invoice: InvoiceT;
+  renewal_digest: RenewalDigestT;
+  oncall_shift: OncallShiftT;
+  idea: IdeaT;
+  idea_vote: IdeaVoteT;
   notification: NotificationT;
   inbound_email_hold: InboundEmailHoldT;
   partner_delegation: PartnerDelegationT;

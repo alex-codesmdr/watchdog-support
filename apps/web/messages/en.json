@@ -24,7 +24,9 @@
     "admin": "Admin",
     "administration": "Administration",
     "myAccount": "My account",
-    "ask": "Ask"
+    "ask": "Ask",
+    "ideas": "Suggestions",
+    "customers": "Your customers"
   },
   "home": {
     "title": "What is your network telling you?",
@@ -32,11 +34,26 @@
     "searchLabel": "Search knowledge base, products, errors",
     "searchButton": "Search",
     "actions": {
-      "openCase": ["Open a case", "Report an outage or a fault on a registered device."],
-      "warranty": ["Check warranty", "Look up coverage for any serial number."],
-      "firmware": ["Download firmware", "Software, release notes, MIBs and checksums."],
-      "rma": ["Request a replacement", "Start an RMA from an open hardware case."],
-      "advisories": ["Security advisories", "CVE-tracked advisories and field notices."]
+      "openCase": [
+        "Open a case",
+        "Report an outage or a fault on a registered device."
+      ],
+      "warranty": [
+        "Check warranty",
+        "Look up coverage for any serial number."
+      ],
+      "firmware": [
+        "Download firmware",
+        "Software, release notes, MIBs and checksums."
+      ],
+      "rma": [
+        "Request a replacement",
+        "Start an RMA from an open hardware case."
+      ],
+      "advisories": [
+        "Security advisories",
+        "CVE-tracked advisories and field notices."
+      ]
     },
     "families": "Products we support",
     "contact": "Need us now?",

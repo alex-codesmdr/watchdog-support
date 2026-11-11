@@ -26,6 +26,13 @@ export const STAFF_TOOLS: Tool[] = [
     group: 'Your tools',
   },
   {
+    perm: 'case:read:all',
+    href: '/workspace/roster',
+    label: 'Roster and on call',
+    desc: 'Who is on shift and who carries the P1 phone, this week and next.',
+    group: 'Your tools',
+  },
+  {
     perm: 'case:note:internal',
     href: '/workspace/saved-replies',
     label: 'Saved replies',
@@ -54,6 +61,27 @@ export const STAFF_TOOLS: Tool[] = [
     group: 'Reports',
   },
   {
+    perm: 'contract:manage',
+    href: '/workspace/renewals',
+    label: 'Renewal pipeline',
+    desc: 'Contracts and coverage ending in the next 90 days, their value and where each renewal stands.',
+    group: 'Customers',
+  },
+  {
+    perm: 'contract:manage',
+    href: '/admin/contracts',
+    label: 'Contracts and invoices',
+    desc: "Record each customer's contracts, their value and invoices.",
+    group: 'Customers',
+  },
+  {
+    perm: 'partner:manage',
+    href: '/admin/partners',
+    label: 'Partner access',
+    desc: 'Which resellers may open and follow cases for which customers.',
+    group: 'Customers',
+  },
+  {
     perm: 'registration:approve',
     href: '/admin/registrations',
     label: 'Registrations',
@@ -79,6 +107,20 @@ export const STAFF_TOOLS: Tool[] = [
     href: '/admin/releases',
     label: 'Releases',
     desc: 'Firmware, software and documents in the download centre.',
+    group: 'Content',
+  },
+  {
+    perm: 'catalog:manage',
+    href: '/admin/lifecycle',
+    label: 'Product lifecycle',
+    desc: "End-of-sale and end-of-support dates and upgrade advice shown beside customers' devices.",
+    group: 'Content',
+  },
+  {
+    perm: 'idea:manage',
+    href: '/workspace/ideas',
+    label: 'Customer suggestions',
+    desc: 'Product ideas from customers, with votes. Set a status and reply.',
     group: 'Content',
   },
   {
@@ -126,6 +168,13 @@ export const STAFF_TOOLS: Tool[] = [
 ];
 
 export const CUSTOMER_ADMIN_TOOLS: Tool[] = [
+  {
+    perm: 'contract:read:org',
+    href: '/portal/contracts',
+    label: 'Contracts and invoices',
+    desc: 'What each support contract covers, its value, renewal date and invoices. Ask to renew.',
+    group: 'Your organisation',
+  },
   {
     perm: 'report:ops:read:org',
     href: '/portal/reports',

@@ -192,6 +192,17 @@ export const AssetSummary = z.object({
   siteName: z.string().nullable(),
   currentVersion: z.string().nullable(),
   entitlement: z.object({ tier: SupportTier, kind: z.string(), endsOn: z.string() }).nullable(),
+  /** Set once the model is past general availability. */
+  lifecycle: z
+    .object({
+      stage: z.enum(['eos_announced', 'eos', 'eol']),
+      endOfSale: z.string().nullable(),
+      endOfSupport: z.string().nullable(),
+      advice: z.string().nullable(),
+      replacement: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 export type AssetSummary = z.infer<typeof AssetSummary>;
 
@@ -1408,3 +1419,227 @@ export const CallerOrgDetail = z.object({
   ),
 });
 export type CallerOrgDetail = z.infer<typeof CallerOrgDetail>;
+
+// ---- Contracts, invoices and the renewal pipeline
+const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const Inr = z.coerce.number().min(0).max(1e12);
+export const RENEWAL_STAGES = ['not_started', 'contacted', 'quoted', 'won', 'lost'] as const;
+export const RenewalStage = z.enum(RENEWAL_STAGES);
+export type RenewalStage = z.infer<typeof RenewalStage>;
+export const RENEWAL_STAGE_LABELS: Record<RenewalStage, string> = {
+  not_started: 'Not started',
+  contacted: 'Customer contacted',
+  quoted: 'Quote sent',
+  won: 'Renewed',
+  lost: 'Not renewing',
+};
+export const InvoiceView = z.object({
+  id: Uuid,
+  number: z.string(),
+  issuedOn: z.string(),
+  dueOn: z.string(),
+  amountInr: z.number(),
+  status: z.enum(['issued', 'paid', 'overdue', 'cancelled']),
+  paidOn: z.string().nullable(),
+});
+export type InvoiceView = z.infer<typeof InvoiceView>;
+export const ContractView = z.object({
+  id: Uuid,
+  orgId: Uuid,
+  orgName: z.string(),
+  ref: z.string(),
+  title: z.string(),
+  valueInr: z.number(),
+  startsOn: z.string(),
+  endsOn: z.string(),
+  daysLeft: z.number().int(),
+  devices: z.array(
+    z.object({ serialNumber: z.string(), modelName: z.string(), siteName: z.string().nullable() }),
+  ),
+  invoices: z.array(InvoiceView),
+  renewalRequested: z.boolean(),
+  /** Staff only (null for customers). */
+  owner: z.object({ id: Uuid, name: z.string() }).nullable(),
+  renewalStage: RenewalStage.nullable(),
+  renewalNote: z.string().nullable(),
+});
+export type ContractView = z.infer<typeof ContractView>;
+export const ContractUpsert = z.object({
+  orgId: Uuid,
+  ref: z.string().trim().min(2).max(60),
+  title: z.string().trim().min(3).max(140),
+  valueInr: Inr,
+  startsOn: Day,
+  endsOn: Day,
+  ownerId: Uuid.nullable().optional(),
+});
+export type ContractUpsert = z.input<typeof ContractUpsert>;
+export const InvoiceCreate = z.object({
+  number: z.string().trim().min(2).max(40),
+  issuedOn: Day,
+  dueOn: Day,
+  amountInr: Inr,
+});
+export const InvoiceStatusUpdate = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('paid'), paidOn: Day }),
+  z.object({ status: z.literal('cancelled') }),
+]);
+export const ContractRenewalRequest = z.object({ note: z.string().trim().max(2000).optional() });
+export const RenewalPipelineItem = z.object({
+  contractId: Uuid.nullable(),
+  orgId: Uuid,
+  orgName: z.string(),
+  ref: z.string().nullable(),
+  title: z.string(),
+  valueInr: z.number().nullable(),
+  endsOn: z.string(),
+  daysLeft: z.number().int(),
+  devices: z.number().int(),
+  ownerId: Uuid.nullable(),
+  ownerName: z.string().nullable(),
+  stage: RenewalStage.nullable(),
+  note: z.string().nullable(),
+  customerAsked: z.boolean(),
+});
+export type RenewalPipelineItem = z.infer<typeof RenewalPipelineItem>;
+export const RenewalPipeline = z.object({
+  items: z.array(RenewalPipelineItem),
+  totals: z.object({ openValueInr: z.number(), wonValueInr: z.number(), count: z.number().int() }),
+});
+export type RenewalPipeline = z.infer<typeof RenewalPipeline>;
+export const RenewalStageUpdate = z.object({
+  stage: RenewalStage,
+  note: z.string().trim().max(2000).optional(),
+  ownerId: Uuid.nullable().optional(),
+});
+
+export const LIFECYCLE_LABELS = {
+  ga: 'Generally available',
+  eos_announced: 'End of sale announced',
+  eos: 'End of sale',
+  eol: 'End of support',
+} as const;
+export const ProductLifecycleUpdate = z.object({
+  lifecycle: z.enum(['ga', 'eos_announced', 'eos', 'eol']),
+  endOfSale: Day.nullable(),
+  endOfSupport: Day.nullable(),
+  replacementSku: z.string().trim().max(60).nullable(),
+  advice: z.string().trim().max(1000).nullable(),
+  /** Email customer administrators who own this model. */
+  notify: z.boolean().default(false),
+});
+export const ProductLifecycleView = z.object({
+  id: Uuid,
+  sku: z.string(),
+  modelName: z.string(),
+  familyName: z.string(),
+  lifecycle: z.enum(['ga', 'eos_announced', 'eos', 'eol']),
+  endOfSale: z.string().nullable(),
+  endOfSupport: z.string().nullable(),
+  replacementSku: z.string().nullable(),
+  advice: z.string().nullable(),
+  installed: z.number().int(),
+  customers: z.number().int(),
+});
+export type ProductLifecycleView = z.infer<typeof ProductLifecycleView>;
+
+// ---- Partners (resellers)
+export const DelegationView = z.object({
+  id: Uuid,
+  partnerOrgId: Uuid,
+  partnerName: z.string(),
+  customerOrgId: Uuid,
+  customerName: z.string(),
+  since: IsoDateTime,
+  expiresAt: IsoDateTime.nullable(),
+  revokedAt: IsoDateTime.nullable(),
+  grantedBy: z.string().nullable(),
+});
+export type DelegationView = z.infer<typeof DelegationView>;
+export const DelegationCreate = z.object({
+  partnerOrgId: Uuid,
+  customerOrgId: Uuid,
+  expiresOn: Day.nullable().optional(),
+});
+export const PartnerCustomer = z.object({
+  id: Uuid,
+  name: z.string(),
+  openCases: z.number().int(),
+  devices: z.number().int(),
+  coverageEndingSoon: z.number().int(),
+});
+export type PartnerCustomer = z.infer<typeof PartnerCustomer>;
+
+// ---- On-call roster
+export const ShiftView = z.object({
+  id: Uuid,
+  userId: Uuid,
+  name: z.string(),
+  startsAt: IsoDateTime,
+  endsAt: IsoDateTime,
+  p1: z.boolean(),
+  note: z.string().nullable(),
+});
+export type ShiftView = z.infer<typeof ShiftView>;
+export const Roster = z.object({
+  from: z.string(),
+  to: z.string(),
+  shifts: z.array(ShiftView),
+  onShiftNow: z.array(z.object({ name: z.string(), p1: z.boolean(), until: IsoDateTime })),
+});
+export type Roster = z.infer<typeof Roster>;
+export const ShiftCreate = z.object({
+  userId: Uuid,
+  startsAt: IsoDateTime,
+  endsAt: IsoDateTime,
+  p1: z.boolean().default(false),
+  note: z.string().trim().max(200).optional(),
+  /** Repeat the same shift on the following days (0–13). */
+  repeatDays: z.coerce.number().int().min(0).max(13).default(0),
+});
+
+// ---- Feature request board
+export const IDEA_STATUSES = [
+  'new',
+  'under_review',
+  'planned',
+  'in_progress',
+  'done',
+  'declined',
+] as const;
+export const IdeaStatus = z.enum(IDEA_STATUSES);
+export type IdeaStatus = z.infer<typeof IdeaStatus>;
+export const IDEA_STATUS_LABELS: Record<IdeaStatus, string> = {
+  new: 'New',
+  under_review: 'Under review',
+  planned: 'Planned',
+  in_progress: 'In progress',
+  done: 'Done',
+  declined: 'Not planned',
+};
+export const IdeaView = z.object({
+  id: Uuid,
+  title: z.string(),
+  body: z.string(),
+  familyName: z.string().nullable(),
+  status: IdeaStatus,
+  response: z.string().nullable(),
+  votes: z.number().int(),
+  votedByMe: z.boolean(),
+  mine: z.boolean(),
+  /** Staff only: who posted it. */
+  postedBy: z.string().nullable(),
+  hidden: z.boolean(),
+  createdAt: IsoDateTime,
+});
+export type IdeaView = z.infer<typeof IdeaView>;
+export const IdeaCreate = z.object({
+  title: z.string().trim().min(8).max(140),
+  body: z.string().trim().min(10).max(4000),
+  familyKey: z.string().trim().max(40).optional(),
+});
+export const IdeaStaffUpdate = z.object({
+  status: IdeaStatus,
+  response: z.string().trim().max(2000).nullable().optional(),
+  hidden: z.boolean().optional(),
+});

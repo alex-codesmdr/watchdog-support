@@ -25,7 +25,12 @@ export type TemplateKey =
   | 'advisory_published'
   | 'user_invited'
   | 'csat_low'
-  | 'monthly_review';
+  | 'monthly_review'
+  | 'contract_renewal_requested'
+  | 'renewal_digest'
+  | 'lifecycle_notice'
+  | 'p1_oncall'
+  | 'partner_access';
 
 interface Rendered {
   subject: string;
@@ -157,6 +162,36 @@ const EN: Strings = {
     body: 'Cases opened: <b>{{opened}}</b><br>Cases resolved: <b>{{resolved}}</b><br>Still open today: <b>{{openNow}}</b><br>Median time to first response: <b>{{firstResponse}}</b><br>Response and resolution targets met: <b>{{slaMet}}</b><br>Your satisfaction rating: <b>{{csat}}</b><br>Devices whose coverage ends in the next 60 days: <b>{{expiring}}</b><br><br>The full report, with charts and a spreadsheet download, is in the portal.',
     cta: 'Open the support report',
   },
+  contract_renewal_requested: {
+    subject: '[Renewal] {{org}} – contract {{ref}}',
+    heading: 'Contract renewal requested',
+    body: '{{requester}} at <b>{{org}}</b> asked to renew contract {{ref}}, "{{title}}", worth {{value}}, ending on {{endsOn}} and covering {{devices}} device(s).<br>Note: {{note}}',
+    cta: 'Open the renewal pipeline',
+  },
+  renewal_digest: {
+    subject: 'Renewals this week: {{count}} open, {{value}}',
+    heading: 'Renewals due in the next 90 days',
+    body: '{{intro}}<br><br>{{listHtml}}<br><br>Update each one in the renewal pipeline as you contact the customer and send the quote.',
+    cta: 'Open the renewal pipeline',
+  },
+  lifecycle_notice: {
+    subject: 'End-of-life notice: {{model}}',
+    heading: '{{model}}: {{stage}}',
+    body: '<b>{{org}}</b> has {{count}} {{model}} device(s): {{serialsHtml}}.<br>End of sale: {{eos}}<br>End of support: {{eol}}<br>{{adviceHtml}}<br>Your devices stay covered until their contract ends. Talk to your WatchDog account manager about upgrading in good time.',
+    cta: 'See your devices',
+  },
+  p1_oncall: {
+    subject: '[P1] {{number}} – {{org}}',
+    heading: 'New P1 case while you are on call',
+    body: '<b>{{org}}</b> opened a P1 case: "{{subject}}".<br>Assigned to: {{assignee}}<br>First response is due by {{due}}.',
+    cta: 'Open case',
+  },
+  partner_access: {
+    subject: '{{partner}} can now handle WatchDog support for {{org}}',
+    heading: 'A partner can now act for you',
+    body: 'WatchDog Support has given <b>{{partner}}</b> access to open and follow support cases and see devices for <b>{{org}}</b>{{untilText}}. They cannot see your contracts or invoices.<br>If you did not expect this, end their access from Your team in the portal and tell us.',
+    cta: 'Review partner access',
+  },
 };
 
 /** Hindi (हिन्दी). Technical terms customers use day to day (case, SLA, RMA, serial) stay in English. */
@@ -277,6 +312,36 @@ const HI: Strings = {
     heading: '{{org}}: {{month}} में सपोर्ट',
     body: 'खोले गए case: <b>{{opened}}</b><br>हल किए गए case: <b>{{resolved}}</b><br>आज भी खुले: <b>{{openNow}}</b><br>पहले जवाब का औसत (माध्यिका) समय: <b>{{firstResponse}}</b><br>जवाब और समाधान के लक्ष्य पूरे: <b>{{slaMet}}</b><br>आपकी संतुष्टि रेटिंग: <b>{{csat}}</b><br>अगले 60 दिनों में कवरेज समाप्त होने वाले डिवाइस: <b>{{expiring}}</b><br><br>चार्ट और स्प्रेडशीट डाउनलोड के साथ पूरी रिपोर्ट पोर्टल में है।',
     cta: 'सपोर्ट रिपोर्ट खोलें',
+  },
+  contract_renewal_requested: {
+    subject: '[नवीनीकरण] {{org}} – अनुबंध {{ref}}',
+    heading: 'अनुबंध नवीनीकरण का अनुरोध',
+    body: '<b>{{org}}</b> के {{requester}} ने अनुबंध {{ref}}, "{{title}}", के नवीनीकरण का अनुरोध किया है। मूल्य {{value}}, समाप्ति {{endsOn}}, {{devices}} डिवाइस शामिल।<br>टिप्पणी: {{note}}',
+    cta: 'नवीनीकरण सूची खोलें',
+  },
+  renewal_digest: {
+    subject: 'इस सप्ताह के नवीनीकरण: {{count}} खुले, {{value}}',
+    heading: 'अगले 90 दिनों में देय नवीनीकरण',
+    body: '{{intro}}<br><br>{{listHtml}}<br><br>ग्राहक से संपर्क करने और कोटेशन भेजने पर नवीनीकरण सूची में हर एक को अपडेट करें।',
+    cta: 'नवीनीकरण सूची खोलें',
+  },
+  lifecycle_notice: {
+    subject: 'जीवन-चक्र सूचना: {{model}}',
+    heading: '{{model}}: {{stage}}',
+    body: '<b>{{org}}</b> के पास {{count}} {{model}} डिवाइस हैं: {{serialsHtml}}।<br>बिक्री समाप्ति: {{eos}}<br>सपोर्ट समाप्ति: {{eol}}<br>{{adviceHtml}}<br>आपके डिवाइस उनके अनुबंध की समाप्ति तक कवर रहेंगे। समय रहते अपग्रेड के बारे में अपने WatchDog अकाउंट मैनेजर से बात करें।',
+    cta: 'अपने डिवाइस देखें',
+  },
+  p1_oncall: {
+    subject: '[P1] {{number}} – {{org}}',
+    heading: 'आपकी ऑन-कॉल ड्यूटी के दौरान नया P1 case',
+    body: '<b>{{org}}</b> ने एक P1 case खोला है: "{{subject}}"।<br>सौंपा गया: {{assignee}}<br>पहला जवाब {{due}} तक देना है।',
+    cta: 'Case खोलें',
+  },
+  partner_access: {
+    subject: '{{partner}} अब {{org}} के लिए WatchDog सपोर्ट संभाल सकता है',
+    heading: 'एक पार्टनर अब आपकी ओर से काम कर सकता है',
+    body: 'WatchDog Support ने <b>{{partner}}</b> को <b>{{org}}</b> के लिए सपोर्ट case खोलने, देखने और डिवाइस देखने की अनुमति दी है{{untilText}}। वे आपके अनुबंध या इनवॉइस नहीं देख सकते।<br>अगर आपको इसकी उम्मीद नहीं थी, तो पोर्टल में अपनी टीम से उनकी पहुँच समाप्त करें और हमें बताएँ।',
+    cta: 'पार्टनर पहुँच देखें',
   },
 };
 

@@ -20,6 +20,11 @@ const fmtDate = (d: string) =>
     new Date(`${d.slice(0, 10)}T00:00:00`),
   );
 
+const LIFECYCLE = {
+  eos_announced: 'End of sale announced',
+  eos: 'No longer sold',
+  eol: 'Support has ended',
+} as const;
 type Coverage = { label: string; tone: 'ok' | 'soon' | 'urgent' | 'none'; days: number | null };
 function coverage(a: AssetSummary, today: string): Coverage {
   if (!a.entitlement) return { label: 'No active coverage', tone: 'none', days: null };
@@ -175,6 +180,28 @@ export function Devices({
                   <div className="min-w-0">
                     <p className="font-mono text-sm font-semibold">{a.serialNumber}</p>
                     <p className="truncate text-sm text-muted">{a.modelName}</p>
+                    {a.lifecycle && (
+                      <details className="mt-1 text-sm">
+                        <summary className="cursor-pointer text-amber-ink">
+                          {LIFECYCLE[a.lifecycle.stage]}
+                          {a.lifecycle.endOfSupport
+                            ? `: support ends ${fmtDate(a.lifecycle.endOfSupport)}`
+                            : ''}
+                        </summary>
+                        <div className="mt-1 space-y-1 text-muted">
+                          {a.lifecycle.endOfSale && (
+                            <p>End of sale: {fmtDate(a.lifecycle.endOfSale)}</p>
+                          )}
+                          {a.lifecycle.endOfSupport && (
+                            <p>End of support: {fmtDate(a.lifecycle.endOfSupport)}</p>
+                          )}
+                          {a.lifecycle.replacement && (
+                            <p>Suggested replacement: {a.lifecycle.replacement}</p>
+                          )}
+                          {a.lifecycle.advice && <p>{a.lifecycle.advice}</p>}
+                        </div>
+                      </details>
+                    )}
                   </div>
                   <p className="text-sm">
                     <span className="sr-only">Site: </span>

@@ -63,7 +63,13 @@ export class AssetsController {
       .innerJoin('product as pr', 'pr.id', 'a.product_id')
       .innerJoin('product_family as f', 'f.id', 'pr.family_id')
       .leftJoin('site as s', 's.id', 'a.site_id')
+      .leftJoin('product as rp', 'rp.id', 'pr.replacement_product_id')
       .select([
+        'pr.lifecycle',
+        sql<string | null>`to_char(pr.eos_date, 'YYYY-MM-DD')`.as('eos_date'),
+        sql<string | null>`to_char(pr.eol_date, 'YYYY-MM-DD')`.as('eol_date'),
+        'pr.lifecycle_note',
+        'rp.model_name as replacement',
         'a.id',
         'a.serial_number',
         'a.product_id',
@@ -112,6 +118,16 @@ export class AssetsController {
         siteName: r.site_name,
         currentVersion: r.current_version,
         entitlement: e ? { tier: e.tier, kind: e.kind, endsOn: e.ends_on } : null,
+        lifecycle:
+          r.lifecycle === 'ga'
+            ? null
+            : {
+                stage: r.lifecycle as 'eos_announced' | 'eos' | 'eol',
+                endOfSale: r.eos_date,
+                endOfSupport: r.eol_date,
+                advice: r.lifecycle_note,
+                replacement: r.replacement,
+              },
       };
     });
   }

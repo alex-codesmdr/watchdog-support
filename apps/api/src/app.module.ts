@@ -63,6 +63,12 @@ import { AssistantController } from './modules/assistant/assistant.controller.js
 import { StatusController } from './modules/status/status.controller.js';
 import { InsightsController } from './modules/insights/insights.controller.js';
 import { MonthlyReviewService } from './modules/insights/monthly-review.service.js';
+import { ContractsController } from './modules/business/contracts.controller.js';
+import { PartnersController } from './modules/business/partners.controller.js';
+import { RosterController } from './modules/business/roster.controller.js';
+import { IdeasController } from './modules/business/ideas.controller.js';
+import { LifecycleController } from './modules/business/lifecycle.controller.js';
+import { RenewalDigestService } from './modules/business/renewal-digest.service.js';
 import { AssistantService } from './modules/assistant/assistant.service.js';
 import { JiraService } from './modules/jira/jira.service.js';
 import { JiraCloud, MockJira } from './modules/jira/jira.adapter.js';
@@ -173,6 +179,11 @@ export class AppModule {
         AssistantController,
         StatusController,
         InsightsController,
+        ContractsController,
+        PartnersController,
+        RosterController,
+        IdeasController,
+        LifecycleController,
       ],
       providers: [
         ...defaults.filter((p) => !overridden.has((p as { provide: unknown }).provide)),
@@ -192,6 +203,7 @@ export class AppModule {
         JiraService,
         AssistantService,
         MonthlyReviewService,
+        RenewalDigestService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_GUARD, useClass: RateLimitGuard },

@@ -31,6 +31,11 @@ export default async function setup() {
   const owner = `postgres://wd_owner:wd_owner_dev@${host.host}/${db}`;
   await migrateUp(owner, () => undefined);
   await seed(owner, { log: () => undefined });
+  // The demo roster depends on the time of day; tests that need shifts create their own.
+  const c3 = new pg.Client({ connectionString: owner });
+  await c3.connect();
+  await c3.query('DELETE FROM oncall_shift');
+  await c3.end();
   process.env.TEST_DATABASE_URL = `postgres://wd_app:wd_app_dev@${host.host}/${db}`;
   process.env.TEST_DATABASE_OWNER_URL = owner;
 }

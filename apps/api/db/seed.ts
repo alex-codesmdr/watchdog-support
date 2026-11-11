@@ -392,6 +392,8 @@ export async function seed(
       const relCount = await seedDownloads(q, SYSTEM_USER_ID);
       if (relCount) log(`  ${relCount} download-centre releases seeded`);
       if (await seedAdvisories(q, SYSTEM_USER_ID)) log('  demo advisory seeded');
+      if (await seedBusinessDemo(q))
+        log('  demo contracts, roster, lifecycle notice and suggestions seeded');
     }
     if (!(await q('SELECT 1 FROM saved_reply WHERE owner_id IS NULL LIMIT 1')).rowCount) {
       for (const [title, body] of SHARED_REPLIES)
@@ -409,6 +411,187 @@ export async function seed(
   } finally {
     await c.end();
   }
+}
+
+/**
+ * Demo contracts with invoices, a two-week engineer roster, an end-of-sale notice with upgrade
+ * advice, and a few customer suggestions. Runs once, after the demo tenants exist.
+ */
+async function seedBusinessDemo(q: (t: string, v?: unknown[]) => Promise<pg.QueryResult>) {
+  if ((await q('SELECT 1 FROM contract LIMIT 1')).rowCount) return false;
+  if (!(await q('SELECT 1 FROM organization WHERE id = $1', [ORGS.kaveri])).rowCount) return false;
+  const MANAGER = '00000000-0000-4000-8000-000000001004';
+  const y = new Date().getUTCFullYear();
+  const contract = async (
+    org: string,
+    ref: string,
+    title: string,
+    value: number,
+    from: string,
+    to: string,
+    entitlementRefs: string[],
+  ) => {
+    const c = await q(
+      `INSERT INTO contract (org_id, ref, title, value_inr, starts_on, ends_on, owner_id, created_by)
+       VALUES ($1,$2,$3,$4,$5::date,$6::date,$7,$7) RETURNING id`,
+      [org, ref, title, value, from, to, MANAGER],
+    );
+    await q(
+      `UPDATE entitlement SET contract_ref = $1 WHERE org_id = $2 AND contract_ref = ANY($3)`,
+      [ref, org, entitlementRefs],
+    );
+    return c.rows[0].id as string;
+  };
+  const k = await contract(
+    ORGS.kaveri,
+    'KCB-AMC-2025',
+    'Annual maintenance: data centre switching and firewall',
+    1840000,
+    `${y - 1}-04-01`,
+    `${y + 1}-03-31`,
+    ['CTR-0001', 'CTR-0002'],
+  );
+  const kw = await contract(
+    ORGS.kaveri,
+    'KCB-WTY-EDGE',
+    'Branch SD-WAN warranty extension',
+    96000,
+    `${y - 2}-01-01`,
+    `${y}-12-31`,
+    ['CTR-0003'],
+  );
+  const n = await contract(
+    ORGS.narmada,
+    'NSCA-AMC-ICC',
+    'Command centre network: premium support',
+    1250000,
+    `${y - 1}-06-01`,
+    `${y + 1}-05-31`,
+    ['CTR-0005', 'CTR-0006'],
+  );
+  const inv = (
+    c: string,
+    org: string,
+    no: string,
+    issued: string,
+    due: string,
+    amt: number,
+    paid: string | null,
+  ) =>
+    q(
+      `INSERT INTO invoice (contract_id, org_id, number, issued_on, due_on, amount_inr, status, paid_on)
+       VALUES ($1,$2,$3,$4::date,$5::date,$6,$7,$8::date)`,
+      [c, org, no, issued, due, amt, paid ? 'paid' : 'issued', paid],
+    );
+  await inv(
+    k,
+    ORGS.kaveri,
+    `AIPL/${y - 1}/0412`,
+    `${y - 1}-04-01`,
+    `${y - 1}-04-30`,
+    920000,
+    `${y - 1}-04-22`,
+  );
+  await inv(
+    k,
+    ORGS.kaveri,
+    `AIPL/${y - 1}/1088`,
+    `${y - 1}-10-01`,
+    `${y - 1}-10-31`,
+    920000,
+    `${y - 1}-10-29`,
+  );
+  await inv(
+    kw,
+    ORGS.kaveri,
+    `AIPL/${y - 2}/0019`,
+    `${y - 2}-01-05`,
+    `${y - 2}-02-04`,
+    96000,
+    `${y - 2}-01-30`,
+  );
+  await inv(
+    n,
+    ORGS.narmada,
+    `AIPL/${y - 1}/0633`,
+    `${y - 1}-06-01`,
+    `${y - 1}-07-01`,
+    625000,
+    `${y - 1}-06-25`,
+  );
+  await inv(n, ORGS.narmada, `AIPL/${y - 1}/1201`, `${y - 1}-12-01`, `${y}-01-15`, 625000, null);
+
+  // Roster: Asha on days, Vikram on the P1 phone overnight, for two weeks from today (IST).
+  await q(
+    `INSERT INTO oncall_shift (user_id, starts_at, ends_at, p1, note, created_by)
+     SELECT u, (d::date + t0) AT TIME ZONE 'Asia/Kolkata', (d::date + t1) AT TIME ZONE 'Asia/Kolkata', p1, note, $3
+       FROM generate_series((now() AT TIME ZONE 'Asia/Kolkata')::date - 1, (now() AT TIME ZONE 'Asia/Kolkata')::date + 13, interval '1 day') d,
+            (VALUES ($1::uuid, time '09:00', interval '9 hours', false, 'Day shift'),
+                    ($2::uuid, time '18:00', interval '15 hours', true, 'P1 phone overnight')) v(u, start, len, p1, note),
+            LATERAL (SELECT start::interval AS t0, start::interval + len AS t1) x`,
+    ['00000000-0000-4000-8000-000000001001', '00000000-0000-4000-8000-000000001002', MANAGER],
+  );
+
+  // The older 24-port switch reached end of sale: dates and an upgrade path.
+  await q(
+    `UPDATE product SET eos_date = $1::date, eol_date = $2::date,
+            replacement_product_id = (SELECT id FROM product WHERE sku = 'WD-SW5600-48P'),
+            lifecycle_note = 'Software fixes continue until end of support. The SW5600-48P adds PoE+ and 10G uplinks; ask about trade-in pricing.'
+      WHERE sku = 'WD-SW3100-24T'`,
+    [`${y}-06-30`, `${y + 3}-06-30`],
+  );
+
+  const idea = async (
+    org: string,
+    author: string,
+    title: string,
+    body: string,
+    status: string,
+    response: string | null,
+    voters: string[],
+  ) => {
+    const i = await q(
+      `INSERT INTO idea (org_id, author_id, family_id, title, body, status, response)
+       VALUES ($1,$2,(SELECT id FROM product_family WHERE key = 'switching'),$3,$4,$5,$6) RETURNING id`,
+      [org, author, title, body, status, response],
+    );
+    for (const v of [author, ...voters])
+      await q('INSERT INTO idea_vote (idea_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [
+        i.rows[0].id,
+        v,
+      ]);
+  };
+  const KAVERI_ADMIN = DEMO_USERS.find((u) => u[2] === 'it.admin@kaveribank.example')![0];
+  const KAVERI_NOC = DEMO_USERS.find((u) => u[2] === 'noc@kaveribank.example')![0];
+  const NARMADA = DEMO_USERS.find((u) => u[2] === 'netops@narmadacity.example')![0];
+  await idea(
+    ORGS.kaveri,
+    KAVERI_NOC,
+    'Show interface error counters in the device list',
+    'When we open a case we copy CRC and input error counts by hand. If the device list showed the last values, engineers would see them straight away.',
+    'under_review',
+    'Thanks. We are looking at this together with device health reporting.',
+    [KAVERI_ADMIN, NARMADA],
+  );
+  await idea(
+    ORGS.narmada,
+    NARMADA,
+    'Schedule firmware upgrades for a maintenance window',
+    'We can only change command centre switches between 01:00 and 04:00. Being able to stage an upgrade and pick a window would save a night shift.',
+    'planned',
+    'Planned for the next release of the management software.',
+    [KAVERI_ADMIN],
+  );
+  await idea(
+    ORGS.kaveri,
+    KAVERI_ADMIN,
+    'Hindi labels on the switch web interface',
+    'Branch staff are more comfortable in Hindi. Even the main status pages in Hindi would help them read alarms.',
+    'new',
+    null,
+    [],
+  );
+  return true;
 }
 
 async function seedDemo(q: (t: string, v?: unknown[]) => Promise<pg.QueryResult>) {

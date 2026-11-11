@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
-import type { Me, TeamMember } from '@wd/contracts';
+import type { DelegationView, Me, TeamMember } from '@wd/contracts';
 import { api } from '@/lib/api';
+import { PartnerAccess } from './partner-access';
 import { TeamManager } from './team-manager';
 
 export const metadata = { title: 'Your team' };
@@ -8,7 +9,12 @@ export const metadata = { title: 'Your team' };
 export default async function TeamPage() {
   const me = await api<Me>('/api/v1/me');
   if (!me.permissions.includes('org:users:manage')) notFound();
-  const r = await api<{ items: TeamMember[] }>('/api/v1/org/users');
+  const [r, partners] = await Promise.all([
+    api<{ items: TeamMember[] }>('/api/v1/org/users'),
+    me.org.type === 'customer'
+      ? api<{ items: DelegationView[] }>('/api/v1/org/partners')
+      : Promise.resolve({ items: [] as DelegationView[] }),
+  ]);
   return (
     <div className="space-y-6">
       <div>
@@ -19,6 +25,7 @@ export default async function TeamPage() {
         </p>
       </div>
       <TeamManager initial={r.items} />
+      {me.org.type === 'customer' && <PartnerAccess initial={partners.items} />}
     </div>
   );
 }

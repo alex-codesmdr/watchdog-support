@@ -19,7 +19,11 @@ export type OutboxTopic =
   | 'advisory.published'
   | 'user.invited'
   | 'csat.low'
-  | 'review.monthly';
+  | 'review.monthly'
+  | 'contract.renewal_requested'
+  | 'renewal.digest'
+  | 'product.lifecycle'
+  | 'partner.access';
 
 /** Transactional outbox (ADR-006): the event commits or rolls back with the business change. */
 export async function emit(
