@@ -7,14 +7,14 @@ Detail lives in the documents it links to.
 
 ## 1. What the portal does
 
-| Area               | For whom                                                 | What it does                                                                                                                                                                                       |
-| ------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public site        | Anyone                                                   | Search and read the knowledge base, ask the help assistant, download centre, security advisories (with RSS and email alerts), warranty check, service status, organisation registration            |
-| Customer portal    | Customer users and administrators                        | Open and follow cases with SLA clocks, devices and coverage, hardware replacements (RMA), support reports, activity log, team management, API keys and webhooks, email language (English or Hindi) |
-| Engineer workspace | L1, L2 and L3 engineers                                  | Case queue sorted by SLA time left, saved views, bulk assignment, saved replies, internal notes, collision warnings, customer panel, time logging, Jira issues                                     |
-| Admin              | Support managers, content editors, system administrators | Case routing rules, announcements, service status, portal settings, registrations, device import, advisories, releases, knowledge base editor, audit trail with tamper check                       |
+| Area               | For whom                                                 | What it does                                                                                                                                                                                                                                                                                                                           |
+| ------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public site        | Anyone                                                   | Search and read the knowledge base, ask the help assistant, download centre, security advisories (with RSS and email alerts), warranty check, service status, organisation registration; English or Hindi                                                                                                                              |
+| Customer portal    | Customer users and administrators                        | Open and follow cases with SLA clocks, book engineer visits, devices with coverage and end-of-life notices, hardware replacements (RMA), contracts and invoices, support reports, community answers, suggestions board, team and partner access, API keys and webhooks, English or Hindi                                               |
+| Engineer workspace | L1, L2 and L3 engineers                                  | Case queue sorted by SLA time left, saved views, bulk assignment, saved replies, internal notes, collision warnings, customer panel, suggested articles and solved cases, time logging, Jira issues, phone call logging, roster, visits                                                                                                |
+| Admin              | Support managers, content editors, system administrators | Management dashboard, low ratings to call back, renewal pipeline, contracts and invoices, partner access, on-call roster, spare stock, product lifecycle, case routing rules, announcements, service status, portal settings, registrations, device import, advisories, releases, knowledge base editor, audit trail with tamper check |
 
-Phase reports with the detail: [PHASE2](PHASE2.md), [PHASE3](PHASE3.md), [PHASE4](PHASE4.md), [PHASE5](PHASE5.md).
+Phase reports with the detail: [PHASE2](PHASE2.md), [PHASE3](PHASE3.md), [PHASE4](PHASE4.md), [PHASE5](PHASE5.md), [PHASE6](PHASE6.md) (the review-guide suggestions).
 Architecture: [ARCHITECTURE](ARCHITECTURE.md). Decisions and their reasons: [ADR](ADR.md).
 
 ## 2. Running it on a computer for review
@@ -45,6 +45,8 @@ These are decisions and accounts only Apollo Infoways can provide.
 | Real support phone numbers and emails | Shown on the site                      | Set them in Admin > Portal settings; no release needed                                                                |
 | Product list                          | Real model names                       | The demo uses invented names; import the real catalogue                                                               |
 | Jira (optional)                       | Engineering issues                     | A Jira Cloud project and an API token                                                                                 |
+| Microsoft / Google app (optional)     | Sign in with a company account         | Register the app, then run `deploy/keycloak/sign-in-with.sh` (see PHASE6)                                             |
+| Contracts, depots, roster             | Renewals, spare stock, visit slots     | Enter real contracts, depots and spare serials, and the engineer roster, in the staff tools                           |
 | AI provider key (optional)            | Fuller assistant answers               | Without it the assistant quotes article passages                                                                      |
 | SMS provider (optional)               | Urgent alerts by SMS                   | Not connected yet; the adapter is ready for one                                                                       |
 | Penetration test                      | Independent security check             | Recommended before going live                                                                                         |
@@ -111,13 +113,14 @@ for staff and is never shown to customers.
 
 ## 8. Known limits and accepted risks
 
-| Item                                                  | Status                                                                                                                                                                                                           |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Portal pages are English; emails are English or Hindi | Hindi pages need translated page text; the message catalogue is ready                                                                                                                                            |
-| SMS alerts                                            | Adapter in place, no provider connected                                                                                                                                                                          |
-| Dependency findings (`pnpm audit --prod`)             | 2 moderate, not reachable: `glob` and `minimatch` are used only by the email template tool's command line, which the portal never runs (`uuid` in the spreadsheet library was upgraded). Recheck at each release |
-| Help assistant                                        | Answers only from published articles; it can miss details, and the page says so                                                                                                                                  |
-| Status page                                           | Updated by staff; it does not monitor services by itself                                                                                                                                                         |
+| Item                                      | Status                                                                                                                                                                                                           |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hindi pages                               | The main customer pages are in Hindi; staff tools, reports, the knowledge base and other pages stay in English until their text is translated (`apps/web/messages/hi-phrases.json`)                              |
+| Visit slots                               | Come from the roster: no shifts entered means no slots offered                                                                                                                                                   |
+| SMS alerts                                | Adapter in place, no provider connected                                                                                                                                                                          |
+| Dependency findings (`pnpm audit --prod`) | 2 moderate, not reachable: `glob` and `minimatch` are used only by the email template tool's command line, which the portal never runs (`uuid` in the spreadsheet library was upgraded). Recheck at each release |
+| Help assistant                            | Answers only from published articles; it can miss details, and the page says so                                                                                                                                  |
+| Status page                               | Updated by staff; it does not monitor services by itself                                                                                                                                                         |
 
 ## 9. Where things are
 
@@ -129,5 +132,5 @@ deploy/        Docker images, database roles, Keycloak realm
 docs/          This guide, phase reports, architecture, decisions, runbooks, security mapping
 ```
 
-Tests: about 540 API and unit tests and about 70 browser tests, run by GitHub on every change, including
+Tests: about 700 API and unit tests and about 80 browser tests, run by GitHub on every change, including
 a full run against the real sign-in server and virus scanner.
