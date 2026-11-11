@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto';
 import { expect, type Page } from '@playwright/test';
 
 /** RFC 6238 TOTP for the demo realm's pre-enrolled authenticator (local/CI only). */
-function totp(raw = 'WatchDogDemoTotpKey2026', step = 30): string {
+export function totp(raw = 'WatchDogDemoTotpKey2026', step = 30): string {
   const counter = Buffer.alloc(8);
   counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 1000 / step)));
   const h = createHmac('sha1', raw).update(counter).digest();

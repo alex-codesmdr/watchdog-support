@@ -17,6 +17,7 @@ import { htmlToText } from '../../common/sanitize.js';
 import { Signer } from '../../common/signing.js';
 import type { IdentityProvisioner } from '../identity/provisioner.js';
 import type { MailTransport, SmsAdapter } from './mailer.js';
+import { monthStats } from '../insights/stats.js';
 import { render, type TemplateKey } from './templates.js';
 
 const fmtIst = (d: Date) =>
@@ -97,9 +98,128 @@ export class NotificationsService {
           Number(payload.days),
           payload.entitlementIds as string[],
         );
+      case 'csat.low':
+        return this.csatLow(String(payload.caseId));
+      case 'review.monthly':
+        return this.monthlyReview(String(payload.orgId), String(payload.month));
       default:
         return;
     }
+  }
+
+  /** A rating of 1 or 2: every active support manager is asked to call the customer back. */
+  private async csatLow(caseId: string) {
+    await this.db.withSystem(async (tx) => {
+      const r = await tx
+        .selectFrom('csat_response as r')
+        .innerJoin('support_case as c', 'c.id', 'r.case_id')
+        .innerJoin('organization as o', 'o.id', 'c.org_id')
+        .innerJoin('app_user as u', 'u.id', 'r.user_id')
+        .select([
+          'c.org_id',
+          'c.number',
+          'c.subject',
+          'o.name',
+          'u.display_name',
+          'u.email',
+          'u.phone',
+          'r.score',
+          'r.comment',
+        ])
+        .where('r.case_id', '=', caseId)
+        .executeTakeFirst();
+      if (!r) return;
+      const managers = await tx
+        .selectFrom('user_role as ur')
+        .innerJoin('app_user as u', 'u.id', 'ur.user_id')
+        .select(['u.id', 'u.email', 'u.locale'])
+        .where('ur.role_key', '=', 'support_manager')
+        .where('u.status', '=', 'active')
+        .execute();
+      for (const m of managers)
+        await this.send({
+          to: m.email,
+          orgId: r.org_id,
+          userId: m.id,
+          key: 'csat_low',
+          locale: m.locale,
+          vars: {
+            number: r.number,
+            subject: r.subject,
+            org: r.name,
+            contact: r.display_name,
+            phone: r.phone ?? r.email,
+            score: r.score,
+            comment: r.comment ?? '—',
+            url: `${this.cfg.PUBLIC_WEB_URL}/workspace/low-ratings`,
+          },
+        });
+    });
+  }
+
+  /** Monthly service review to each active customer administrator, in their language. */
+  private async monthlyReview(orgId: string, month: string) {
+    const [y, m] = month.split('-').map(Number) as [number, number];
+    const next = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
+    await this.db.withSystem(async (tx) => {
+      const org = await tx
+        .selectFrom('organization')
+        .select('name')
+        .where('id', '=', orgId)
+        .executeTakeFirst();
+      if (!org) return;
+      const s = await monthStats(tx, orgId, month, next);
+      // Nothing happened and nothing is about to: no email.
+      if (!s.opened && !s.resolved && !s.openNow && !s.expiringSoon) return;
+      const admins = await tx
+        .selectFrom('user_role as ur')
+        .innerJoin('app_user as u', 'u.id', 'ur.user_id')
+        .select(['u.id', 'u.email', 'u.locale'])
+        .where('ur.role_key', '=', 'customer_admin')
+        .where('u.org_id', '=', orgId)
+        .where('u.status', '=', 'active')
+        .execute();
+      for (const a of admins) {
+        const hi = (a.locale ?? 'en').startsWith('hi');
+        const dur = (min: number | null) => {
+          if (min === null) return '—';
+          const h = Math.floor(min / 60);
+          const mm = min % 60;
+          if (hi) return h ? `${h} घंटे ${mm} मिनट` : `${mm} मिनट`;
+          return h ? `${h} h ${mm} min` : `${mm} min`;
+        };
+        await this.send({
+          to: a.email,
+          orgId,
+          userId: a.id,
+          key: 'monthly_review',
+          locale: a.locale,
+          vars: {
+            org: org.name,
+            month: new Intl.DateTimeFormat(hi ? 'hi-IN' : 'en-IN', {
+              month: 'long',
+              year: 'numeric',
+              timeZone: 'UTC',
+            }).format(new Date(Date.UTC(y, m - 1, 1))),
+            opened: s.opened,
+            resolved: s.resolved,
+            openNow: s.openNow,
+            firstResponse: dur(s.medianFirstResponseMinutes),
+            slaMet: s.slaMetPct === null ? '—' : `${s.slaMetPct}%`,
+            csat:
+              s.csatAverage === null
+                ? hi
+                  ? 'अभी कोई रेटिंग नहीं'
+                  : 'No ratings this month'
+                : hi
+                  ? `5 में से ${s.csatAverage} (${s.csatResponses} रेटिंग)`
+                  : `${s.csatAverage} out of 5 (${s.csatResponses} rating${s.csatResponses === 1 ? '' : 's'})`,
+            expiring: s.expiringSoon,
+            url: `${this.cfg.PUBLIC_WEB_URL}/portal/reports`,
+          },
+        });
+      }
+    });
   }
 
   /**

@@ -446,6 +446,105 @@
           "userSetupAllowed": true
         }
       ]
+    },
+    {
+      "alias": "watchdog-link-account",
+      "description": "First sign-in with Microsoft or Google: only for people who already have a WatchDog account, confirmed with their WatchDog password",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-detect-existing-broker-user",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "idp-confirm-link",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "idp-username-password-form",
+          "requirement": "REQUIRED",
+          "priority": 30,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "watchdog-broker-mfa",
+      "description": "Every sign-in with Microsoft or Google still asks for the WatchDog authenticator code",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "CONDITIONAL",
+          "priority": 10,
+          "flowAlias": "broker loa1",
+          "autheticatorFlow": true,
+          "userSetupAllowed": false
+        },
+        {
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "flowAlias": "broker loa2",
+          "autheticatorFlow": true,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "broker loa1",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-level-of-authentication",
+          "authenticatorConfig": "loa1",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "allow-access-authenticator",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "broker loa2",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-level-of-authentication",
+          "authenticatorConfig": "loa2",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": true
+        }
+      ]
     }
   ],
   "authenticatorConfig": [
@@ -470,8 +569,8 @@
       "displayName": "WatchDog staff (Entra ID)",
       "providerId": "oidc",
       "enabled": false,
-      "trustEmail": true,
-      "firstBrokerLoginFlowAlias": "first broker login",
+      "trustEmail": false,
+      "firstBrokerLoginFlowAlias": "watchdog-link-account",
       "config": {
         "issuer": "https://login.microsoftonline.com/TENANT_ID/v2.0",
         "authorizationUrl": "https://login.microsoftonline.com/TENANT_ID/oauth2/v2.0/authorize",
@@ -482,6 +581,47 @@
         "syncMode": "IMPORT",
         "pkceEnabled": "true",
         "pkceMethod": "S256"
+      },
+      "postBrokerLoginFlowAlias": "watchdog-broker-mfa"
+    },
+    {
+      "alias": "microsoft",
+      "displayName": "Microsoft",
+      "providerId": "microsoft",
+      "enabled": false,
+      "trustEmail": false,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "watchdog-link-account",
+      "postBrokerLoginFlowAlias": "watchdog-broker-mfa",
+      "config": {
+        "clientId": "set-by-sign-in-with-script",
+        "clientSecret": "set-by-sign-in-with-script",
+        "defaultScope": "openid profile email",
+        "syncMode": "IMPORT",
+        "guiOrder": "1",
+        "hideOnLoginPage": "false"
+      }
+    },
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": false,
+      "trustEmail": false,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "watchdog-link-account",
+      "postBrokerLoginFlowAlias": "watchdog-broker-mfa",
+      "config": {
+        "clientId": "set-by-sign-in-with-script",
+        "clientSecret": "set-by-sign-in-with-script",
+        "defaultScope": "openid profile email",
+        "syncMode": "IMPORT",
+        "guiOrder": "2",
+        "hideOnLoginPage": "false"
       }
     }
   ]

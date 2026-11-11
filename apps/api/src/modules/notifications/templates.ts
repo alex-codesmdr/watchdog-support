@@ -23,7 +23,9 @@ export type TemplateKey =
   | 'rma_update'
   | 'rma_requested'
   | 'advisory_published'
-  | 'user_invited';
+  | 'user_invited'
+  | 'csat_low'
+  | 'monthly_review';
 
 interface Rendered {
   subject: string;
@@ -143,6 +145,18 @@ const EN: Strings = {
     body: '{{inviter}} added you to <b>{{org}}</b> on WatchDog Support. A separate email will ask you to verify your address, set a password and enrol an authenticator app. After that you can open and follow support cases for your organisation.',
     cta: 'Go to WatchDog Support',
   },
+  csat_low: {
+    subject: '[Low rating] {{number}} rated {{score}}/5 by {{org}}',
+    heading: 'Please call {{contact}} back',
+    body: '{{contact}} at <b>{{org}}</b> rated case {{number}}, "{{subject}}", {{score}} out of 5.<br>Comment: {{comment}}<br>Phone: {{phone}}<br>Once you have spoken to them, mark the call back as done on the Low ratings page.',
+    cta: 'Open low ratings',
+  },
+  monthly_review: {
+    subject: 'Your WatchDog support summary for {{month}}',
+    heading: '{{org}}: support in {{month}}',
+    body: 'Cases opened: <b>{{opened}}</b><br>Cases resolved: <b>{{resolved}}</b><br>Still open today: <b>{{openNow}}</b><br>Median time to first response: <b>{{firstResponse}}</b><br>Response and resolution targets met: <b>{{slaMet}}</b><br>Your satisfaction rating: <b>{{csat}}</b><br>Devices whose coverage ends in the next 60 days: <b>{{expiring}}</b><br><br>The full report, with charts and a spreadsheet download, is in the portal.',
+    cta: 'Open the support report',
+  },
 };
 
 /** Hindi (हिन्दी). Technical terms customers use day to day (case, SLA, RMA, serial) stay in English. */
@@ -251,6 +265,18 @@ const HI: Strings = {
     heading: 'स्वागत है, {{name}}',
     body: '{{inviter}} ने आपको WatchDog Support पर <b>{{org}}</b> में जोड़ा है। एक अलग ईमेल में आपसे अपना ईमेल पता सत्यापित करने, पासवर्ड बनाने और ऑथेंटिकेटर ऐप जोड़ने के लिए कहा जाएगा। इसके बाद आप अपने संगठन के सपोर्ट case खोल और देख सकेंगे।',
     cta: 'WatchDog Support खोलें',
+  },
+  csat_low: {
+    subject: '[कम रेटिंग] {{org}} ने {{number}} को {{score}}/5 दिया',
+    heading: 'कृपया {{contact}} को वापस कॉल करें',
+    body: '<b>{{org}}</b> के {{contact}} ने case {{number}}, "{{subject}}", को 5 में से {{score}} दिया।<br>टिप्पणी: {{comment}}<br>फ़ोन: {{phone}}<br>बात हो जाने के बाद कम रेटिंग पेज पर कॉल को पूरा चिह्नित करें।',
+    cta: 'कम रेटिंग खोलें',
+  },
+  monthly_review: {
+    subject: '{{month}} के लिए आपका WatchDog सपोर्ट सारांश',
+    heading: '{{org}}: {{month}} में सपोर्ट',
+    body: 'खोले गए case: <b>{{opened}}</b><br>हल किए गए case: <b>{{resolved}}</b><br>आज भी खुले: <b>{{openNow}}</b><br>पहले जवाब का औसत (माध्यिका) समय: <b>{{firstResponse}}</b><br>जवाब और समाधान के लक्ष्य पूरे: <b>{{slaMet}}</b><br>आपकी संतुष्टि रेटिंग: <b>{{csat}}</b><br>अगले 60 दिनों में कवरेज समाप्त होने वाले डिवाइस: <b>{{expiring}}</b><br><br>चार्ट और स्प्रेडशीट डाउनलोड के साथ पूरी रिपोर्ट पोर्टल में है।',
+    cta: 'सपोर्ट रिपोर्ट खोलें',
   },
 };
 

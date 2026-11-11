@@ -8,7 +8,7 @@ const dur = (min: number | null) =>
   min === null ? '—' : min < 120 ? `${Math.round(min)} min` : `${(min / 60).toFixed(1)} h`;
 
 /** A ranked list where each row's bar is proportional to the largest count (single series). */
-function Bars({ title, items, empty }: { title: string; items: Count[]; empty: string }) {
+export function Bars({ title, items, empty }: { title: string; items: Count[]; empty: string }) {
   const max = Math.max(1, ...items.map((i) => i.count));
   return (
     <section aria-label={title} className="space-y-3">
@@ -42,7 +42,7 @@ function Bars({ title, items, empty }: { title: string; items: Count[]; empty: s
   );
 }
 
-function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
+export function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="border-l-2 border-line pl-3">
       <dt className="text-sm text-muted">{label}</dt>

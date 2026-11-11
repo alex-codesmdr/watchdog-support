@@ -176,6 +176,7 @@ export interface QueueT {
 }
 export interface SupportCaseT {
   id: Generated<string>;
+  channel: Generated<'web' | 'email' | 'phone' | 'api'>;
   org_id: string;
   number: Generated<string>;
   requester_id: string;
@@ -212,7 +213,7 @@ export interface CaseMessageT {
   author_is_staff: boolean;
   visibility: 'public' | 'internal';
   body_html: string;
-  source: 'web' | 'email' | 'api' | 'system';
+  source: 'web' | 'email' | 'api' | 'system' | 'phone';
   email_message_id: string | null;
   created_at: Ts;
 }
@@ -279,7 +280,16 @@ export interface CsatResponseT {
   user_id: string;
   score: number;
   comment: string | null;
+  followup_status: 'needed' | 'done' | null;
+  followup_by: string | null;
+  followup_at: TsNull;
+  followup_note: string | null;
   created_at: Ts;
+}
+export interface MonthlyReviewT {
+  org_id: string;
+  month: string;
+  sent_at: Ts;
 }
 export interface NotificationT {
   id: Generated<string>;
@@ -772,6 +782,7 @@ export interface DB {
   case_event: CaseEventT;
   sla_clock: SlaClockT;
   csat_response: CsatResponseT;
+  monthly_review: MonthlyReviewT;
   notification: NotificationT;
   inbound_email_hold: InboundEmailHoldT;
   partner_delegation: PartnerDelegationT;

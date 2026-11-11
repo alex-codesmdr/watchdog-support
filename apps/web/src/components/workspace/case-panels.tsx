@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   STATUS_LABELS,
   type CaseStatus,
+  type CaseSuggestions,
   type CustomerContext,
   type JiraLink,
   type Presence,
@@ -350,6 +351,72 @@ export function JiraPanel({ number, canRaise }: { number: string; canRaise: bool
             </Button>
           </div>
         </form>
+      )}
+    </section>
+  );
+}
+
+/** Articles and solved cases that look like this one, to answer faster. */
+export function SuggestionsPanel({ number }: { number: string }) {
+  const q = useQuery({
+    queryKey: ['case-suggestions', number],
+    queryFn: () => apiFetch<CaseSuggestions>(`/v1/workspace/cases/${number}/suggestions`),
+    staleTime: 5 * 60_000,
+  });
+  const s = q.data;
+  return (
+    <section aria-labelledby="sugg" className="rounded-m border border-line bg-surface p-4">
+      <h2 id="sugg" className="font-semibold">
+        Might help
+      </h2>
+      {!s ? (
+        <p className="mt-2 text-sm text-muted">{q.isError ? 'Could not load.' : 'Loading…'}</p>
+      ) : s.articles.length === 0 && s.cases.length === 0 ? (
+        <p className="mt-2 text-sm text-muted">No similar articles or solved cases found.</p>
+      ) : (
+        <>
+          {s.articles.length > 0 && (
+            <>
+              <h3 className="mt-3 text-sm font-semibold">Articles</h3>
+              <ul className="mt-1 space-y-1.5 text-sm">
+                {s.articles.map((a) => (
+                  <li key={a.slug}>
+                    <a
+                      href={`/kb/${a.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-teal-ink underline underline-offset-2"
+                    >
+                      {a.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {s.cases.length > 0 && (
+            <>
+              <h3 className="mt-4 text-sm font-semibold">Solved cases like this</h3>
+              <ul className="mt-1 space-y-3 text-sm">
+                {s.cases.map((c) => (
+                  <li key={c.number}>
+                    <Link
+                      href={`/workspace/cases/${c.number}`}
+                      className="text-teal-ink underline underline-offset-2"
+                    >
+                      {c.number}
+                    </Link>{' '}
+                    <span className="text-muted">{c.orgName}</span>
+                    <span className="block">{c.subject}</span>
+                    {c.resolution && (
+                      <span className="mt-0.5 block text-muted">Last reply: {c.resolution}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </>
       )}
     </section>
   );

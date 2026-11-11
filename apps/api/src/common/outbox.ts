@@ -17,7 +17,9 @@ export type OutboxTopic =
   | 'release.file.scan'
   | 'rma.status_changed'
   | 'advisory.published'
-  | 'user.invited';
+  | 'user.invited'
+  | 'csat.low'
+  | 'review.monthly';
 
 /** Transactional outbox (ADR-006): the event commits or rolls back with the business change. */
 export async function emit(

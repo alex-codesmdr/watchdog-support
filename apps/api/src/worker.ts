@@ -12,6 +12,7 @@ import { WebhooksService } from './modules/integrations/webhooks.service.js';
 import { DownloadsService } from './modules/downloads/downloads.service.js';
 import { RemindersService } from './modules/assets/reminders.service.js';
 import { JiraService } from './modules/jira/jira.service.js';
+import { MonthlyReviewService } from './modules/insights/monthly-review.service.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
 import { CONFIG, DB, OBJECT_STORE } from './tokens.js';
 import { S3ObjectStore, type ObjectStore } from './modules/files/object-store.js';
@@ -51,6 +52,7 @@ async function bootstrap() {
   const stopReminders = ctx.get(RemindersService).start();
   const stopWebhookRetries = webhooks.start();
   const stopJira = ctx.get(JiraService).start();
+  const stopReviews = ctx.get(MonthlyReviewService).start();
   const imap = new ImapPoller(cfg, ctx.get(EmailInService));
   imap.start();
   logger.info('WatchDog Support worker started');
@@ -62,6 +64,7 @@ async function bootstrap() {
     stopReminders();
     stopWebhookRetries();
     stopJira();
+    stopReviews();
     await relay.stop();
     await Promise.all(workers.map((w) => w.close()));
     await ctx.close();

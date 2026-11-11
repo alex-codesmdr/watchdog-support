@@ -52,6 +52,7 @@ permissions:
   - jira:link # raise or link an engineering issue from a case
   - status:manage # public service status page and incidents
   - reply:template:share # create and edit saved replies shared with every engineer
+  - csat:followup # call back customers who gave a low satisfaction rating
 
 roles:
   customer_user:
@@ -195,6 +196,7 @@ roles:
         settings:manage,
         jira:link,
         status:manage,
+        csat:followup,
       ]
   content_editor:
     internal: true
@@ -451,4 +453,22 @@ endpoints:
       method: GET,
       path: /api/v1/admin/settings,
       allow: [support_manager, system_admin],
+    }
+  - {
+      id: insights.dashboard,
+      method: GET,
+      path: /api/v1/workspace/dashboard,
+      allow: [support_manager, system_admin],
+    }
+  - {
+      id: insights.low-ratings,
+      method: GET,
+      path: /api/v1/workspace/low-ratings,
+      allow: [support_manager],
+    }
+  - {
+      id: insights.callers,
+      method: GET,
+      path: '/api/v1/workspace/callers?q=kaveri',
+      allow: [l1_engineer, l2_engineer, l3_engineer, support_manager],
     }

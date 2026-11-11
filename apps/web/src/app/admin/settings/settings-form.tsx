@@ -38,7 +38,11 @@ export function SettingsForm({ initial }: { initial: PortalSettings }) {
       {(p) => <Input {...p} type={type} value={s[k]} onChange={(e) => set(k, e.target.value)} />}
     </Field>
   );
-  const flag = (k: 'selfRegistration' | 'publicWarrantyCheck', label: string, hint: string) => (
+  const flag = (
+    k: 'selfRegistration' | 'publicWarrantyCheck' | 'monthlyReviewEmail',
+    label: string,
+    hint: string,
+  ) => (
     <label className="flex items-start gap-3">
       <input
         type="checkbox"
@@ -89,6 +93,11 @@ export function SettingsForm({ initial }: { initial: PortalSettings }) {
           'publicWarrantyCheck',
           'Anyone can check a warranty',
           'When off, only signed-in customers see coverage, for their own devices.',
+        )}
+        {flag(
+          'monthlyReviewEmail',
+          'Monthly service review email',
+          'On the first of each month, customer administrators get a summary of last month: cases, response times, targets met, satisfaction and coverage ending soon.',
         )}
       </fieldset>
       <div>

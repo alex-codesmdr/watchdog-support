@@ -12,11 +12,32 @@ export interface Tool {
 
 export const STAFF_TOOLS: Tool[] = [
   {
+    perm: 'case:create:on_behalf',
+    href: '/workspace/calls/new',
+    label: 'Log a phone call',
+    desc: 'Open a case for a customer who phoned, with SLA timed from the call.',
+    group: 'Your tools',
+  },
+  {
+    perm: 'csat:followup',
+    href: '/workspace/low-ratings',
+    label: 'Low ratings to call back',
+    desc: 'Customers who rated a case 1 or 2 out of 5, and the notes from each call back.',
+    group: 'Your tools',
+  },
+  {
     perm: 'case:note:internal',
     href: '/workspace/saved-replies',
     label: 'Saved replies',
     desc: 'Text you send often, ready to insert into a case reply.',
     group: 'Your tools',
+  },
+  {
+    perm: 'report:ops:read:all',
+    href: '/workspace/dashboard',
+    label: 'Management dashboard',
+    desc: "Six-month trends, the queue right now, busiest customers and each engineer's workload.",
+    group: 'Reports',
   },
   {
     perm: 'report:ops:read:all',

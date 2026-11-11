@@ -221,6 +221,10 @@ export const CreateCaseRequest = z.object({
     .array(z.string().regex(/^[a-f0-9]{32}$/))
     .max(20)
     .default([]),
+  /** Staff only: the case was reported by phone. */
+  channel: z.enum(['web', 'phone']).optional(),
+  /** Staff only, phone cases: when the call came in (SLA clocks start then). Up to 24 hours ago. */
+  callStartedAt: IsoDateTime.optional(),
 });
 export type CreateCaseRequest = z.infer<typeof CreateCaseRequest>;
 
@@ -276,7 +280,7 @@ export const MessageView = z.object({
   author: z.object({ id: Uuid.nullable(), name: z.string(), isStaff: z.boolean() }),
   visibility: Visibility,
   bodyHtml: z.string(),
-  source: z.enum(['web', 'email', 'api', 'system']),
+  source: z.enum(['web', 'email', 'api', 'system', 'phone']),
   createdAt: IsoDateTime,
   attachments: z.array(AttachmentView),
 });
@@ -292,6 +296,8 @@ export const CaseEventView = z.object({
 export type CaseEventView = z.infer<typeof CaseEventView>;
 
 export const CaseDetail = CaseSummary.extend({
+  /** How the case reached WatchDog. */
+  channel: z.enum(['web', 'email', 'phone', 'api']),
   description: z.string(),
   stepsTried: z.string().nullable(),
   businessImpact: z.string().nullable(),
@@ -1113,6 +1119,8 @@ export const PortalSettings = z.object({
   selfRegistration: z.boolean().default(true),
   /** Anyone can check a serial number's warranty without signing in. */
   publicWarrantyCheck: z.boolean().default(true),
+  /** Customer administrators get a summary email on the first of each month. */
+  monthlyReviewEmail: z.boolean().default(true),
 });
 export type PortalSettings = z.infer<typeof PortalSettings>;
 export const PORTAL_SETTING_DEFAULTS: PortalSettings = PortalSettings.parse({});
@@ -1315,3 +1323,88 @@ export const IncidentUpdate = z.object({
   componentStatus: ComponentStatus.optional(),
 });
 export type IncidentUpdate = z.input<typeof IncidentUpdate>;
+
+// ---- Insights: management dashboard, low-rating follow-up, suggestions, phone logging
+const Pct = z.number().nullable();
+export const DashboardMonth = z.object({
+  month: z.string(),
+  opened: z.number().int(),
+  resolved: z.number().int(),
+  slaMetPct: Pct,
+  csatAverage: z.number().nullable(),
+  csatResponses: z.number().int(),
+});
+export const ManagementDashboard = z.object({
+  months: z.array(DashboardMonth),
+  now: z.object({
+    openCases: z.number().int(),
+    openP1: z.number().int(),
+    unassigned: z.number().int(),
+    breachedOpen: z.number().int(),
+    lowRatingsWaiting: z.number().int(),
+  }),
+  byFamily: z.array(Count),
+  topCustomers: z.array(Count),
+  engineers: z.array(
+    z.object({
+      id: Uuid,
+      name: z.string(),
+      open: z.number().int(),
+      resolvedThisMonth: z.number().int(),
+      csatAverage: z.number().nullable(),
+    }),
+  ),
+});
+export type ManagementDashboard = z.infer<typeof ManagementDashboard>;
+
+export const LowRating = z.object({
+  id: Uuid,
+  caseNumber: z.string(),
+  subject: z.string(),
+  orgName: z.string(),
+  contactName: z.string(),
+  contactEmail: z.string(),
+  contactPhone: z.string().nullable(),
+  score: z.number().int(),
+  comment: z.string().nullable(),
+  ratedAt: IsoDateTime,
+  status: z.enum(['needed', 'done']),
+  followedUpBy: z.string().nullable(),
+  followedUpAt: IsoDateTime.nullable(),
+  note: z.string().nullable(),
+});
+export type LowRating = z.infer<typeof LowRating>;
+export const LowRatingFollowUp = z.object({ note: z.string().trim().min(3).max(2000) });
+
+export const CaseSuggestions = z.object({
+  articles: z.array(z.object({ slug: z.string(), title: z.string(), type: z.string() })),
+  cases: z.array(
+    z.object({
+      number: z.string(),
+      subject: z.string(),
+      orgName: z.string(),
+      resolvedAt: IsoDateTime.nullable(),
+      resolution: z.string(),
+    }),
+  ),
+});
+export type CaseSuggestions = z.infer<typeof CaseSuggestions>;
+
+export const CallerOrg = z.object({ id: Uuid, name: z.string() });
+export type CallerOrg = z.infer<typeof CallerOrg>;
+export const CallerOrgDetail = z.object({
+  id: Uuid,
+  name: z.string(),
+  contacts: z.array(
+    z.object({ id: Uuid, name: z.string(), email: z.string(), phone: z.string().nullable() }),
+  ),
+  devices: z.array(
+    z.object({
+      serialNumber: z.string(),
+      modelName: z.string(),
+      siteName: z.string().nullable(),
+      coveredUntil: z.string().nullable(),
+    }),
+  ),
+});
+export type CallerOrgDetail = z.infer<typeof CallerOrgDetail>;

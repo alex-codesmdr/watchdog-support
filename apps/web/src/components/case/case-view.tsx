@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import {
   CustomerPanel,
   JiraPanel,
+  SuggestionsPanel,
   PresenceNotice,
   TimePanel,
 } from '@/components/workspace/case-panels';
@@ -167,7 +168,9 @@ export function CaseView({
           </p>
           <h1 className="mt-2 text-2xl font-semibold">{c.subject}</h1>
           <p className="mt-1 text-sm text-muted">
-            {staff && <>{c.orgName}. </>}Raised by {c.requesterName} on {when(c.openedAt)} IST.{' '}
+            {staff && <>{c.orgName}. </>}
+            {c.channel === 'phone' ? 'Reported by phone by' : 'Raised by'} {c.requesterName} on{' '}
+            {when(c.openedAt)} IST.{' '}
             {c.assigneeName ? `Engineer: ${c.assigneeName}.` : 'Waiting for an engineer.'}
           </p>
         </header>
@@ -359,6 +362,9 @@ export function CaseView({
           </p>
         )}
         {staff && <CustomerPanel number={c.number} />}
+        {staff && c.status !== 'resolved' && c.status !== 'closed' && (
+          <SuggestionsPanel number={c.number} />
+        )}
         {staff && <JiraPanel number={c.number} canRaise={canJira} />}
         {staff && <TimePanel number={c.number} canLog={c.can.internalNote} />}
       </aside>

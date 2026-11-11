@@ -21,6 +21,28 @@ export { renderMarkdown };
 
 export type Audience = Array<'public' | 'registered' | 'partner' | 'internal'>;
 
+const reEsc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Replaces details that identify a customer in text drafted from their case: the given names
+ * (organisation, people, sites, serials) and any email address, phone number or IP address.
+ */
+export function redactCustomer(text: string, known: string[]): string {
+  let t = text
+    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email address]')
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?\b/g, '[IP address]')
+    .replace(
+      /(?<![\w:])(?=[0-9a-f:]*(?:::|[a-f]))(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{1,4}\b/gi,
+      '[IP address]',
+    )
+    .replace(/(?:\+91[\s-]?)?\b[6-9]\d{4}[\s-]?\d{5}\b/g, '[phone number]');
+  const names = [...new Set(known.map((k) => k.trim()).filter((k) => k.length >= 3))].sort(
+    (a, b) => b.length - a.length,
+  );
+  for (const n of names)
+    t = t.replace(new RegExp(`(?<![\\w])${reEsc(n)}(?![\\w])`, 'gi'), '[customer detail]');
+  return t;
+}
+
 /** Which visibility levels a caller may read. Anonymous visitors see public articles only. */
 export function audienceFor(p: Principal | undefined): Audience {
   if (!p) return ['public'];
@@ -612,6 +634,14 @@ export class KbService {
       if (!c) throw notFound('Case');
       if (c.status !== 'resolved' && c.status !== 'closed')
         throw conflict('not-resolved', 'Create articles from resolved cases');
+      // Names, serials and addresses of this customer, removed from the draft below.
+      const known = await sql<{ v: string }>`
+        SELECT o.name AS v FROM organization o JOIN support_case c ON c.org_id = o.id WHERE c.id = ${c.id}
+        UNION SELECT u.display_name FROM app_user u WHERE u.org_id = (SELECT org_id FROM support_case WHERE id = ${c.id})
+        UNION SELECT s.name FROM site s WHERE s.org_id = (SELECT org_id FROM support_case WHERE id = ${c.id})
+        UNION SELECT a.serial_number FROM asset a WHERE a.org_id = (SELECT org_id FROM support_case WHERE id = ${c.id})`.execute(
+        tx,
+      );
       const replies = await tx
         .selectFrom('case_message')
         .select('body_html')
@@ -620,25 +650,28 @@ export class KbService {
         .where('author_is_staff', '=', true)
         .orderBy('created_at')
         .execute();
-      return { c, replies };
+      return { c, replies, known: known.rows.map((r) => r.v) };
     });
+    const clean = (t: string) => redactCustomer(t, src.known);
     const body = [
       '## Symptoms',
       '',
-      htmlToText(src.c.description_html),
+      clean(htmlToText(src.c.description_html)),
       '',
       '## Resolution',
       '',
-      ...src.replies.map((r) => htmlToText(r.body_html)),
+      ...src.replies.map((r) => clean(htmlToText(r.body_html))),
       '',
-      '> Review before publishing: remove customer names, IP addresses, hostnames and serial numbers.',
+      '> Customer names, sites, serial numbers, email addresses, phone numbers and IP addresses were replaced automatically. Check for hostnames and anything else that identifies the customer before publishing.',
     ].join('\n');
     return this.create(
       p,
       ctx,
       {
-        title:
-          src.c.subject.length >= 8 ? src.c.subject : `${src.c.subject} (from ${src.c.number})`,
+        title: (() => {
+          const t = clean(src.c.subject);
+          return t.length >= 8 ? t : `${t} (from ${src.c.number})`;
+        })(),
         summary: '',
         bodyMd: body,
         type: src.c.category === 'documentation' ? 'faq' : 'troubleshooting',

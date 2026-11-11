@@ -100,7 +100,16 @@ export class CasesService {
         .select('id')
         .where('key', '=', 'l1')
         .executeTakeFirst();
-      const now = new Date();
+      const phone = body.channel === 'phone' || body.callStartedAt !== undefined;
+      if (phone && !p.isInternal)
+        throw unprocessable('channel', 'Only WatchDog staff log cases from phone calls');
+      let now = new Date();
+      if (body.callStartedAt) {
+        const at = new Date(body.callStartedAt);
+        if (at.getTime() > now.getTime() + 60_000 || now.getTime() - at.getTime() > 24 * 3600_000)
+          throw unprocessable('call-time', 'The call time must be within the last 24 hours');
+        now = at;
+      }
       const descriptionHtml = textToHtml(body.description);
 
       const c = await tx
@@ -122,6 +131,7 @@ export class CasesService {
           queue_id: queue?.id ?? null,
           sla_policy_id: pol?.policyId ?? null,
           opened_at: now,
+          channel: phone ? 'phone' : p.apiKeyId ? 'api' : 'web',
         })
         .returning(['id', 'number'])
         .executeTakeFirstOrThrow();
@@ -134,7 +144,8 @@ export class CasesService {
           author_is_staff: false,
           visibility: 'public',
           body_html: descriptionHtml,
-          source: 'web',
+          source: phone ? 'phone' : 'web',
+          created_at: now,
         })
         .returning('id')
         .executeTakeFirstOrThrow();
@@ -145,6 +156,7 @@ export class CasesService {
         severity: body.severity,
         tier,
         onBehalf: p.userId !== requesterId,
+        ...(phone ? { channel: 'phone' } : {}),
       });
       // Routing rules may set the queue and assign the least busy engineer straight away.
       await sql`SELECT * FROM wd.route_case(${c.id}::uuid)`.execute(tx);
@@ -182,7 +194,7 @@ export class CasesService {
         .select('id')
         .where('id', '=', body.requesterId)
         .where('org_id', '=', body.orgId)
-        .where('status', '=', 'active')
+        .where('status', '!=', 'disabled')
         .executeTakeFirst();
       if (!r) throw unprocessable('on-behalf', 'That contact does not belong to the organisation');
       return { orgId: body.orgId, requesterId: r.id };
@@ -389,6 +401,7 @@ export class CasesService {
       openedAt: c.opened_at.toISOString(),
       updatedAt: c.updated_at.toISOString(),
       nextSla: open ? nextClock(sla) : null,
+      channel: c.channel,
       description: c.description_html,
       stepsTried: c.steps_tried,
       businessImpact: c.business_impact,
@@ -838,7 +851,7 @@ export class CasesService {
 
   private async insertCsat(
     tx: Tx,
-    c: { id: string; status: string },
+    c: { id: string; org_id: string; status: string },
     userId: string,
     body: CsatRequest,
   ) {
@@ -852,9 +865,17 @@ export class CasesService {
     if (exists) throw conflict('csat-exists', 'Feedback was already submitted for this case');
     await tx
       .insertInto('csat_response')
-      .values({ case_id: c.id, user_id: userId, score: body.score, comment: body.comment ?? null })
+      .values({
+        case_id: c.id,
+        user_id: userId,
+        score: body.score,
+        comment: body.comment ?? null,
+        followup_status: body.score <= 2 ? 'needed' : null,
+      })
       .execute();
     await this.event(tx, c.id, 'csat_submitted', userId, { score: body.score });
+    // A poor rating asks a support manager to call the customer back.
+    if (body.score <= 2) await emit(tx, 'csat.low', c.org_id, { caseId: c.id, score: body.score });
   }
 
   // ------------------------------------------------------------------ helpers
